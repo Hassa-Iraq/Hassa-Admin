@@ -73,7 +73,6 @@ const [searchQuery, setSearchQuery] = useState('');
       isHeader: true,
       items: [
         { icon: UserCircle, label: 'Deliveryman', key: 'deliveryManagement', submenu: ['All Employees', 'Roles', 'Permissions'] },
-        // { icon: Users, label: 'Riders Setup', hasSubmenu: false }
       ]
       },
     {
@@ -81,7 +80,6 @@ const [searchQuery, setSearchQuery] = useState('');
       isHeader: true,
       items: [
         { icon: UserCircle, label: 'Employees', key: 'employeeManagement', submenu: ['All Employees', 'Roles', 'Permissions'] },
-        // { icon: Users, label: 'Riders Setup', hasSubmenu: false }
       ]
       },
     {

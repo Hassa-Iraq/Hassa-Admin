@@ -38,7 +38,7 @@ export default function TopRestaurants() {
           {restaurants.map((restaurant) => (
             <div
               key={restaurant.id}
-              className="bg-white border-2 border-[#6001D2] rounded-lg p-4 flex items-center gap-3 hover:bg-purple-50 transition-colors cursor-pointer"
+              className="bg-white border border-[#6001D2] rounded-lg p-4 flex items-center gap-3 hover:bg-purple-50 transition-colors cursor-pointer"
             >
               {/* Restaurant Logo */}
               <img

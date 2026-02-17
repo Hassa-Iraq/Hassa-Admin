@@ -1,8 +1,13 @@
 'use client'
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { ChevronDown, LayoutDashboard, ShoppingCart, Store, Users, FileText, Wallet, DollarSign, CreditCard, Building2, UserCircle, Settings, Bell, ChevronUp, Search } from 'lucide-react';
 
 export default function Sidebar() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [activeItem, setActiveItem] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
     orderManagement: true,
     vendorManagement: false,
@@ -17,6 +22,44 @@ export default function Sidebar() {
   });
     
 const [searchQuery, setSearchQuery] = useState('');
+
+  const ordersFilterSlugByLabel = useMemo(() => ({
+    All: 'all',
+    Pending: 'pending',
+    Accepted: 'accepted',
+    Processing: 'processing',
+    Scheduled: 'scheduled',
+    'Feed On The Way': 'on-the-way',
+    Delivered: 'delivered',
+    Cancelled: 'cancelled',
+    Refunded: 'refunded',
+    'Dine In': 'dine-in',
+    'Offline Payments': 'offline-payments',
+    'Payments Failed': 'payments-failed',
+  }), []);
+
+  const ordersFilterLabelBySlug = useMemo(() => {
+    const entries = Object.entries(ordersFilterSlugByLabel);
+    return Object.fromEntries(entries.map(([label, slug]) => [slug, label]));
+  }, [ordersFilterSlugByLabel]);
+
+  useEffect(() => {
+    if (!pathname) return;
+
+    if (pathname === '/dashboard') {
+      setActiveItem('Dashboard');
+      return;
+    }
+
+    const match = pathname.match(/^\/dashboard\/orders\/([^/]+)$/);
+    if (match) {
+      const slug = match[1];
+      const label = ordersFilterLabelBySlug[slug] ?? 'All';
+      setActiveItem(label);
+      setExpandedSections(prev => ({ ...prev, orderManagement: true }));
+    }
+  }, [pathname, ordersFilterLabelBySlug]);
+
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -34,7 +77,7 @@ const [searchQuery, setSearchQuery] = useState('');
       label: 'ORDER MANAGEMENT',
       isHeader: true,
       items: [
-        { icon: ShoppingCart, label: 'Orders', key: 'orderManagement', submenu: ['All Orders', 'Pending Orders', 'Accepted Orders', 'Scheduled Orders'] },
+        { icon: ShoppingCart, label: 'Orders', key: 'orderManagement', submenu: ['All', 'Pending', 'Accepted', 'Processing', 'Scheduled', 'Feed On The Way', 'Delivered', 'Cancelled', 'Refunded', 'Dine In', 'Offline Payments', 'Payments Failed'] },
         { icon: Store, label: 'Dispatch Management', hasSubmenu: false },
         { icon: ShoppingCart, label: 'Order Refund', hasSubmenu: false }
       ]
@@ -145,9 +188,20 @@ const [searchQuery, setSearchQuery] = useState('');
     return (
       <div key={index}>
         <div
-          className="sidebar-item flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors"
-          onClick={() => hasSubmenu && toggleSection(item.key)}
-        >
+          // className="sidebar-item flex items-center gap-2  cursor-pointer p-2 rounded hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors"
+         className={`flex items-center gap-2 cursor-pointer p-2 rounded border transition-all
+${activeItem === item.label 
+  ? 'border-[#7C3AED] bg-purple-50 text-purple-600'
+  : 'border-transparent  hover:bg-purple-50 hover:text-purple-600'
+}`}
+onClick={() => {
+  setActiveItem(item.label);
+  hasSubmenu && toggleSection(item.key);
+  if (!hasSubmenu) {
+    if (item.label === 'Dashboard') router.push('/dashboard');
+  }
+}}
+> 
           {Icon && <Icon size={18} />}
           <span className="flex-1 font-semibold text-[#1E1E24] ">{item.label}</span>
           {hasSubmenu && (
@@ -157,15 +211,36 @@ const [searchQuery, setSearchQuery] = useState('');
         
         {hasSubmenu && isExpanded && (
           <div className="ml-6 mt-1 space-y-1 font-medium text-[#1E1E24] ">
-            {item.submenu.map((subMenuItem, subIndex) => (
-              <div
-                key={subIndex}
-                className=" font-medium text-[#1E1E24] flex items-center gap-2 cursor-pointer p-2 rounded text-sm hover:bg-purple-50 hover:text-purple-600 transition-colors"
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-[#00C49A]"></div>
-                <span>{subMenuItem}</span>
-              </div>
-            ))}
+            {item.submenu.map((subMenuItem, subIndex) => {
+              const isOrdersSubItem = item.label === 'Orders';
+              const slug = isOrdersSubItem
+                ? ordersFilterSlugByLabel[subMenuItem] ?? 'all'
+                : null;
+              const content = (
+                <div
+                  // className=" font-medium text-[#1E1E24] flex items-center gap-2 cursor-pointer p-2 rounded text-sm hover:bg-purple-50  hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                  className={`flex items-center gap-2 cursor-pointer p-2 rounded text-sm border transition-all
+                  ${activeItem === subMenuItem 
+                    ? 'border-[#7C3AED] bg-purple-50 text-purple-600'
+                    : 'border-transparent  hover:bg-purple-50 hover:text-purple-600'
+                  }`}
+                  onClick={() => {
+                    setActiveItem(subMenuItem);
+                  }}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#00C49A]"></div>
+                  <span>{subMenuItem}</span>
+                </div>
+              );
+
+              return slug ? (
+                <Link key={subIndex} href={`/dashboard/orders/${slug}`}>
+                  {content}
+                </Link>
+              ) : (
+                <div key={subIndex}>{content}</div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -189,6 +264,10 @@ const [searchQuery, setSearchQuery] = useState('');
       <div
         key={index}
         className="flex items-center font-semibold gap-2 cursor-pointer p-2 rounded hover:bg-purple-50 text-[#1E1E24] hover:text-purple-600 transition-colors"
+        onClick={() => {
+          setActiveItem(item.label);
+          if (item.label === 'Dashboard') router.push('/dashboard');
+        }}
       >
         {Icon && <Icon size={18} />}
         <span>{item.label}</span>

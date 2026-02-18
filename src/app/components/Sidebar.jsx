@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronDown, LayoutDashboard, ShoppingCart, Store, Users, FileText, Wallet, DollarSign, CreditCard, Building2, UserCircle, Settings, Bell, ChevronUp, Search } from 'lucide-react';
 
@@ -29,7 +28,7 @@ const [searchQuery, setSearchQuery] = useState('');
     Accepted: 'accepted',
     Processing: 'processing',
     Scheduled: 'scheduled',
-    'Feed On The Way': 'on-the-way',
+    'Food On The Way': 'food-on-the-way',
     Delivered: 'delivered',
     Cancelled: 'cancelled',
     Refunded: 'refunded',
@@ -77,7 +76,7 @@ const [searchQuery, setSearchQuery] = useState('');
       label: 'ORDER MANAGEMENT',
       isHeader: true,
       items: [
-        { icon: ShoppingCart, label: 'Orders', key: 'orderManagement', submenu: ['All', 'Pending', 'Accepted', 'Processing', 'Scheduled', 'Feed On The Way', 'Delivered', 'Cancelled', 'Refunded', 'Dine In', 'Offline Payments', 'Payments Failed'] },
+        { icon: ShoppingCart, label: 'Orders', key: 'orderManagement', submenu: ['All', 'Pending', 'Accepted', 'Processing', 'Scheduled', 'Food On The Way', 'Delivered', 'Cancelled', 'Refunded', 'Dine In', 'Offline Payments', 'Payments Failed'] },
         { icon: Store, label: 'Dispatch Management', hasSubmenu: false },
         { icon: ShoppingCart, label: 'Order Refund', hasSubmenu: false }
       ]
@@ -216,9 +215,10 @@ onClick={() => {
               const slug = isOrdersSubItem
                 ? ordersFilterSlugByLabel[subMenuItem] ?? 'all'
                 : null;
-              const content = (
+
+              return (
                 <div
-                  // className=" font-medium text-[#1E1E24] flex items-center gap-2 cursor-pointer p-2 rounded text-sm hover:bg-purple-50  hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                  key={subIndex}
                   className={`flex items-center gap-2 cursor-pointer p-2 rounded text-sm border transition-all
                   ${activeItem === subMenuItem 
                     ? 'border-[#7C3AED] bg-purple-50 text-purple-600'
@@ -226,19 +226,14 @@ onClick={() => {
                   }`}
                   onClick={() => {
                     setActiveItem(subMenuItem);
+                    if (slug) {
+                      router.push(`/dashboard/orders/${slug}`);
+                    }
                   }}
                 >
                   <div className="w-1.5 h-1.5 rounded-full bg-[#00C49A]"></div>
                   <span>{subMenuItem}</span>
                 </div>
-              );
-
-              return slug ? (
-                <Link key={subIndex} href={`/dashboard/orders/${slug}`}>
-                  {content}
-                </Link>
-              ) : (
-                <div key={subIndex}>{content}</div>
               );
             })}
           </div>

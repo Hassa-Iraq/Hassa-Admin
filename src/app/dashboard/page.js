@@ -1,4 +1,4 @@
-import OrdersTable from "../components/OrdersTable";
+import MostPopularRestaurants from "../components/PopularRestaurants";
 import RevenueChart from "../components/RevenueChart";
 import UserDonut from "../components/UserDonut";
 import { stats } from "../data/DashboardData";
@@ -35,7 +35,7 @@ export default function Dashboard() {
 
                 <div className="grid lg:grid-cols-2 gap-6">
                     <UserDonut />
-                    <OrdersTable />
+                    <MostPopularRestaurants />
                 </div>
                 <div className="grid lg:grid-cols-2 gap-6">
                     <TopDeliveryMan />

@@ -240,7 +240,7 @@ export default function OrderDetailPage() {
             </div>
 
             {/* DELIVERY INFO */}
-            <div className="bg-white border rounded-xl p-5">
+            <div className="bg-white  rounded-xl p-5">
               <h3 className="font-semibold mb-4">Delivery Info</h3>
 
               <div className="text-xs text-gray-600 space-y-1.5">
@@ -258,7 +258,7 @@ export default function OrderDetailPage() {
             </div>
 
             {/* DELIVERY PROOF */}
-            <div className="bg-white border rounded-xl p-5">
+            <div className="bg-white rounded-xl p-5">
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold">Delivery Proof</h3>
                 <button className="bg-[#7C3AED] text-white text-xs font-medium px-4 py-1.5 rounded-lg hover:bg-[#6D28D9]">
@@ -268,7 +268,7 @@ export default function OrderDetailPage() {
             </div>
 
             {/* RESTAURANT */}
-            <div className="bg-white border rounded-xl p-5">
+            <div className="bg-white  rounded-xl p-5">
               <h3 className="font-semibold mb-4">Restaurant Info</h3>
 
               <div className="flex gap-3 items-center">

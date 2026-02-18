@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { FaApple, FaGoogle, FaFacebook, FaEye, FaEyeSlash } from 'react-icons/fa';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -48,20 +49,9 @@ export default function LoginPage() {
                   fill
                   className="object-cover"
                 />
-                {/* Logo Overlay */}
-                {/* <div className="absolute top-6 left-6 bg-white rounded-2xl p-4 shadow-lg">
-                </div> */}
               </div>
 
-              {/* Right Side - Sign In Form */}
               <div className="relative p-8 md:p-12 flex flex-col justify-center">
-                {/* Close Button */}
-                {/* <button
-                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition-colors"
-                  aria-label="Close"
-                >
-                  <span className="text-red-500 text-xl font-light">×</span>
-                </button> */}
 
                 {/* Header */}
                 <div className="text-center mb-8">
@@ -119,7 +109,6 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                                              // className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6001D2] hover:text-[#4b00a8]"
                         aria-label="Toggle password visibility"
                       >
@@ -133,37 +122,28 @@ export default function LoginPage() {
                   </div>
 
                   {/* Forgot Password Link */}
-                 <div className="text-right">
-  <a
-    href="#"
-    className="text-sm text-[#6001D2] underline font-medium"
-  >
-    Forgot Password?
-  </a>
-</div>
+                  <div className="text-right">
+                    <a
+                      href="#"
+                      className="text-sm text-[#6001D2] underline font-medium"
+                    >
+                      Forgot Password?
+                    </a>
+                  </div>
 
 
                   {/* Sign In Button */}
-                  <button
-                    type="submit"
-                    className="w-full bg-[#6001D2] hover:bg-purple-600 text-white font-semibold py-3 rounded-lg transition-colors shadow-md hover:shadow-lg"
-                  >
-                    Sign In
-                  </button>
+                  <Link href="/dashboard" className="block w-full">
+                    <button
+                      type="button"
+                      className="w-full bg-[#6001D2] hover:bg-purple-600 text-white font-semibold py-3 rounded-lg transition-colors shadow-md hover:shadow-lg"
+                    >
+                      Sign In
+                    </button>
+                  </Link>
+
                 </form>
 
-                {/* Divider */}
-                {/* <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300" />
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-4 text-[#6001D2] font-poppins font-semibold text-[16px] leading-[16px] tracking-[0.5%] text-center">
-                      or sign in with
-                    </span>
-                  </div>
-                </div> */}
-                {/* Divider */}
 {/* Divider */}
 <div className="flex flex-col items-center mt-8">
 
@@ -185,19 +165,12 @@ export default function LoginPage() {
       className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
     >
       <FaApple className="w-7 h-7 text-black" />
-    </button>
-
-    {/* <button
-      onClick={() => handleSocialLogin('Google')}
-      className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
-    >
-      <FaGoogle className="w-6 h-6" />
-    </button> */}
-<button
-  onClick={() => handleSocialLogin('Google')}
-  className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
->
-  <img
+                    </button>
+                    <button
+                      onClick={() => handleSocialLogin('Google')}
+                      className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
+                    >
+              <img
     src="/images/google.png"
     alt="Google"
     className="w-6 h-6"
@@ -219,11 +192,9 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Bottom Right Text */}
-                  {/* <div className="text-right mt-4 pr-4"> */}
-                  <div className="w-full mt-4 flex justify-end pr-0">
+          <div className="w-full mt-4 flex justify-end pr-0">
 
-            <p className="text-white text-[16px] font-semibold drop-shadow-lg">
+          <p className="text-white text-[16px] font-semibold drop-shadow-lg">
               Hassa
             </p>
           </div>

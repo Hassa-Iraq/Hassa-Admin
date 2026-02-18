@@ -6,6 +6,8 @@ import {
   Search as SearchIcon,
   Download,
   SlidersHorizontal,
+  Eye,
+  Printer
 } from 'lucide-react';
 
 // Mock orders data for demo – adjust to your API later
@@ -497,11 +499,31 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                     </div>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    {/* <button className="text-xs font-medium text-purple-600 hover:underline">
-  View
-</button> */}
-                    
+  <div className="flex justify-end gap-2">
 
+    {/* View */}
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        router.push(`/dashboard/orders/all/${order.id}`);
+      }}
+      className="w-8 h-8 flex items-center justify-center rounded-md border border-orange-200 bg-orange-50 text-orange-500 hover:bg-orange-100 transition"
+    >
+      <Eye className="w-4 h-4" />
+    </button>
+
+    {/* Print */}
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        console.log('Print order', order.id);
+      }}
+      className="w-8 h-8 flex items-center justify-center rounded-md border border-purple-200 bg-purple-50 text-purple-600 hover:bg-purple-100 transition"
+    >
+      <Printer className="w-4 h-4" />
+    </button>
+
+  </div>
                   </td>
                 </tr>
               );

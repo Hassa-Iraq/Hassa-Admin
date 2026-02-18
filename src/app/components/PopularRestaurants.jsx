@@ -12,11 +12,13 @@ export default function MostPopularRestaurants() {
 
   return (
     <div className="bg-white rounded-lg shadow p-6 border border-[#8A8A9E80]">
-      {/* Header with border bottom */}
+      
+      {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-[#8A8A9E80] mb-4">
-        <h2 className="text-lg font-bold text-gray-900">Most Popular Restaurants</h2>
+        <h2 className="text-lg font-bold text-gray-900">
+          Most Popular Restaurants
+        </h2>
         
-        {/* Radius Dropdown */}
         <div className="relative w-32">
           <select className="appearance-none w-full bg-white border border-purple-300 rounded-lg px-2 py-2 pr-10 text-sm text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer">
             <option>Radius: 5km</option>
@@ -41,18 +43,17 @@ export default function MostPopularRestaurants() {
         </div>
       </div>
 
-      {/* Scrollable Restaurant List */}
-      <div className="max-h-[320px] overflow-y-auto">
+      {/* Restaurant List (No Scroll) */}
+      <div>
         <div className="space-y-3">
           {restaurants.map((restaurant) => (
             <div
               key={restaurant.id}
               className="flex items-center justify-between bg-purple-50 border border-[#6001D2] rounded-lg p-3 hover:bg-purple-100 transition-colors cursor-pointer"
             >
-              {/* Left side - Image and Name */}
               <div className="flex items-center gap-3">
                 <img
-                  src={`https://tse4.mm.bing.net/th/id/OIP.qOEjssW7vOnbuoTsXFmF5wHaEU?cb=defcache2&defcache=1&rs=1&pid=ImgDetMain&o=7&rm=3?name=${restaurant.name}&background=7c3aed&color=fff&size=40`}
+                  src={`https://tse4.mm.bing.net/th/id/OIP.qOEjssW7vOnbuoTsXFmF5wHaEU?cb=defcache2&defcache=1&rs=1&pid=ImgDetMain&o=7&rm=3`}
                   alt={restaurant.name}
                   className="w-10 h-10 rounded-full"
                 />
@@ -61,7 +62,6 @@ export default function MostPopularRestaurants() {
                 </span>
               </div>
 
-              {/* Right side - Favorites count with heart */}
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-gray-900">
                   {restaurant.favorites}

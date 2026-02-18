@@ -24,7 +24,7 @@ export default function Dashboard() {
                     </select>
                 }
             />
-            <div className="pt-36 px-6 space-y-6">
+            <div className="pt-36 px-6 space-y-6 pb-16">
                 <OrderStats>
                     {stats.map((s, i) => (
                         <StatCard key={i} {...s} index={i} />

@@ -10,11 +10,7 @@ export default function TopDeliveryMan() {
     { id: 5, name: 'Hamza Khan', orders: 4, avatar: 'HK', online: true },
     { id: 6, name: 'Hamza Khan', orders: 4, avatar: 'HK', online: true },
     { id: 7, name: 'Hamza Khan', orders: 4, avatar: 'HK', online: true },
-    { id: 8, name: 'Hamza Khan', orders: 4, avatar: 'HK', online: true },
-    { id: 9, name: 'Hamza Khan', orders: 4, avatar: 'HK', online: true },
-    { id: 10, name: 'Hamza Khan', orders: 4, avatar: 'HK', online: true },
-    { id: 11, name: 'Hamza Khan', orders: 4, avatar: 'HK', online: true },
-    { id: 12, name: 'Hamza Khan', orders: 4, avatar: 'HK', online: true }
+    { id: 8, name: 'Hamza Khan', orders: 4, avatar: 'HK', online: true }
   ];
 
   return (
@@ -37,15 +33,14 @@ export default function TopDeliveryMan() {
         </div>
       </div>
 
-      {/* Scrollable Grid Section */}
-      <div className="p-6 max-h-[320px] overflow-y-auto">
+      {/* Grid Section (No Scroll) */}
+      <div className="p-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {deliveryMen.map((person) => (
             <div
               key={person.id}
-             className="bg-white rounded-lg shadow-sm px-5 py-4 border border-gray-200 border-opacity-60 flex flex-col items-center cursor-pointer transition hover:shadow-md"
+              className="bg-white rounded-lg shadow-sm px-5 py-4 border border-gray-200 border-opacity-60 flex flex-col items-center cursor-pointer transition hover:shadow-md"
             >
-              {/* Avatar */}
               <div className="relative mb-2">
                 <img
                   src={`https://ui-avatars.com/api/?name=${person.avatar}&background=555&color=fff&size=56`}
@@ -57,12 +52,10 @@ export default function TopDeliveryMan() {
                 )}
               </div>
 
-              {/* Name */}
               <h3 className="text-[13px] font-medium text-gray-800 whitespace-nowrap">
                 {person.name}
               </h3>
 
-              {/* Orders */}
               <p className="text-[13px] text-teal-500 font-semibold mt-0.5">
                 {person.orders} Orders
               </p>

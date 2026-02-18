@@ -11,10 +11,6 @@ export default function TopRatedFood() {
     { id: 6, name: 'Beef Stroganoff', rating: 4, price: 200 },
     { id: 7, name: 'Beef Stroganoff', rating: 4, price: 200 },
     { id: 8, name: 'Beef Stroganoff', rating: 4, price: 200 },
-    { id: 9, name: 'Beef Stroganoff', rating: 4, price: 200 },
-    { id: 10, name: 'Beef Stroganoff', rating: 4, price: 200 },
-    { id: 11, name: 'Beef Stroganoff', rating: 4, price: 200 },
-    { id: 12, name: 'Beef Stroganoff', rating: 4, price: 200 }
   ];
 
   return (
@@ -37,15 +33,14 @@ export default function TopRatedFood() {
         </div>
       </div>
 
-      {/* Scrollable Grid Section */}
-      <div className="p-6 max-h-[320px] overflow-y-auto">
+      {/* Grid Section (No Scroll) */}
+      <div className="p-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {foods.map((food) => (
             <div
               key={food.id}
               className="bg-white rounded-lg shadow-sm px-4 py-4 border border-gray-200 border-opacity-60 flex flex-col items-center cursor-pointer transition hover:shadow-md"
             >
-              {/* Food Image */}
               <div className="mb-2">
                 <img
                   src="https://images.unsplash.com/photo-1574484284002-952d92456975?w=200&h=200&fit=crop"
@@ -54,16 +49,14 @@ export default function TopRatedFood() {
                 />
               </div>
 
-              {/* Food Name */}
               <h3 className="text-[13px] font-medium text-gray-800 text-center mb-1">
                 {food.name}
               </h3>
 
-              {/* Rating */}
               <div className="flex items-center gap-1 mb-1">
                 <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
                 <span className="text-[12px] text-gray-700 font-semibold">
-                  {food.rating}({food.price})
+                  {food.rating} ({food.price})
                 </span>
               </div>
             </div>

@@ -8,10 +8,7 @@ export default function TopSellingFoods() {
     { id: 3, name: 'Name' },
     { id: 4, name: 'Name' },
     { id: 5, name: 'Name' },
-    { id: 6, name: 'Name' },
-    { id: 7, name: 'Name' },
-    { id: 8, name: 'Name' },
-    { id: 9, name: 'Name' }
+    { id: 6, name: 'Name' }
   ];
 
   return (
@@ -34,15 +31,14 @@ export default function TopSellingFoods() {
         </div>
       </div>
 
-      {/* Scrollable Grid Section */}
-      <div className="p-6 max-h-[320px] overflow-y-auto">
+      {/* Grid Section (No Scroll) */}
+      <div className="p-6">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {foods.map((food) => (
             <div
               key={food.id}
               className="bg-white rounded-lg shadow-sm p-3 border border-gray-200 border-opacity-60 flex flex-col items-center cursor-pointer transition hover:shadow-md"
             >
-              {/* Food Image */}
               <div className="mb-2 w-full">
                 <img
                   src="https://images.unsplash.com/photo-1574484284002-952d92456975?w=300&h=200&fit=crop"
@@ -51,7 +47,6 @@ export default function TopSellingFoods() {
                 />
               </div>
 
-              {/* Food Name */}
               <h3 className="text-[14px] font-medium text-gray-800 text-center">
                 {food.name}
               </h3>

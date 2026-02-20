@@ -1,5 +1,4 @@
 'use client'
-import { ChevronDown } from 'lucide-react';
 
 export default function TopRestaurants() {
   const restaurants = [
@@ -12,42 +11,31 @@ export default function TopRestaurants() {
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 border border-[#8A8A9E80]">
+    <div className="bg-white rounded-xl border border-[#8A8A9E80] shadow-sm">
       
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#8A8A9E80] mb-6">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[#CFCFD6]">
         <h2 className="text-lg font-bold text-gray-900">Top Restaurants</h2>
-        
-        <div className="relative w-36">
-          <select className="appearance-none w-full bg-white border border-[#6001D2] rounded-lg px-4 py-2 pr-10 text-sm text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer">
-            <option>Radius: 5km</option>
-            <option>Radius: 10km</option>
-            <option>Radius: 15km</option>
-            <option>Radius: 20km</option>
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-purple-600 pointer-events-none" />
-        </div>
       </div>
 
-      {/* Grid Section (No Scroll) */}
-      <div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="p-6">
+        <div className="grid grid-cols-2 gap-3">
           {restaurants.map((restaurant) => (
             <div
               key={restaurant.id}
-              className="bg-white border border-[#6001D2] rounded-lg p-4 flex items-center gap-3 hover:bg-purple-50 transition-colors cursor-pointer"
+              className="bg-white border border-[#6001D2] rounded-lg px-3 py-3 flex items-center gap-3 hover:bg-purple-50 transition-colors cursor-pointer"
             >
               <img
-                src={`/images/restaurant.webp`}
+                src="/images/restaurant.webp"
                 alt={restaurant.name}
-                className="w-12 h-12 rounded-full"
+                className="w-10 h-10 rounded-full flex-shrink-0"
               />
 
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-1">
+              <div className="min-w-0">
+                <h3 className="text-[13px] font-medium text-gray-900 leading-tight">
                   {restaurant.name}
                 </h3>
-                <p className="text-sm text-teal-600 font-semibold">
+                <p className="text-[13px] text-teal-600 font-semibold leading-tight mt-0.5">
                   {restaurant.orders} Orders
                 </p>
               </div>

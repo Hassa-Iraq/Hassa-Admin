@@ -17,12 +17,6 @@ export default function Dashboard() {
             <Topbar
                 title="Dashboard Overview"
                 subtitle="Welcome back Admin!"
-                rightContent={
-                    <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                        <option>Radius: 5km</option>
-                        <option>Radius: 10km</option>
-                    </select>
-                }
             />
             <div className="pt-36 px-6 space-y-6 pb-16">
                 <OrderStats>

@@ -1,6 +1,5 @@
 import OrdersListTable from "@/app/components/OrdersListTable";
 import Topbar from "@/app/components/Topbar";
-import OrderDetailPage from "./[id]/page";
 
 const labelBySlug = {
   all: 'All',
@@ -12,7 +11,6 @@ const labelBySlug = {
   delivered: 'Delivered',
   cancelled: 'Cancelled',
   refunded: 'Refunded',
-  'dine-in': 'Dine In',
   'offline-payments': 'Offline Payments',
   'payments-failed': 'Payments Failed',
 };
@@ -28,11 +26,6 @@ export default async function OrdersFilteredPage({ params }) {
       <Topbar
         title={title}
         subtitle="Manage all active and scheduled orders"
-        rightContent={
-          <button className="bg-[#7C3AED] text-white text-sm font-medium px-4 py-2 rounded-lg shadow-sm hover:bg-[#6D28D9]">
-            + New Order
-          </button>
-        }
       />
 
       <div className="pt-36 px-6 pb-10">

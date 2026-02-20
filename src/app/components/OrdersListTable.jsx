@@ -7,7 +7,9 @@ import {
   Download,
   SlidersHorizontal,
   Eye,
-  Printer
+  Printer,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 // Mock orders data for demo – adjust to your API later
@@ -166,7 +168,6 @@ const statusStyles = {
   Delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   Cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
   Refunded: 'bg-orange-50 text-orange-700 border-orange-200',
-  'Dine In': 'bg-sky-50 text-sky-700 border-sky-200',
   'Offline Payments': 'bg-slate-50 text-slate-700 border-slate-200',
   'Payments Failed': 'bg-pink-50 text-pink-700 border-pink-200',
 };
@@ -187,6 +188,8 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [orderTypeFilter, setOrderTypeFilter] = useState('All');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 10;
   const router = useRouter();
 
   const filteredOrders = useMemo(() => {
@@ -226,6 +229,9 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
 
     return base;
   }, [filterLabel, search, orderTypeFilter, paymentStatusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PER_PAGE));
+  const paginatedOrders = filteredOrders.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const handleExport = () => {
     if (!filteredOrders.length) return;
@@ -286,13 +292,13 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
             Manage all active and scheduled orders
           </p> */}
           <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6001D2]" />
             <input
               type="text"
               placeholder="Search any order..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-56 pl-9 pr-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="w-56 pl-3 pr-9 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
         </div>
@@ -427,44 +433,39 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full text-xs md:text-sm">
+        <table className="min-w-full text-[16px] md:text-sm">
           <thead className="bg-gray-50">
-            <tr className="text-left text-gray-500">
-              <th className="py-3 px-6 font-medium">Sl</th>
-              <th className="py-3 px-4 font-medium">Order ID</th>
-              <th className="py-3 px-4 font-medium">Order Date</th>
-              <th className="py-3 px-4 font-medium">Customer Information</th>
-              <th className="py-3 px-4 font-medium">Restaurant</th>
-              <th className="py-3 px-4 font-medium">Total Amount</th>
-              <th className="py-3 px-4 font-medium">Order Status</th>
-              <th className="py-3 px-4 font-medium text-right">Actions</th>
+            <tr className="text-left text-[#1E1E24]">
+              <th className="py-3 px-6 font-bold whitespace-nowrap">Sl</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">Order ID</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">Order Date</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">Customer Information</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">Restaurant</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">Total Amount</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">Order Status</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredOrders.map((order, index) => {
+            {paginatedOrders.map((order, index) => {
               const chipClass =
                 statusStyles[order.status] ??
-                'bg-gray-50 text-gray-700 border-gray-200';
+                'bg-gray-50 text-[#1E1E24] border-gray-200';
 
               return (
-                // <tr
-                //   key={order.id}
-                //   className="border-t border-gray-100 hover:bg-gray-50"
-                // >
                 <tr
-  key={order.id}
-  onClick={() => router.push(`/dashboard/orders/all/${order.id}`)}
-  className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
->
-
-                  <td className="py-3 px-6 text-gray-500">{index + 1}</td>
-                  <td className="py-3 px-4 font-medium text-gray-900">
+                  key={order.id}
+                  onClick={() => router.push(`/dashboard/orders/all/${order.id}`)}
+                  className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                >
+                  <td className="py-3 px-6 text-gray-500 whitespace-nowrap">{(page - 1) * PER_PAGE + index + 1}</td>
+                  <td className="py-3 px-4 font-regular text-gray-900 whitespace-nowrap">
                     {order.orderId}
                   </td>
-                  <td className="py-3 px-4 text-gray-600">{order.date}</td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 text-gray-600 whitespace-nowrap">{order.date}</td>
+                  <td className="py-3 px-4 whitespace-nowrap">
                     <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">
+                      <span className="font-regular text-gray-900">
                         {order.customerName}
                       </span>
                       <span className="text-xs text-gray-500">
@@ -472,14 +473,14 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-gray-700">{order.restaurant}</td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 text-gray-700 whitespace-nowrap">{order.restaurant}</td>
+                  <td className="py-3 px-4 whitespace-nowrap">
                     <div className="flex flex-col">
-                      <span className="font-semibold text-gray-900">
+                      <span className="font-regular text-gray-900">
                         {order.totalAmount}
                       </span>
                       <span
-                        className={`text-xs font-medium ${
+                        className={`text-xs font-regular ${
                           paymentStatusStyles[order.paymentStatus] ??
                           'text-gray-500'
                         }`}
@@ -488,7 +489,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full border text-[11px] font-semibold ${chipClass}`}
                     >
@@ -498,7 +499,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                       {order.orderType}
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-right">
+                  <td className="py-3 px-4 text-right whitespace-nowrap">
   <div className="flex justify-end gap-2">
 
     {/* View */}
@@ -531,11 +532,47 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
           </tbody>
         </table>
 
-        {filteredOrders.length === 0 && (
+        {paginatedOrders.length === 0 && (
           <div className="py-10 text-center text-sm text-gray-500">
             No orders found for this filter.
           </div>
         )}
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+        <p className="text-xs text-gray-400">
+          Showing {Math.min((page - 1) * PER_PAGE + 1, filteredOrders.length)}–{Math.min(page * PER_PAGE, filteredOrders.length)} of {filteredOrders.length} results
+        </p>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:border-purple-400 disabled:opacity-40"
+          >
+            <ChevronLeft size={14} />
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+            <button
+              key={n}
+              onClick={() => setPage(n)}
+              className={`w-8 h-8 rounded-lg text-xs font-semibold transition-colors ${
+                n === page
+                  ? 'bg-purple-600 text-white border border-purple-600'
+                  : 'border border-gray-200 text-gray-500 hover:border-purple-400'
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:border-purple-400 disabled:opacity-40"
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );

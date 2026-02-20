@@ -5,6 +5,132 @@
   --foreground: #171717;
 }
 
+/* ─── Typography System ─────────────────────────────────────────────────────
+   Applies Fredoka (Latin) + Cairo Play (Arabic) to all elements.
+   The browser automatically uses Cairo Play for Arabic characters
+   and Fredoka for Latin characters.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --font-primary: 'Fredoka', 'Cairo Play', sans-serif;
+}
+
+/* Apply font family globally */
+*,
+*::before,
+*::after {
+  font-family: var(--font-primary);
+}
+
+body {
+  font-family: var(--font-primary);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* ─── H1 / Page Title ───────────────────────────────────────────────────── */
+h1 {
+  font-family: var(--font-primary);
+  font-size: 32px;
+  font-weight: 700;
+  text-transform: none;
+  /* Sentence case */
+}
+
+/* ─── H2 / Section Title ────────────────────────────────────────────────── */
+h2 {
+  font-family: var(--font-primary);
+  font-size: 24px;
+  font-weight: 500;
+  text-transform: none;
+  /* Sentence case */
+}
+
+/* ─── H3 / Card Title ───────────────────────────────────────────────────── */
+h3 {
+  font-family: var(--font-primary);
+  font-size: 20px;
+  font-weight: 500;
+  text-transform: none;
+  /* Sentence case */
+}
+
+/* ─── Body / Paragraph ──────────────────────────────────────────────────── */
+p,
+span,
+li,
+td,
+th,
+label,
+input,
+textarea,
+select {
+  font-family: var(--font-primary);
+  font-size: 16px;
+  font-weight: 400;
+  text-transform: none;
+  /* Sentence case */
+}
+
+/* ─── Button Text ───────────────────────────────────────────────────────── */
+button,
+[role="button"],
+.btn {
+  font-family: var(--font-primary);
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  /* ALL CAPS */
+  letter-spacing: 0.03em;
+}
+
+/* ─── Caption / Label ───────────────────────────────────────────────────── */
+caption,
+.caption,
+small,
+.label,
+figcaption {
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 400;
+  text-transform: none;
+  /* Sentence case */
+}
+
+/* ─── Utility Classes (optional, use alongside Tailwind) ────────────────── */
+.text-h1 {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.text-h2 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.text-h3 {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.text-body {
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.text-btn {
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.text-caption {
+  font-size: 14px;
+  font-weight: 400;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -17,12 +143,6 @@
     --background: #0a0a0a;
     --foreground: #ededed;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 /* Hide default password reveal icon (Edge, Chrome) */

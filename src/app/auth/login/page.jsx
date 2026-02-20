@@ -2,19 +2,56 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { FaApple, FaGoogle, FaFacebook, FaEye, FaEyeSlash } from 'react-icons/fa';
-import Link from 'next/link';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Invalid email or password');
+      }
+
+      const token = data.token || data.accessToken || data.data?.token;
+      if (token) {
+        document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+        localStorage.setItem('token', token);
+      }
+
+      if (data.user || data.data?.user) {
+        localStorage.setItem('user', JSON.stringify(data.user || data.data?.user));
+      }
+
+      router.push('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSocialLogin = (provider) => {
@@ -63,6 +100,13 @@ export default function LoginPage() {
                   </p>
                 </div>
 
+                {/* Error Message */}
+                {error && (
+                  <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
+                    {error}
+                  </div>
+                )}
+
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-5">
                   {/* Email Input */}
@@ -83,6 +127,7 @@ export default function LoginPage() {
                       }
                       className="w-full px-4 py-3 rounded-lg border border-[#6001D2] focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all placeholder:text-gray-400"
                       required
+                      disabled={loading}
                     />
                   </div>
 
@@ -105,6 +150,7 @@ export default function LoginPage() {
                         }
                         className="w-full px-4 py-3 rounded-lg border border-[#6001D2]  focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all placeholder:text-gray-400"
                         required
+                        disabled={loading}
                       />
                       <button
                         type="button"
@@ -131,70 +177,55 @@ export default function LoginPage() {
                     </a>
                   </div>
 
-
                   {/* Sign In Button */}
-                  <Link href="/dashboard" className="block w-full">
-                    <button
-                      type="button"
-                      className="w-full bg-[#6001D2] hover:bg-purple-600 text-white font-semibold py-3 rounded-lg transition-colors shadow-md hover:shadow-lg"
-                    >
-                      Sign In
-                    </button>
-                  </Link>
-
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#6001D2] hover:bg-purple-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors shadow-md hover:shadow-lg"
+                  >
+                    {loading ? 'Signing In...' : 'Sign In'}
+                  </button>
                 </form>
 
-{/* Divider */}
-<div className="flex flex-col items-center mt-8">
+                {/* Divider */}
+                <div className="flex flex-col items-center mt-8">
+                  <div className="flex items-center justify-between w-[240px] mb-6">
+                    <div className="h-[1px] bg-[#6001D2] flex-1" />
+                    <span className="px-3 text-[#6001D2] font-semibold text-[16px] leading-[16px] tracking-[0.5%] whitespace-nowrap">
+                      or sign in with
+                    </span>
+                    <div className="h-[1px] bg-[#6001D2] flex-1" />
+                  </div>
 
-  {/* Divider */}
-  <div className="flex items-center justify-between w-[240px] mb-6">
-    <div className="h-[1px] bg-[#6001D2] flex-1" />
-    
-    <span className="px-3 text-[#6001D2] font-semibold text-[16px] leading-[16px] tracking-[0.5%] whitespace-nowrap">
-      or sign in with
-    </span>
-    
-    <div className="h-[1px] bg-[#6001D2] flex-1" />
-  </div>
-
-  {/* Social Icons */}
-  <div className="flex justify-between w-[240px]">
-    <button
-      onClick={() => handleSocialLogin('Apple')}
-      className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
-    >
-      <FaApple className="w-7 h-7 text-black" />
+                  {/* Social Icons */}
+                  <div className="flex justify-between w-[240px]">
+                    <button
+                      onClick={() => handleSocialLogin('Apple')}
+                      className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
+                    >
+                      <FaApple className="w-7 h-7 text-black" />
                     </button>
                     <button
                       onClick={() => handleSocialLogin('Google')}
                       className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
                     >
-              <img
-    src="/images/google.png"
-    alt="Google"
-    className="w-6 h-6"
-  />
-</button>
-
-
-    <button
-      onClick={() => handleSocialLogin('Facebook')}
-      className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
-    >
-      <FaFacebook className="w-6 h-6 text-blue-600" />
-    </button>
-  </div>
-
-</div>
+                      <img src="/images/google.png" alt="Google" className="w-6 h-6" />
+                    </button>
+                    <button
+                      onClick={() => handleSocialLogin('Facebook')}
+                      className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
+                    >
+                      <FaFacebook className="w-6 h-6 text-blue-600" />
+                    </button>
+                  </div>
+                </div>
 
               </div>
             </div>
           </div>
 
           <div className="w-full mt-4 flex justify-end pr-0">
-
-          <p className="text-white text-[16px] font-semibold drop-shadow-lg">
+            <p className="text-white text-[16px] font-semibold drop-shadow-lg">
               Hassa
             </p>
           </div>

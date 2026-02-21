@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -21,7 +22,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/login`, {
+      const res = await fetch('/backend-api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -46,7 +47,8 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(data.user || data.data?.user));
       }
 
-      router.push('/dashboard');
+      setSuccess('Login successful! Redirecting...');
+      setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
@@ -104,6 +106,12 @@ export default function LoginPage() {
                 {error && (
                   <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
                     {error}
+                  </div>
+                )}
+
+                {success && (
+                  <div className="mb-4 px-4 py-3 rounded-lg bg-green-50 border border-green-200 text-green-600 text-sm">
+                    {success}
                   </div>
                 )}
 

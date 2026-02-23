@@ -435,8 +435,8 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
       <div className="overflow-x-auto">
         <table className="min-w-full text-[16px] md:text-sm">
           <thead className="bg-gray-50">
-            <tr className="text-left text-[#1E1E24]">
-              <th className="py-3 px-6 font-bold whitespace-nowrap">Sl</th>
+            <tr className="text-left text-black font-bold">
+              <th className="py-3 px-4 font-bold whitespace-nowrap">Sl</th>
               <th className="py-3 px-4 font-bold whitespace-nowrap">Order ID</th>
               <th className="py-3 px-4 font-bold whitespace-nowrap">Order Date</th>
               <th className="py-3 px-4 font-bold whitespace-nowrap">Customer Information</th>

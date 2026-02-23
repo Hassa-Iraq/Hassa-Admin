@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FaApple, FaGoogle, FaFacebook, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaGoogle, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,12 +39,21 @@ export default function LoginPage() {
 
       const token = data.token || data.accessToken || data.data?.token;
       if (token) {
-        document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+        document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
         localStorage.setItem('token', token);
       }
 
-      if (data.user || data.data?.user) {
-        localStorage.setItem('user', JSON.stringify(data.user || data.data?.user));
+      const user = data.user || data.data?.user || data.data;
+      if (user && typeof user === 'object') {
+        const adminInfo = {
+          name: user.name || user.full_name || `${user.f_name || user.first_name || ''} ${user.l_name || user.last_name || ''}`.trim(),
+          email: user.email || formData.email,
+          phone: user.phone || '',
+          image: user.image || user.avatar || '',
+        };
+        localStorage.setItem('adminUser', JSON.stringify(adminInfo));
+      } else {
+        localStorage.setItem('adminUser', JSON.stringify({ name: 'Admin', email: formData.email }));
       }
 
       setSuccess('Login successful! Redirecting...');
@@ -76,12 +85,12 @@ export default function LoginPage() {
 
       {/* Main Content */}
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
-       <div className="w-[1131px] h-[636px]">
+       <div className="w-[1131px]">
           {/* Card Container */}
           <div className=" bg-white rounded-3xl shadow-2xl overflow-hidden">
             <div className="grid md:grid-cols-2">
               {/* Left Side - Food Image */}
-              <div className="relative h-50 md:h-auto min-h-[360px]">
+              <div className="relative h-50 md:h-auto min-h-[320px]">
                 <Image
                   src="/images/heroBg.png"
                   alt="Pasta salad"
@@ -90,10 +99,10 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div className="relative p-8 md:p-12 flex flex-col justify-center">
+              <div className="relative p-8 md:p-10 flex flex-col justify-center">
 
                 {/* Header */}
-                <div className="text-center mb-8">
+                <div className="text-center mb-6">
                   <h1 className="text-[28px] font-medium text-gray-900 text-center leading-[24px] tracking-[0.15%] font-poppins mb-2">
                     Sign In
                   </h1>
@@ -116,7 +125,7 @@ export default function LoginPage() {
                 )}
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   {/* Email Input */}
                   <div>
                     <label
@@ -196,8 +205,8 @@ export default function LoginPage() {
                 </form>
 
                 {/* Divider */}
-                <div className="flex flex-col items-center mt-8">
-                  <div className="flex items-center justify-between w-[240px] mb-6">
+                <div className="flex flex-col items-center mt-6">
+                  <div className="flex items-center justify-between w-[240px] mb-4">
                     <div className="h-[1px] bg-[#6001D2] flex-1" />
                     <span className="px-3 text-[#6001D2] font-semibold text-[16px] leading-[16px] tracking-[0.5%] whitespace-nowrap">
                       or sign in with
@@ -205,27 +214,12 @@ export default function LoginPage() {
                     <div className="h-[1px] bg-[#6001D2] flex-1" />
                   </div>
 
-                  {/* Social Icons */}
-                  <div className="flex justify-between w-[240px]">
-                    <button
-                      onClick={() => handleSocialLogin('Apple')}
-                      className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
-                    >
-                      <FaApple className="w-7 h-7 text-black" />
-                    </button>
-                    <button
-                      onClick={() => handleSocialLogin('Google')}
-                      className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
-                    >
-                      <img src="/images/google.png" alt="Google" className="w-6 h-6" />
-                    </button>
-                    <button
-                      onClick={() => handleSocialLogin('Facebook')}
-                      className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-300 flex items-center justify-center shadow-sm hover:shadow-md transition"
-                    >
-                      <FaFacebook className="w-6 h-6 text-blue-600" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => handleSocialLogin('Google')}
+                    className="w-[240px] h-11 rounded-lg bg-gray-100 border border-[#6001D2] flex items-center justify-center shadow-sm hover:shadow-md transition"
+                  >
+                    <img src="/images/google.png" alt="Google" className="w-7 h-7" />
+                  </button>
                 </div>
 
               </div>

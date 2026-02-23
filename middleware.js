@@ -4,19 +4,22 @@ export function middleware(request) {
   const token = request.cookies.get('token')?.value;
   const { pathname } = request.nextUrl;
 
+  if (pathname === '/') {
+    const target = token ? '/dashboard' : '/auth/login';
+    return NextResponse.redirect(new URL(target, request.url));
+  }
+
   if (pathname.startsWith('/dashboard') && !token) {
-    const loginUrl = new URL('/auth/login', request.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
   if (pathname.startsWith('/auth/login') && token) {
-    const dashboardUrl = new URL('/dashboard', request.url);
-    return NextResponse.redirect(dashboardUrl);
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/auth/login'],
+  matcher: ['/', '/dashboard/:path*', '/auth/login'],
 };

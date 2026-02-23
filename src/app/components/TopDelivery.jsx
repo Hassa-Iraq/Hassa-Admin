@@ -1,6 +1,9 @@
 'use client'
 
+import { useLanguage } from '@/app/i18n/LanguageContext';
+
 export default function TopDeliveryMan() {
+  const { t } = useLanguage();
   const deliveryMen = [
     { id: 1, name: 'Hamza Khan', orders: 4, avatar: 'HK', online: true },
     { id: 2, name: 'Hamza Khan', orders: 4, avatar: 'HK', online: true },
@@ -18,12 +21,12 @@ export default function TopDeliveryMan() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#CFCFD6]">
         <h2 className="text-lg font-bold text-gray-900">
-          Top Delivery Man
+          {t.topDeliveryMan}
         </h2>
       </div>
 
       <div className="p-6">
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {deliveryMen.map((person) => (
             <div
               key={person.id}

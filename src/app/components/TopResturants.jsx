@@ -1,6 +1,9 @@
 'use client'
 
+import { useLanguage } from '@/app/i18n/LanguageContext';
+
 export default function TopRestaurants() {
+  const { t } = useLanguage();
   const restaurants = [
     { id: 1, name: 'Rose Restaurant', orders: 4 },
     { id: 2, name: 'Rose Restaurant', orders: 4 },
@@ -15,7 +18,7 @@ export default function TopRestaurants() {
       
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#CFCFD6]">
-        <h2 className="text-lg font-bold text-gray-900">Top Restaurants</h2>
+        <h2 className="text-lg font-bold text-gray-900">{t.topRestaurants}</h2>
       </div>
 
       <div className="p-6">
@@ -32,7 +35,7 @@ export default function TopRestaurants() {
               />
 
               <div className="min-w-0">
-                <h3 className="text-[13px] font-medium text-gray-900 leading-tight">
+                <h3 className="text-[13px] font-medium text-gray-800 leading-tight">
                   {restaurant.name}
                 </h3>
                 <p className="text-[13px] text-teal-600 font-semibold leading-tight mt-0.5">

@@ -63,6 +63,24 @@ export default function RestaurantListPage() {
 
   const toggle = (id) => setStatuses(p => ({ ...p, [id]: !p[id] }));
 
+  const handleExport = () => {
+    if (!filtered.length) return;
+    const headers = ['SI', 'Restaurant Name', 'Owner', 'Phone', 'Radius', 'Cuisine', 'Status'];
+    const rows = filtered.map((r, i) => [
+      i + 1, r.name, r.owner, r.phone, r.radius, r.cuisine, statuses[r.id] ? 'Active' : 'Inactive',
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'restaurants-export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
      <div className="min-h-screen bg-gray-50">
   <div className="pt-36">
@@ -158,8 +176,12 @@ export default function RestaurantListPage() {
                 className="pl-4 pr-8 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 w-72"
               />
             </div>
-            <button className="flex items-center gap-1.5 text-xs text-gray-400 border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-50">
-              <Download size={14} strokeWidth={1.5} /> Export
+            <button
+              onClick={handleExport}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export</span>
             </button>
           </div>
         </div>
@@ -169,13 +191,13 @@ export default function RestaurantListPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
-                <th className="text-left px-6 py-3 text-[12px] font-semibold text-[#1E1E24]">SI</th>
-                <th className="text-left px-4 py-3 text-[12px] font-semibold text-[#1E1E24]">Restaurant Info</th>
-                <th className="text-left px-4 py-3 text-[12px] font-semibold text-[#1E1E24]">Owner Information</th>
-                <th className="text-left px-4 py-3 text-[12px] font-semibold text-[#1E1E24]">Radius</th>
-                <th className="text-left px-4 py-3 text-[12px] font-semibold text-[#1E1E24]">Cuisine</th>
-                <th className="text-left px-4 py-3 text-[12px] font-semibold text-[#1E1E24]">Status</th>
-                <th className="text-left px-4 py-3 text-[12px] font-semibold text-[#1E1E24]">Actions</th>
+                <th className="text-left px-6 py-3 text-[12px] font-semibold text-black">SI</th>
+                <th className="text-left px-4 py-3 text-[12px] font-semibold text-black">Restaurant Info</th>
+                <th className="text-left px-4 py-3 text-[12px] font-semibold text-black">Owner Information</th>
+                <th className="text-left px-4 py-3 text-[12px] font-semibold text-black">Radius</th>
+                <th className="text-left px-4 py-3 text-[12px] font-semibold text-black">Cuisine</th>
+                <th className="text-left px-4 py-3 text-[12px] font-semibold text-balck">Status</th>
+                <th className="text-left px-4 py-3 text-[12px] font-semibold text-black">Actions</th>
               </tr>
             </thead>
             <tbody>

@@ -1,7 +1,9 @@
 'use client'
 import { Star } from 'lucide-react';
+import { useLanguage } from '@/app/i18n/LanguageContext';
 
 export default function TopRatedFood() {
+  const { t } = useLanguage();
   const foods = [
     { id: 1, name: 'Beef Stroganoff', rating: 4.6, reviews: 161 },
     { id: 2, name: 'Beef Stroganoff', rating: 4.6, reviews: 161 },
@@ -19,12 +21,12 @@ export default function TopRatedFood() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#CFCFD6]">
         <h2 className="text-lg font-bold text-gray-900">
-          Top Rated Food
+          {t.topRatedFood}
         </h2>
       </div>
 
       <div className="p-6">
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {foods.map((food) => (
             <div
               key={food.id}

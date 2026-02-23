@@ -178,3 +178,10 @@ input[type="password"]::-webkit-textfield-decoration-container {
   background: white;
   border-radius: 10px;
 }
+
+/* RTL font override */
+[dir="rtl"] *,
+[dir="rtl"] *::before,
+[dir="rtl"] *::after {
+  font-family: var(--font-cairo), 'Cairo', sans-serif;
+}

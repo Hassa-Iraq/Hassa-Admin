@@ -1,6 +1,9 @@
 'use client'
 
+import { useLanguage } from '@/app/i18n/LanguageContext';
+
 export default function TopSellingFoods() {
+  const { t } = useLanguage();
   const foods = [
     { id: 1, name: 'Beef Stroganoff' },
     { id: 2, name: 'Name' },
@@ -16,12 +19,12 @@ export default function TopSellingFoods() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#CFCFD6]">
         <h2 className="text-lg font-bold text-gray-900">
-          Top Selling Foods
+          {t.topSellingFoods}
         </h2>
       </div>
 
       <div className="p-6">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {foods.map((food) => (
             <div
               key={food.id}

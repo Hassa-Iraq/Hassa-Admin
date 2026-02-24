@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FaGoogle, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -65,10 +65,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleSocialLogin = (provider) => {
-    console.log(`Login with ${provider}`);
-  };
-
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
       {/* Background Image */}
@@ -87,7 +83,7 @@ export default function LoginPage() {
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
        <div className="w-[1131px]">
           {/* Card Container */}
-          <div className=" bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
             <div className="grid md:grid-cols-2">
               {/* Left Side - Food Image */}
               <div className="relative h-50 md:h-auto min-h-[320px]">
@@ -203,24 +199,6 @@ export default function LoginPage() {
                     {loading ? 'Signing In...' : 'Sign In'}
                   </button>
                 </form>
-
-                {/* Divider */}
-                <div className="flex flex-col items-center mt-6">
-                  <div className="flex items-center justify-between w-[240px] mb-4">
-                    <div className="h-[1px] bg-[#6001D2] flex-1" />
-                    <span className="px-3 text-[#6001D2] font-semibold text-[16px] leading-[16px] tracking-[0.5%] whitespace-nowrap">
-                      or sign in with
-                    </span>
-                    <div className="h-[1px] bg-[#6001D2] flex-1" />
-                  </div>
-
-                  <button
-                    onClick={() => handleSocialLogin('Google')}
-                    className="w-[240px] h-11 rounded-lg bg-gray-100 border border-[#6001D2] flex items-center justify-center shadow-sm hover:shadow-md transition"
-                  >
-                    <img src="/images/google.png" alt="Google" className="w-7 h-7" />
-                  </button>
-                </div>
 
               </div>
             </div>

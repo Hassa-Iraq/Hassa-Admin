@@ -1,6 +1,8 @@
 'use client'
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { API_BASE_URL } from '@/app/config';
 import {
   Search, Download,
   CreditCard, TrendingUp, ArrowDownLeft,
@@ -8,28 +10,13 @@ import {
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 
-// ─── mock data ────────────────────────────────────────────────────────────────
-const FIXED_RATINGS  = [4.2, 4.8, 4.1, 4.5, 4.9, 4.3, 4.7, 4.0, 4.6, 4.4, 4.2, 4.8];
-const FIXED_REVIEWS  = [82, 156, 63, 120, 194, 75, 143, 51, 178, 99, 67, 211];
-
-const RESTAURANTS = Array.from({ length: 12 }, (_, i) => ({
-  id: i + 1,
-  name: 'Rose Restaurant',
-  image: `https://api.dicebear.com/7.x/shapes/svg?seed=rose${i}`,
-  rating: FIXED_RATINGS[i].toFixed(1),
-  reviews: FIXED_REVIEWS[i],
-  owner: 'Hamza Khan',
-  ownerEmail: '@hamzakhan',
-  radius: ['5 km', 'All over the world'][i % 2],
-  cuisine: ['Cuisine not found', 'Italian', 'Arabian', 'Sea Food', 'Halal', 'Syrian', 'Saudi', 'Turkish', 'Indian'][i % 9],
-  status: i % 5 !== 0,
-}));
+const PER_PAGE = 20;
 
 const STATS = [
-  { label: 'Total Restaurants',        value: 24, icon: '/images/mdi.png',    bg: 'bg-[#F3EAFF]', border: 'border-[#6001D2]' },
-  { label: 'Active Restaurants',       value: 8,  icon: '/images/location.png',   bg: 'bg-[#E6FFF5]', border: 'border-[#00C49A]' },
-  { label: 'Inactive Restaurants',     value: 0,  icon: '/images/food-inactive.png', bg: 'bg-[#FFF0F0]', border: 'border-[#FF6B6B]' },
-  { label: 'Newly joined Restaurants', value: 3,  icon: '/images/food.png',         bg: 'bg-[#FFF7E6]', border: 'border-[#FF9F43]' },
+  { key: 'total', label: 'Total Restaurants',        icon: '/images/mdi.png',    bg: 'bg-[#F3EAFF]', border: 'border-[#6001D2]' },
+  { key: 'active', label: 'Active Restaurants',       icon: '/images/location.png',   bg: 'bg-[#E6FFF5]', border: 'border-[#00C49A]' },
+  { key: 'inactive', label: 'Inactive Restaurants',     icon: '/images/food-inactive.png', bg: 'bg-[#FFF0F0]', border: 'border-[#FF6B6B]' },
+  { key: 'newlyJoined', label: 'Newly joined Restaurants', icon: '/images/food.png',         bg: 'bg-[#FFF7E6]', border: 'border-[#FF9F43]' },
 ];
 
 const TRANSACTIONS = [
@@ -41,33 +28,287 @@ const TRANSACTIONS = [
 // ─── component ────────────────────────────────────────────────────────────────
 export default function RestaurantListPage() {
   const router = useRouter();
+  const [restaurants, setRestaurants] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [summary, setSummary] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    newlyJoined: 0,
+  });
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState('');
   const [search, setSearch] = useState('');
-  const [statuses, setStatuses] = useState(
-    Object.fromEntries(RESTAURANTS.map(r => [r.id, r.status]))
-  );
+  const [statuses, setStatuses] = useState({});
+  const [baseStatuses, setBaseStatuses] = useState({});
   const [page, setPage] = useState(1);
   const [cuisineFilter, setCuisineFilter] = useState('');
   const [radiusFilter, setRadiusFilter]   = useState('');
   const [modelFilter, setModelFilter]     = useState('');
 
-  const filtered = RESTAURANTS.filter(r => {
-    const matchSearch  = r.name.toLowerCase().includes(search.toLowerCase()) || r.owner.toLowerCase().includes(search.toLowerCase());
-    const matchCuisine = !cuisineFilter || r.cuisine === cuisineFilter;
-    const matchRadius  = !radiusFilter  || r.radius  === radiusFilter;
-    return matchSearch && matchCuisine && matchRadius;
-  });
+  useEffect(() => {
+    const toAbsoluteUrl = (value) => {
+      if (!value || typeof value !== 'string') return '';
+      const trimmed = value.trim();
+      if (!trimmed) return '';
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+      if (trimmed.startsWith('//')) return `https:${trimmed}`;
+      if (trimmed.startsWith('/')) return `${API_BASE_URL}${trimmed}`;
+      return `${API_BASE_URL}/${trimmed}`;
+    };
 
-  const PER_PAGE = 10;
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+    const normalizeImage = (value) => {
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const candidate = normalizeImage(item);
+          if (candidate) return candidate;
+        }
+        return '';
+      }
+      if (typeof value === 'string' && value.trim()) return toAbsoluteUrl(value);
+      if (value && typeof value === 'object') {
+        const pathWithKey =
+          value.path && value.key
+            ? `${String(value.path).replace(/\/$/, '')}/${String(value.key).replace(/^\//, '')}`
+            : '';
+
+        return (
+          normalizeImage(value.full_url) ||
+          normalizeImage(value.url) ||
+          normalizeImage(pathWithKey) ||
+          normalizeImage(value.path) ||
+          normalizeImage(value.key) ||
+          normalizeImage(value.image) ||
+          normalizeImage(value.logo) ||
+          ''
+        );
+      }
+      return '';
+    };
+
+    const normalizeCountryCode = (value) => {
+      if (!value) return '';
+      const raw = String(value).trim();
+      if (!raw) return '';
+      const digits = raw.replace(/[^\d]/g, '');
+      return digits ? `+${digits}` : '';
+    };
+
+    const formatPhone = (phoneValue, countryCodeValue) => {
+      if (!phoneValue) return '-';
+      const raw = String(phoneValue).trim();
+      if (!raw) return '-';
+      if (raw.startsWith('+')) return raw;
+
+      const countryCode = normalizeCountryCode(countryCodeValue);
+      if (!countryCode) return raw;
+
+      const rawDigits = raw.replace(/[^\d]/g, '');
+      const codeDigits = countryCode.replace('+', '');
+      if (!rawDigits) return '-';
+      if (rawDigits.startsWith(codeDigits)) return `+${rawDigits}`;
+
+      // If local phone starts with 0, drop it when prefixing country code.
+      return `${countryCode}${raw.startsWith('0') ? raw.slice(1) : raw}`;
+    };
+
+    const normalizeRestaurant = (item, index) => {
+      const firstName = item?.vendor?.f_name || item?.vendor?.first_name || '';
+      const lastName = item?.vendor?.l_name || item?.vendor?.last_name || '';
+      const ownerName = `${firstName} ${lastName}`.trim();
+      const countryCode =
+        item?.country_code ||
+        item?.countryCode ||
+        item?.dial_code ||
+        item?.dialCode ||
+        item?.vendor?.country_code ||
+        item?.vendor?.countryCode ||
+        item?.vendor?.dial_code ||
+        item?.vendor?.dialCode ||
+        '';
+      const rawPhone = item?.phone || item?.vendor?.phone || '';
+
+      return {
+        id: item?.id ?? item?.restaurant_id ?? `${page}-${index}`,
+        name: item?.name || item?.restaurant_name || item?.translations?.[0]?.name || 'N/A',
+        image:
+          normalizeImage(item?.logo_url) ||
+          normalizeImage(item?.logoUrl) ||
+          normalizeImage(item?.logo_full_url) ||
+          normalizeImage(item?.logo) ||
+          normalizeImage(item?.cover_image_url) ||
+          normalizeImage(item?.coverImageUrl) ||
+          normalizeImage(item?.image_full_url) ||
+          normalizeImage(item?.image) ||
+          normalizeImage(item?.cover_photo_full_url) ||
+          normalizeImage(item?.cover_photo),
+        rating: Number(item?.avg_rating || item?.rating || 0),
+        reviews: Number(item?.rating_count || item?.reviews_count || item?.total_reviews || 0),
+        owner: ownerName || item?.owner_name || 'N/A',
+        ownerEmail: item?.vendor?.email || item?.owner_email || item?.email || '-',
+        phone: formatPhone(rawPhone, countryCode),
+        radius: item?.radius || item?.delivery_time || item?.zone || '-',
+        cuisine:
+          (typeof item?.cuisine === 'string' && item.cuisine.trim()) ||
+          item?.cuisine?.name ||
+          item?.cuisine_name ||
+          'Cuisine not found',
+        status:
+          item?.is_active === true ||
+          item?.is_active === 1 ||
+          item?.status === 1 ||
+          item?.status === true ||
+          item?.status === 'active',
+        createdAt: item?.created_at || item?.createdAt || null,
+      };
+    };
+
+    const fetchRestaurants = async () => {
+      setLoading(true);
+      setFetchError('');
+      try {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(PER_PAGE),
+        });
+        if (search.trim()) params.set('search', search.trim());
+        if (modelFilter) params.set('business_model', modelFilter);
+        if (cuisineFilter) params.set('cuisine', cuisineFilter);
+        if (radiusFilter) params.set('radius', radiusFilter);
+
+        const { data } = await axios.get(`/api/restaurants?${params.toString()}`);
+
+        const list =
+          data?.data?.restaurants ||
+          data?.data?.list ||
+          data?.restaurants ||
+          data?.list ||
+          data?.data ||
+          [];
+
+        const normalized = (Array.isArray(list) ? list : []).map(normalizeRestaurant);
+        setRestaurants(normalized);
+
+        const toNumber = (value, fallback = null) => {
+          const n = Number(value);
+          return Number.isFinite(n) ? n : fallback;
+        };
+
+        const total =
+          data?.data?.total ??
+          data?.total ??
+          data?.data?.total_size ??
+          data?.total_size ??
+          data?.data?.count ??
+          normalized.length;
+        const parsedTotal = toNumber(total, 0) || 0;
+        setTotalCount(parsedTotal);
+
+        const activeFromApi =
+          data?.data?.active_restaurants ??
+          data?.active_restaurants ??
+          data?.data?.active_count ??
+          data?.active_count ??
+          data?.data?.active;
+        const inactiveFromApi =
+          data?.data?.inactive_restaurants ??
+          data?.inactive_restaurants ??
+          data?.data?.inactive_count ??
+          data?.inactive_count ??
+          data?.data?.inactive;
+        const newlyJoinedFromApi =
+          data?.data?.newly_joined_restaurants ??
+          data?.newly_joined_restaurants ??
+          data?.data?.new_restaurants ??
+          data?.new_restaurants;
+
+        const activeFromList = normalized.filter((r) => r.status).length;
+        const inactiveFromList = normalized.length - activeFromList;
+        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const newlyJoinedFromList = normalized.filter((r) => {
+          const ts = r.createdAt ? new Date(r.createdAt).getTime() : NaN;
+          return Number.isFinite(ts) && ts >= sevenDaysAgo;
+        }).length;
+
+        const active = toNumber(activeFromApi, activeFromList) ?? activeFromList;
+        const inactive =
+          toNumber(inactiveFromApi, null) ??
+          Math.max(parsedTotal - active, inactiveFromList);
+        const newlyJoined = toNumber(newlyJoinedFromApi, newlyJoinedFromList) ?? newlyJoinedFromList;
+
+        setSummary({
+          total: parsedTotal,
+          active,
+          inactive,
+          newlyJoined,
+        });
+      } catch (error) {
+        setRestaurants([]);
+        setTotalCount(0);
+        setSummary({
+          total: 0,
+          active: 0,
+          inactive: 0,
+          newlyJoined: 0,
+        });
+        setFetchError(error.message || 'Failed to load restaurants');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRestaurants();
+  }, [page, search, modelFilter, cuisineFilter, radiusFilter]);
+
+  useEffect(() => {
+    setStatuses((prev) => {
+      const next = { ...prev };
+      restaurants.forEach((r) => {
+        if (next[r.id] === undefined) next[r.id] = r.status;
+      });
+      return next;
+    });
+    setBaseStatuses((prev) => {
+      const next = { ...prev };
+      restaurants.forEach((r) => {
+        if (next[r.id] === undefined) next[r.id] = r.status;
+      });
+      return next;
+    });
+  }, [restaurants]);
+
+  const displaySummary = useMemo(() => {
+    let activeDelta = 0;
+
+    Object.keys(statuses).forEach((id) => {
+      if (baseStatuses[id] === undefined) return;
+      const base = Boolean(baseStatuses[id]);
+      const current = Boolean(statuses[id]);
+      if (base === current) return;
+      if (base && !current) activeDelta -= 1;
+      if (!base && current) activeDelta += 1;
+    });
+
+    const active = Math.max(0, (summary.active ?? 0) + activeDelta);
+    const inactive = Math.max(0, (summary.inactive ?? 0) - activeDelta);
+
+    return {
+      ...summary,
+      active,
+      inactive,
+    };
+  }, [summary, statuses, baseStatuses]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
+  const paginated = restaurants;
 
   const toggle = (id) => setStatuses(p => ({ ...p, [id]: !p[id] }));
 
   const handleExport = () => {
-    if (!filtered.length) return;
+    if (!restaurants.length) return;
     const headers = ['SI', 'Restaurant Name', 'Owner', 'Phone', 'Radius', 'Cuisine', 'Status'];
-    const rows = filtered.map((r, i) => [
-      i + 1, r.name, r.owner, r.phone, r.radius, r.cuisine, statuses[r.id] ? 'Active' : 'Inactive',
+    const rows = restaurants.map((r, i) => [
+      (page - 1) * PER_PAGE + i + 1, r.name, r.owner, r.phone, r.radius, r.cuisine, statuses[r.id] ? 'Active' : 'Inactive',
     ]);
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -121,7 +362,7 @@ export default function RestaurantListPage() {
           className="px-4 py-2 text-sm rounded-lg border border-gray-200 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-300"
         >
           <option value="">Select Cuisine</option>
-          {['Italian','Arabian','Sea Food','Halal','Syrian','Saudi','Turkish','Indian'].map(c => (
+          {['Italian','Arabian','Chinese','Pakistani','Sea Food','Halal','Syrian','Saudi','Turkish','Indian'].map(c => (
             <option key={c}>{c}</option>
           ))}
         </select>
@@ -141,7 +382,7 @@ export default function RestaurantListPage() {
         {STATS.map(s => (
           <div key={s.label} className={`${s.bg} rounded-2xl border ${s.border} p-5 flex items-start justify-between`}>
             <div>
-              <p className="text-[24px] font-semibold text-[#1E1E24]">{s.value}</p>
+              <p className="text-[24px] font-semibold text-[#1E1E24]">{displaySummary[s.key] ?? 0}</p>
               <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
             </div>
             <img src={s.icon} alt={s.label} className="w-6 h-6 flex-shrink-0" />
@@ -201,7 +442,23 @@ export default function RestaurantListPage() {
               </tr>
             </thead>
             <tbody>
-              {paginated.map((r, idx) => (
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="text-center py-10 text-gray-400 text-sm">
+                    Loading restaurants...
+                  </td>
+                </tr>
+              )}
+
+              {!loading && fetchError && (
+                <tr>
+                  <td colSpan={7} className="text-center py-10 text-red-400 text-sm">
+                    {fetchError}
+                  </td>
+                </tr>
+              )}
+
+              {!loading && !fetchError && paginated.map((r, idx) => (
                 <tr
                   key={r.id}
                   className="border-b border-gray-50 hover:bg-purple-50/30 transition-colors"
@@ -213,13 +470,17 @@ export default function RestaurantListPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-purple-100 overflow-hidden flex-shrink-0">
-                        <img src={r.image} alt={r.name} className="w-full h-full object-cover" />
+                        <img
+                          src={r.image || '/images/food.png'}
+                          alt={r.name}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div>
                         <p className="font-semibold text-[#1E1E24] text-xs">{r.name}</p>
                         <div className="flex items-center gap-1 mt-0.5">
                           {'★★★★★'.split('').map((s, i) => (
-                            <span key={i} className={`text-[10px] ${i < Math.round(r.rating) ? 'text-amber-400' : 'text-gray-300'}`}>★</span>
+                            <span key={i} className={`text-[10px] ${i < Math.round(r.rating || 0) ? 'text-amber-400' : 'text-gray-300'}`}>★</span>
                           ))}
                           <span className="text-[10px] text-gray-400">({r.reviews})</span>
                         </div>
@@ -230,7 +491,7 @@ export default function RestaurantListPage() {
                   {/* Owner */}
                   <td className="px-4 py-3">
                     <p className="text-xs font-medium text-[#1E1E24]">{r.owner}</p>
-                    <p className="text-[10px] text-gray-400">{r.ownerEmail}</p>
+                    <p className="text-[10px] text-gray-400">{r.phone}</p>
                   </td>
 
                   {/* Radius */}
@@ -283,7 +544,7 @@ export default function RestaurantListPage() {
                 </tr>
               ))}
 
-              {paginated.length === 0 && (
+              {!loading && !fetchError && paginated.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-center py-10 text-gray-400 text-sm">
                     No restaurants found.
@@ -297,7 +558,7 @@ export default function RestaurantListPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
           <p className="text-xs text-gray-400">
-            Showing {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} results
+            Showing {totalCount === 0 ? 0 : (page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, totalCount)} of {totalCount} results
           </p>
           <div className="flex items-center gap-1">
             <button

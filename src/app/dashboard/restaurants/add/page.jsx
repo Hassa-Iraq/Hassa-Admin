@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, MapPin, Eye, EyeOff } from 'lucide-react';
+import axios from 'axios';
+import { API_BASE_URL } from '@/app/config';
 
 const INITIAL_FORM = {
   restaurantName: '',
   restaurantAddress: '',
+  zone: '',
   cuisine: '',
   radius: '',
   latitude: '',
@@ -37,6 +40,8 @@ export default function AddRestaurantPage() {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [mapLoading, setMapLoading] = useState(false);
+  const [mapResults, setMapResults] = useState([]);
 
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -51,6 +56,7 @@ export default function AddRestaurantPage() {
   const coverRef = useRef(null);
   const tinCertRef = useRef(null);
   const licenseRef = useRef(null);
+  const mapSearchDebounceRef = useRef(null);
 
   const [mapSearch, setMapSearch] = useState('');
 
@@ -82,20 +88,238 @@ export default function AddRestaurantPage() {
     if (!form.email.trim()) newErrors.email = 'Required';
     if (!form.password) newErrors.password = 'Required';
     if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    if (!form.latitude || !form.longitude) newErrors.location = 'Select location from map search';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const getZoneFromAddress = (address = {}) =>
+    address.suburb ||
+    address.neighbourhood ||
+    address.city_district ||
+    address.town ||
+    address.city ||
+    address.state_district ||
+    address.state ||
+    '';
+
+  const handleMapLookup = async (queryOverride) => {
+    const query = (queryOverride ?? mapSearch).trim();
+    if (!query) return;
+
+    setMapLoading(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`
+      );
+      const data = await response.json();
+      setMapResults(Array.isArray(data) ? data : []);
+      if (!Array.isArray(data) || data.length === 0) {
+        setErrors((prev) => ({ ...prev, location: 'No location found. Try another search.' }));
+      } else {
+        setErrors((prev) => ({ ...prev, location: '' }));
+      }
+    } catch {
+      setErrors((prev) => ({ ...prev, location: 'Unable to search map location right now.' }));
+      setMapResults([]);
+    } finally {
+      setMapLoading(false);
+    }
+  };
+
+  const selectMapLocation = (item) => {
+    const lat = Number(item?.lat);
+    const lng = Number(item?.lon);
+    const zone = getZoneFromAddress(item?.address || {});
+
+    setForm((prev) => ({
+      ...prev,
+      latitude: Number.isFinite(lat) ? lat.toFixed(6) : '',
+      longitude: Number.isFinite(lng) ? lng.toFixed(6) : '',
+      zone,
+    }));
+
+    setMapSearch(item?.display_name || '');
+    setMapResults([]);
+    setErrors((prev) => ({ ...prev, location: '' }));
+  };
+
+  useEffect(() => {
+    const query = mapSearch.trim();
+
+    if (mapSearchDebounceRef.current) {
+      clearTimeout(mapSearchDebounceRef.current);
+    }
+
+    if (query.length < 3) {
+      setMapResults([]);
+      return;
+    }
+
+    mapSearchDebounceRef.current = setTimeout(() => {
+      handleMapLookup(query);
+    }, 450);
+
+    return () => {
+      if (mapSearchDebounceRef.current) {
+        clearTimeout(mapSearchDebounceRef.current);
+      }
+    };
+  }, [mapSearch]);
+
+  const pickFirstUrl = (...values) =>
+    values.find((value) => typeof value === 'string' && value.trim().length > 0) || '';
+
+  const toAbsoluteAssetUrl = (value) => {
+    if (!value || typeof value !== 'string') return '';
+    if (value.startsWith('http://') || value.startsWith('https://')) return value;
+    if (value.startsWith('/')) return `${API_BASE_URL}${value}`;
+    return value;
+  };
+
+  const extractUploadedAssetUrls = (uploadData = {}) => {
+    const source = uploadData?.data && typeof uploadData.data === 'object'
+      ? uploadData.data
+      : uploadData;
+    const assets = source?.assets && typeof source.assets === 'object'
+      ? source.assets
+      : source;
+
+    return {
+      logo_url: toAbsoluteAssetUrl(pickFirstUrl(
+        assets?.logo_url,
+        assets?.logo,
+        assets?.logoUrl,
+        source?.logo_url
+      )),
+      cover_image_url: toAbsoluteAssetUrl(pickFirstUrl(
+        assets?.cover_image_url,
+        assets?.cover_url,
+        assets?.cover,
+        assets?.coverImageUrl,
+        source?.cover_image_url
+      )),
+      certificate_url: toAbsoluteAssetUrl(pickFirstUrl(
+        assets?.certificate_url,
+        assets?.tin_certificate_url,
+        assets?.certificate,
+        source?.certificate_url
+      )),
+      license_document_url: toAbsoluteAssetUrl(pickFirstUrl(
+        assets?.license_document_url,
+        assets?.license_url,
+        assets?.license,
+        source?.license_document_url
+      )),
+    };
+  };
+
+  const uploadRestaurantAssets = async (token) => {
+    const hasAnyAssetFile = [logoFile, coverFile, tinCertFile, licenseFile].some(Boolean);
+    if (!hasAnyAssetFile) {
+      return {
+        logo_url: null,
+        cover_image_url: null,
+        certificate_url: null,
+        license_document_url: null,
+      };
+    }
+
+    const formData = new FormData();
+    if (logoFile) formData.append('logo', logoFile);
+    if (coverFile) formData.append('cover_image', coverFile);
+    if (tinCertFile) formData.append('certificate', tinCertFile);
+    if (licenseFile) formData.append('license_document', licenseFile);
+
+    const response = await axios.post('/backend-api/restaurants/uploads/restaurant-assets', formData, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    const uploadedUrls = extractUploadedAssetUrls(response.data);
+    if (logoFile && !uploadedUrls.logo_url) throw new Error('Logo upload failed. URL not returned.');
+    if (coverFile && !uploadedUrls.cover_image_url) throw new Error('Cover upload failed. URL not returned.');
+    if (tinCertFile && !uploadedUrls.certificate_url) throw new Error('Certificate upload failed. URL not returned.');
+    if (licenseFile && !uploadedUrls.license_document_url) throw new Error('License upload failed. URL not returned.');
+
+    return uploadedUrls;
+  };
+
+  const buildPayload = (uploadedAssetUrls = {}) => {
+    const cleanedTags = form.tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+    const radiusValue = form.radius ? Number(String(form.radius).replace(/[^\d.]/g, '')) : null;
+    const latValue = form.latitude ? Number(form.latitude) : null;
+    const lngValue = form.longitude ? Number(form.longitude) : null;
+    const ownerFullName = `${form.firstName || ''} ${form.lastName || ''}`.trim();
+    const ownerPhone = `${form.phoneCode}${form.phone}`.trim();
+    const tinExpiryDate = form.tinExpiry ? form.tinExpiry : null;
+    const additionalDate = form.additionalDate ? form.additionalDate : null;
+
+    return {
+      owner: {
+        email: form.email.trim(),
+        password: form.password,
+        phone: ownerPhone,
+        full_name: ownerFullName,
+      },
+      restaurant: {
+        name: form.restaurantName.trim(),
+        address: form.restaurantAddress.trim(),
+        zone: form.zone.trim() || mapSearch.trim(),
+        lat: Number.isFinite(latValue) ? latValue : null,
+        lng: Number.isFinite(lngValue) ? lngValue : null,
+        radius_km: Number.isFinite(radiusValue) ? radiusValue : null,
+        cuisine: form.cuisine || '',
+        logo_url: uploadedAssetUrls.logo_url || null,
+        cover_image_url: uploadedAssetUrls.cover_image_url || null,
+        delivery_time_min: form.minDeliveryTime ? Number(form.minDeliveryTime) : null,
+        delivery_time_max: form.maxDeliveryTime ? Number(form.maxDeliveryTime) : null,
+        tags: cleanedTags,
+        tin: form.tinNumber.trim(),
+        tin_expiry_date: tinExpiryDate,
+        certificate_url: uploadedAssetUrls.certificate_url || null,
+        additional_data: {
+          additional_tin: form.additionalTin.trim(),
+          additional_date: additionalDate,
+          license_document_url: uploadedAssetUrls.license_document_url || null,
+        },
+        contact_email: form.email.trim(),
+        phone: ownerPhone,
+        tax_type: 'exclusive',
+        tax_rate: 5,
+        free_delivery_enabled: false,
+        description: '',
+      },
+    };
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
+    setErrors((prev) => ({ ...prev, api: '' }));
     setLoading(true);
     try {
-      alert('Restaurant added successfully!');
+      const token = localStorage.getItem('token');
+      const uploadedAssetUrls = await uploadRestaurantAssets(token);
+      const payload = buildPayload(uploadedAssetUrls);
+
+      await axios.post('/backend-api/restaurants/admin/onboard', payload, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
       router.push('/dashboard/restaurants/list');
-    } catch {
-      alert('Something went wrong. Please try again.');
+    } catch (error) {
+      const cleanedMessage = axios.isAxiosError(error)
+        ? (error.response?.data?.message || error.message || 'Something went wrong. Please try again.')
+        : (error?.message || 'Something went wrong. Please try again.');
+      setErrors((prev) => ({ ...prev, api: cleanedMessage }));
     } finally {
       setLoading(false);
     }
@@ -123,6 +347,11 @@ export default function AddRestaurantPage() {
   return (
     <div className="pt-36 pb-8">
       <form onSubmit={handleSubmit} className="space-y-6">
+        {errors.api && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errors.api}
+          </div>
+        )}
 
         {/* ===================== BASIC INFORMATION ===================== */}
         <section className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
@@ -198,11 +427,39 @@ export default function AddRestaurantPage() {
                 <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-500" />
                 <input
                   value={mapSearch}
-                  onChange={(e) => setMapSearch(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setMapSearch(value);
+                    // If user edits location text again, drop previous coordinates.
+                    setForm((prev) => ({ ...prev, latitude: '', longitude: '', zone: '' }));
+                    setErrors((prev) => ({ ...prev, location: '' }));
+                  }}
                   className="w-full border border-purple-400 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:border-purple-500 focus:outline-none"
                   placeholder="Select location on Map for your exact pickup location"
                 />
               </div>
+              <p className="text-xs text-gray-400">Type at least 3 characters and select a result</p>
+              {errors.location && (
+                <p className="text-xs text-red-500">{errors.location}</p>
+              )}
+              {mapLoading && (
+                <p className="text-xs text-gray-500">Searching location...</p>
+              )}
+
+              {mapResults.length > 0 && (
+                <div className="border border-gray-200 rounded-lg max-h-44 overflow-auto">
+                  {mapResults.map((item) => (
+                    <button
+                      key={`${item.place_id}-${item.lat}-${item.lon}`}
+                      type="button"
+                      onClick={() => selectMapLocation(item)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                    >
+                      {item.display_name}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Map Embed */}
               <div className="w-full h-48 sm:h-56 rounded-xl overflow-hidden border border-gray-200">
@@ -212,7 +469,11 @@ export default function AddRestaurantPage() {
                   height="100%"
                   loading="lazy"
                   style={{ border: 0 }}
-                  src="https://www.openstreetmap.org/export/embed.html?bbox=46.5,24.6,46.8,24.8&layer=mapnik"
+                  src={
+                    form.latitude && form.longitude
+                      ? `https://www.openstreetmap.org/export/embed.html?bbox=${Number(form.longitude) - 0.02},${Number(form.latitude) - 0.01},${Number(form.longitude) + 0.02},${Number(form.latitude) + 0.01}&layer=mapnik&marker=${form.latitude},${form.longitude}`
+                      : 'https://www.openstreetmap.org/export/embed.html?bbox=46.5,24.6,46.8,24.8&layer=mapnik'
+                  }
                 />
               </div>
             </div>
@@ -316,9 +577,19 @@ export default function AddRestaurantPage() {
                   Phone *
                 </label>
                 <div className="flex">
-                  <span className="inline-flex items-center px-3 bg-white border border-gray-200 rounded-l-lg text-sm text-gray-600 border-r-0">
-                    +1
-                  </span>
+                  <select
+                    name="phoneCode"
+                    value={form.phoneCode}
+                    onChange={handleChange}
+                    className="inline-flex items-center px-2 bg-white border border-gray-200 rounded-l-lg text-sm text-gray-600 border-r-0 focus:border-purple-400 focus:outline-none"
+                  >
+                    <option value="+1">+1</option>
+                    <option value="+44">+44</option>
+                    <option value="+92">+92</option>
+                    <option value="+966">+966</option>
+                    <option value="+971">+971</option>
+                    <option value="+964">+964</option>
+                  </select>
                   <input
                     name="phone"
                     value={form.phone}

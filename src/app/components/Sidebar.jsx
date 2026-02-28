@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronDown, LayoutDashboard, ShoppingCart, Store, Users, FileText, Wallet, DollarSign, CreditCard, Building2, UserCircle, Settings, Bell, ChevronUp, Search } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, ShoppingCart, Store, Users, FileText, Wallet, DollarSign, CreditCard, Building2, UserCircle, Settings, Bell, ChevronUp, Search, UtensilsCrossed, FolderTree, Puzzle, Star } from 'lucide-react';
 import { useLanguage } from '@/app/i18n/LanguageContext';
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
@@ -12,6 +12,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const [activeItem, setActiveItem] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
     orderManagement: true,
+    dispatchManagement: true,
+    orderRefunds: true,
     vendorManagement: false,
     walletManagement: false,
     apartmentManagement: false,
@@ -20,7 +22,9 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     taxManagement: false,
     businessSettings: false,
     reportLog: false,
-    marketing: false
+    marketing: false,
+    foodManagement: true,
+    categoriesManagement: true
   });
     
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,8 +54,13 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Restaurant List': '/dashboard/restaurants/list',
     'New Joining Request': '/dashboard/restaurants/requests',
     'Customers': '/dashboard/customers',
-    'Dispatch Management': '/dashboard/dispatch',
-    'Order Refund': '/dashboard/order-refund',
+    'Dispatch Management': '/dashboard/dispatch/searching',
+    'Searching Deliverymen': '/dashboard/dispatch/searching',
+    'Ongoing Orders': '/dashboard/dispatch/ongoing',
+    'Order Refund': '/dashboard/order-refund/new-request',
+    'New Refund Request': '/dashboard/order-refund/new-request',
+    'Refund Cancelled': '/dashboard/order-refund/cancelled',
+    'Refunded Orders': '/dashboard/order-refund/refunded',
     'Customer Wallet': '/dashboard/wallet/customer',
     'Vendor Wallet': '/dashboard/wallet/vendor',
     'Driver Wallet': '/dashboard/wallet/driver',
@@ -73,6 +82,19 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Customer Report': '/dashboard/reports/customer',
     'Restaurant WP Report': '/dashboard/reports/restaurant-wp',
     'Push Notification': '/dashboard/marketing/notifications',
+    'Add New Item': '/dashboard/foods/add',
+    'List': '/dashboard/foods/list',
+    'Category': '/dashboard/foods/categories',
+    'Sub category': '/dashboard/foods/sub-categories',
+    'Addons': '/dashboard/foods/addons',
+    'Reviews': '/dashboard/foods/reviews',
+    'Employee Role': '/dashboard/employees/role',
+    'Add New Employee': '/dashboard/employees/add',
+    'Employee List': '/dashboard/employees/list',
+    'New Join Request': '/dashboard/deliveryman/new-join-request',
+    'Add New Deliveryman': '/dashboard/deliveryman/add',
+    'Deliveryman List': '/dashboard/deliveryman/list',
+    'Deliveryman Reviews': '/dashboard/deliveryman/reviews',
   }), []);
 
   useEffect(() => {
@@ -101,6 +123,114 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       return;
     }
 
+    if (pathname === '/dashboard/dispatch/searching') {
+      setActiveItem('Searching Deliverymen');
+      setExpandedSections(prev => ({ ...prev, orderManagement: true, dispatchManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/dispatch/ongoing') {
+      setActiveItem('Ongoing Orders');
+      setExpandedSections(prev => ({ ...prev, orderManagement: true, dispatchManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/order-refund/new-request') {
+      setActiveItem('New Refund Request');
+      setExpandedSections(prev => ({ ...prev, orderManagement: true, orderRefunds: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/order-refund/cancelled') {
+      setActiveItem('Refund Cancelled');
+      setExpandedSections(prev => ({ ...prev, orderManagement: true, orderRefunds: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/order-refund/refunded') {
+      setActiveItem('Refunded Orders');
+      setExpandedSections(prev => ({ ...prev, orderManagement: true, orderRefunds: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/foods/add') {
+      setActiveItem('Add New Item');
+      setExpandedSections(prev => ({ ...prev, foodManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/foods/list') {
+      setActiveItem('List');
+      setExpandedSections(prev => ({ ...prev, foodManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/foods/categories') {
+      setActiveItem('Category');
+      setExpandedSections(prev => ({ ...prev, foodManagement: true, categoriesManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/foods/sub-categories') {
+      setActiveItem('Sub category');
+      setExpandedSections(prev => ({ ...prev, foodManagement: true, categoriesManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/foods/addons') {
+      setActiveItem('Addons');
+      setExpandedSections(prev => ({ ...prev, foodManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/foods/reviews') {
+      setActiveItem('Reviews');
+      setExpandedSections(prev => ({ ...prev, foodManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/employees/role') {
+      setActiveItem('Employee Role');
+      setExpandedSections(prev => ({ ...prev, employeeManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/employees/add') {
+      setActiveItem('Add New Employee');
+      setExpandedSections(prev => ({ ...prev, employeeManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/employees/list') {
+      setActiveItem('Employee List');
+      setExpandedSections(prev => ({ ...prev, employeeManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/deliveryman/new-join-request') {
+      setActiveItem('New Join Request');
+      setExpandedSections(prev => ({ ...prev, deliveryManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/deliveryman/add') {
+      setActiveItem('Add New Deliveryman');
+      setExpandedSections(prev => ({ ...prev, deliveryManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/deliveryman/list') {
+      setActiveItem('Deliveryman List');
+      setExpandedSections(prev => ({ ...prev, deliveryManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/deliveryman/reviews') {
+      setActiveItem('Deliveryman Reviews');
+      setExpandedSections(prev => ({ ...prev, deliveryManagement: true }));
+      return;
+    }
+
     const match = pathname.match(/^\/dashboard\/orders\/([^/]+)$/);
     if (match) {
       const slug = match[1];
@@ -123,8 +253,23 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Cancelled': 'cancelled', 'Refunded': 'refunded', 'Offline Payments': 'offlinePayments',
     'Payments Failed': 'paymentsFailed', 'Add Restaurants': 'addRestaurants',
     'Restaurant List': 'restaurantList', 'New Joining Request': 'newJoiningRequest',
+    'Searching Deliverymen': 'searchingDeliverymen',
+    'Ongoing Orders': 'ongoingOrders',
+    'New Refund Request': 'newRefundRequest',
+    'Refund Cancelled': 'refundCancelled',
+    'Refunded Orders': 'refundedOrders',
     'Customer Wallet': 'customerWallet', 'Vendor Wallet': 'vendorWallet', 'Driver Wallet': 'driverWallet',
     'All Apartments': 'allEmployees', 'Add New': 'addNewRestaurant',
+    'Add New Item': 'addNewItem',
+    'Category': 'category',
+    'Sub category': 'subCategory',
+    'Employee Role': 'employeeRole',
+    'Add New Employee': 'addNewEmployee',
+    'Employee List': 'employeeList',
+    'New Join Request': 'newJoinRequest',
+    'Add New Deliveryman': 'addNewDeliveryman',
+    'Deliveryman List': 'deliverymanList',
+    'Deliveryman Reviews': 'deliverymanReviews',
     'All Employees': 'allEmployees', 'Roles': 'roles', 'Permissions': 'permissions',
     'Daily Report': 'dailyReport', 'Monthly Report': 'monthlyReport', 'Yearly Report': 'yearlyReport',
     'Active Customers': 'activeCustomers', 'Inactive Customers': 'inactiveCustomers',
@@ -141,8 +286,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       isHeader: true,
       items: [
         { icon: ShoppingCart, label: 'Orders', tKey: 'orders', key: 'orderManagement', submenu: ['All', 'Pending', 'Accepted', 'Processing', 'Scheduled', 'Food On The Way', 'Delivered', 'Cancelled', 'Refunded', 'Offline Payments', 'Payments Failed'] },
-        { icon: Store, label: 'Dispatch Management', tKey: 'dispatchManagement', hasSubmenu: false },
-        { icon: ShoppingCart, label: 'Order Refund', tKey: 'orderRefund', hasSubmenu: false }
+        { icon: Store, label: 'Dispatch Management', tKey: 'dispatchManagement', key: 'dispatchManagement', submenu: ['Searching Deliverymen', 'Ongoing Orders'] },
+        { icon: ShoppingCart, label: 'Order Refund', tKey: 'orderRefund', key: 'orderRefunds', submenu: ['New Refund Request', 'Refund Cancelled', 'Refunded Orders'] }
       ]
     },
     {
@@ -150,6 +295,16 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       isHeader: true,
       items: [
         { icon: Store, label: 'Restaurants', tKey: 'restaurants', key: 'vendorManagement', submenu: ['Add Restaurants', 'Restaurant List', 'New Joining Request'] },
+      ]
+    },
+    {
+      label: 'FOOD MANAGEMENT', tKey: 'foodManagement',
+      isHeader: true,
+      items: [
+        { icon: UtensilsCrossed, label: 'Foods', tKey: 'foods', key: 'foodManagement', submenu: ['Add New Item', 'List'] },
+        { icon: FolderTree, label: 'Categories', tKey: 'categories', key: 'categoriesManagement', submenu: ['Category', 'Sub category'] },
+        { icon: Puzzle, label: 'Addons', tKey: 'addons', hasSubmenu: false },
+        { icon: Star, label: 'Reviews', tKey: 'reviews', hasSubmenu: false },
       ]
     },
     {
@@ -177,14 +332,14 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       label: 'DELIVERY MANAGEMENT', tKey: 'deliveryManagement',
       isHeader: true,
       items: [
-        { icon: UserCircle, label: 'Deliveryman', tKey: 'deliveryman', key: 'deliveryManagement', submenu: ['All Employees', 'Roles', 'Permissions'] },
+        { icon: UserCircle, label: 'Deliveryman', tKey: 'deliveryman', key: 'deliveryManagement', submenu: ['New Join Request', 'Add New Deliveryman', 'Deliveryman List', 'Deliveryman Reviews'] },
       ]
     },
     {
       label: 'EMPLOYEE MANAGEMENT', tKey: 'employeeManagement',
       isHeader: true,
       items: [
-        { icon: UserCircle, label: 'Employees', tKey: 'employees', key: 'employeeManagement', submenu: ['All Employees', 'Roles', 'Permissions'] },
+        { icon: UserCircle, label: 'Employees', tKey: 'employees', key: 'employeeManagement', submenu: ['Employee Role', 'Add New Employee', 'Employee List'] },
       ]
     },
     {
@@ -306,7 +461,9 @@ ${activeItem === item.label
           onClick={() => handleSubItemClick(item, hasSubmenu)}
         >
           {Icon && <Icon size={18} />}
-          <span className="flex-1 font-semibold text-[#1E1E24]">{t[item.tKey] || item.label}</span>
+          <span className="min-w-0 flex-1 truncate font-semibold text-[#1E1E24]">
+            {t[item.tKey] || item.label}
+          </span>
           {hasSubmenu && (
             isExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />
           )}
@@ -325,7 +482,9 @@ ${activeItem === item.label
                 onClick={() => handleSubmenuItemClick(subMenuItem, item)}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-[#00C49A]"></div>
-                <span>{t[submenuTKeys[subMenuItem]] || subMenuItem}</span>
+                <span className="min-w-0 flex-1 truncate">
+                  {t[submenuTKeys[subMenuItem]] || subMenuItem}
+                </span>
               </div>
             ))}
           </div>

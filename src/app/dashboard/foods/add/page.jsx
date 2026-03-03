@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
 
@@ -48,8 +48,7 @@ const SUBCATEGORY_OPTIONS = {
 
 export default function AddFoodPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const menuItemId = searchParams.get('menu_item_id') || '';
+  const [menuItemId, setMenuItemId] = useState('');
   const isEditMode = Boolean(menuItemId);
   const [activeTab, setActiveTab] = useState('default');
   const [form, setForm] = useState(INITIAL_FORM);
@@ -61,6 +60,11 @@ export default function AddFoodPage() {
   const [apiError, setApiError] = useState('');
   const [apiSuccess, setApiSuccess] = useState('');
   const imageRef = useRef(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setMenuItemId(params.get('menu_item_id') || '');
+  }, []);
 
   const selectedCategoryId = Number(form.categoryId);
   const subcategoryOptions = useMemo(

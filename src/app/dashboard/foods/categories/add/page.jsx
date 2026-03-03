@@ -3,7 +3,7 @@
 import { Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
 
@@ -16,8 +16,7 @@ const INITIAL_FORM = {
 
 export default function AddCategoryPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const categoryId = searchParams.get('category_id') || '';
+  const [categoryId, setCategoryId] = useState('');
   const isEditMode = Boolean(categoryId);
   const [form, setForm] = useState(INITIAL_FORM);
   const [imageFile, setImageFile] = useState(null);
@@ -28,6 +27,11 @@ export default function AddCategoryPage() {
   const [apiError, setApiError] = useState('');
   const [apiSuccess, setApiSuccess] = useState('');
   const imageRef = useRef(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setCategoryId(params.get('category_id') || '');
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;

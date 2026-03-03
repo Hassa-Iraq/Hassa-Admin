@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search as SearchIcon,
@@ -11,153 +11,6 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-
-// Mock orders data for demo – adjust to your API later
-const ORDERS = [
-  {
-    id: 1,
-    orderId: '#9792',
-    date: '16 Dec 2025',
-    customerName: 'Hamza Khan',
-    customerPhone: '+971 123 456 789',
-    restaurant: 'Cafeteria Restaurant',
-    totalAmount: '$ 59.23',
-    status: 'Pending',
-    orderType: 'Home Delivery',
-    paymentMethod: 'Online',
-    paymentStatus: 'Paid',
-  },
-  {
-    id: 2,
-    orderId: '#9793',
-    date: '16 Dec 2025',
-    customerName: 'Hamza Khan',
-    customerPhone: '+971 123 456 789',
-    restaurant: 'Cafeteria Restaurant',
-    totalAmount: '$ 19.99',
-    status: 'Accepted',
-    orderType: 'Home Delivery',
-    paymentMethod: 'Online',
-    paymentStatus: 'Paid',
-  },
-  {
-    id: 3,
-    orderId: '#9794',
-    date: '16 Dec 2025',
-    customerName: 'Hamza Khan',
-    customerPhone: '+971 123 456 789',
-    restaurant: 'Cafeteria Restaurant',
-    totalAmount: '$ 42.10',
-    status: 'Scheduled',
-    orderType: 'Home Delivery',
-    paymentMethod: 'Online',
-    paymentStatus: 'Paid',
-  },
-  {
-    id: 4,
-    orderId: '#9795',
-    date: '16 Dec 2025',
-    customerName: 'Hamza Khan',
-    customerPhone: '+971 123 456 789',
-    restaurant: 'Cafeteria Restaurant',
-    totalAmount: '$ 12.50',
-    status: 'Processing',
-    orderType: 'Home Delivery',
-    paymentMethod: 'Online',
-    paymentStatus: 'Paid',
-  },
-  {
-    id: 5,
-    orderId: '#9796',
-    date: '16 Dec 2025',
-    customerName: 'Hamza Khan',
-    customerPhone: '+971 123 456 789',
-    restaurant: 'Cafeteria Restaurant',
-    totalAmount: '$ 27.80',
-    status: 'Food On The Way',
-    orderType: 'Home Delivery',
-    paymentMethod: 'Online',
-    paymentStatus: 'Paid',
-  },
-  {
-    id: 6,
-    orderId: '#9797',
-    date: '16 Dec 2025',
-    customerName: 'Hamza Khan',
-    customerPhone: '+971 123 456 789',
-    restaurant: 'Cafeteria Restaurant',
-    totalAmount: '$ 33.40',
-    status: 'Delivered',
-    orderType: 'Home Delivery',
-    paymentMethod: 'Online',
-    paymentStatus: 'Paid',
-  },
-  {
-    id: 7,
-    orderId: '#9798',
-    date: '16 Dec 2025',
-    customerName: 'Hamza Khan',
-    customerPhone: '+971 123 456 789',
-    restaurant: 'Cafeteria Restaurant',
-    totalAmount: '$ 14.70',
-    status: 'Cancelled',
-    orderType: 'Home Delivery',
-    paymentMethod: 'Online',
-    paymentStatus: 'Failed',
-  },
-  {
-    id: 8,
-    orderId: '#9799',
-    date: '16 Dec 2025',
-    customerName: 'Hamza Khan',
-    customerPhone: '+971 123 456 789',
-    restaurant: 'Cafeteria Restaurant',
-    totalAmount: '$ 9.99',
-    status: 'Refunded',
-    orderType: 'Home Delivery',
-    paymentMethod: 'Online',
-    paymentStatus: 'Refunded',
-  },
-  {
-    id: 9,
-    orderId: '#9800',
-    date: '16 Dec 2025',
-    customerName: 'Hamza Khan',
-    customerPhone: '+971 123 456 789',
-    restaurant: 'Cafeteria Restaurant',
-    totalAmount: '$ 21.60',
-    status: 'Dine In',
-    orderType: 'Dine In',
-    paymentMethod: 'Offline Payment',
-    paymentStatus: 'Paid',
-  },
-  {
-    id: 10,
-    orderId: '#9801',
-    date: '16 Dec 2025',
-    customerName: 'Hamza Khan',
-    customerPhone: '+971 123 456 789',
-    restaurant: 'Cafeteria Restaurant',
-    totalAmount: '$ 18.30',
-    status: 'Offline Payments',
-    orderType: 'Home Delivery',
-    paymentMethod: 'Offline Payment',
-    paymentStatus: 'Paid',
-  },
-  {
-    id: 11,
-    orderId: '#9802',
-    date: '16 Dec 2025',
-    customerName: 'Hamza Khan',
-    customerPhone: '+971 123 456 789',
-    restaurant: 'Cafeteria Restaurant',
-    totalAmount: '$ 48.90',
-    status: 'Payments Failed',
-    orderType: 'Home Delivery',
-    paymentMethod: 'Online',
-    paymentStatus: 'Failed',
-  },
-];
 
 const statusStyles = {
   Scheduled: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -189,33 +42,126 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
   const [orderTypeFilter, setOrderTypeFilter] = useState('All');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
   const [page, setPage] = useState(1);
-  const PER_PAGE = 10;
+  const [orders, setOrders] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState('');
+  const PER_PAGE = 20;
   const router = useRouter();
 
-  const filteredOrders = useMemo(() => {
-    let base = ORDERS;
+  useEffect(() => {
+    setPage(1);
+  }, [filterLabel]);
 
-    // Apply sidebar filter label
-    if (filterLabel && filterLabel !== 'All') {
-      if (filterLabel === 'Offline Payments') {
-        base = base.filter((order) => order.paymentMethod === 'Offline Payment');
-      } else if (filterLabel === 'Payments Failed') {
-        base = base.filter((order) => order.paymentStatus === 'Failed');
-      } else {
-        base = base.filter((order) => order.status === filterLabel);
+  useEffect(() => {
+    const formatDate = (value) => {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    const toAmount = (value) => {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return '$ 0.00';
+      return `$ ${n.toFixed(2)}`;
+    };
+
+    const toOrderType = (orderTypeValue) => {
+      const raw = String(orderTypeValue || '').toLowerCase();
+      if (raw.includes('dine')) return 'Dine In';
+      if (raw.includes('delivery')) return 'Home Delivery';
+      return orderTypeValue || 'Home Delivery';
+    };
+
+    const normalizeOrder = (item, index) => {
+      const customer =
+        item?.customer ||
+        item?.user ||
+        item?.delivery_address?.contact_person ||
+        {};
+      const customerName =
+        item?.customer_name ||
+        item?.customerName ||
+        customer?.name ||
+        `${customer?.f_name || customer?.first_name || ''} ${customer?.l_name || customer?.last_name || ''}`.trim() ||
+        'N/A';
+      const customerPhone = item?.customer_phone || item?.customerPhone || customer?.phone || '-';
+
+      return {
+        id: item?.id ?? item?.order_id ?? `${page}-${index}`,
+        orderId: String(item?.order_id || item?.id || '-'),
+        date: formatDate(item?.created_at || item?.date || item?.createdAt),
+        customerName,
+        customerPhone,
+        restaurant: item?.restaurant_name || item?.restaurant?.name || item?.store?.name || 'N/A',
+        totalAmount: toAmount(item?.total_amount ?? item?.order_amount ?? item?.amount ?? 0),
+        status: item?.order_status || item?.status || filterLabel || 'Pending',
+        orderType: toOrderType(item?.order_type || item?.delivery_type || item?.type),
+        paymentMethod: item?.payment_method || 'Online',
+        paymentStatus: item?.payment_status || 'Unpaid',
+      };
+    };
+
+    const fetchOrders = async () => {
+      setLoading(true);
+      setFetchError('');
+      try {
+        const token = localStorage.getItem('token');
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(PER_PAGE),
+          status: filterLabel || 'All',
+          q: search.trim(),
+          date_from: '',
+          date_to: '',
+          restaurant_id: '',
+          user_id: '',
+        });
+
+        const response = await fetch(`/api/orders/?${params.toString()}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.message || 'Failed to fetch orders');
+        }
+
+        const list =
+          data?.data?.orders ||
+          data?.data?.list ||
+          data?.orders ||
+          data?.list ||
+          data?.data ||
+          [];
+        const normalized = (Array.isArray(list) ? list : []).map(normalizeOrder);
+        setOrders(normalized);
+
+        const apiTotal =
+          data?.data?.total ??
+          data?.total ??
+          data?.data?.total_size ??
+          data?.total_size ??
+          normalized.length;
+        const parsedTotal = Number(apiTotal);
+        setTotalCount(Number.isFinite(parsedTotal) ? parsedTotal : normalized.length);
+      } catch (error) {
+        setOrders([]);
+        setTotalCount(0);
+        setFetchError(error?.message || 'Failed to fetch orders');
+      } finally {
+        setLoading(false);
       }
-    }
+    };
 
-    // Apply text search (by order id or customer)
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      base = base.filter(
-        (order) =>
-          order.orderId.toLowerCase().includes(q) ||
-          order.customerName.toLowerCase().includes(q) ||
-          order.customerPhone.toLowerCase().includes(q)
-      );
-    }
+    fetchOrders();
+  }, [filterLabel, page, search]);
+
+  const filteredOrders = useMemo(() => {
+    let base = orders;
 
     // Apply order type filter
     if (orderTypeFilter !== 'All') {
@@ -228,10 +174,10 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
     }
 
     return base;
-  }, [filterLabel, search, orderTypeFilter, paymentStatusFilter]);
+  }, [orders, orderTypeFilter, paymentStatusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PER_PAGE));
-  const paginatedOrders = filteredOrders.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
+  const paginatedOrders = filteredOrders;
 
   const handleExport = () => {
     if (!filteredOrders.length) return;
@@ -447,7 +393,21 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
             </tr>
           </thead>
           <tbody>
-            {paginatedOrders.map((order, index) => {
+            {loading && (
+              <tr>
+                <td colSpan={8} className="py-10 text-center text-sm text-gray-500">
+                  Loading orders...
+                </td>
+              </tr>
+            )}
+            {!loading && fetchError && (
+              <tr>
+                <td colSpan={8} className="py-10 text-center text-sm text-rose-500">
+                  {fetchError}
+                </td>
+              </tr>
+            )}
+            {!loading && !fetchError && paginatedOrders.map((order, index) => {
               const chipClass =
                 statusStyles[order.status] ??
                 'bg-gray-50 text-[#1E1E24] border-gray-200';
@@ -532,7 +492,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
           </tbody>
         </table>
 
-        {paginatedOrders.length === 0 && (
+        {!loading && !fetchError && paginatedOrders.length === 0 && (
           <div className="py-10 text-center text-sm text-gray-500">
             No orders found for this filter.
           </div>
@@ -542,7 +502,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
       {/* Pagination */}
       <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
         <p className="text-xs text-gray-400">
-          Showing {Math.min((page - 1) * PER_PAGE + 1, filteredOrders.length)}–{Math.min(page * PER_PAGE, filteredOrders.length)} of {filteredOrders.length} results
+          Showing {totalCount === 0 ? 0 : (page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, totalCount)} of {totalCount} results
         </p>
         <div className="flex items-center gap-1">
           <button

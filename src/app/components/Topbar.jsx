@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Mail, ShoppingCart, Search, Globe, ChevronDown } from 'lucide-react';
+import { Mail, ShoppingCart, Search, Globe, ChevronDown, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/app/i18n/LanguageContext';
 
 const LANGUAGES = [
@@ -10,38 +11,96 @@ const LANGUAGES = [
   { code: 'ku', label: 'کوردی (KU)', flag: '🇮🇶' },
 ];
 
+const normalizeAdmin = (user, fallbackEmail = '') => ({
+  name:
+    user?.name ||
+    user?.full_name ||
+    `${user?.f_name || user?.first_name || ''} ${user?.l_name || user?.last_name || ''}`.trim() ||
+    'Admin',
+  email: user?.email || fallbackEmail || '',
+  phone: user?.phone || '',
+  image: user?.image || user?.avatar || '',
+});
+
 export default function Topbar({ title, subtitle, rightContent }) {
+  const router = useRouter();
   const { locale, dir, t, changeLanguage } = useLanguage();
   const isRTL = dir === 'rtl';
   const [langOpen, setLangOpen] = useState(false);
-  const [admin, setAdmin] = useState({ name: '', email: '' });
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [admin, setAdmin] = useState({ name: 'Admin', email: '' });
   const langRef = useRef(null);
+  const profileRef = useRef(null);
 
   useEffect(() => {
     const handler = (e) => {
       if (langRef.current && !langRef.current.contains(e.target)) setLangOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('adminUser');
-      if (stored) {
-        setAdmin(JSON.parse(stored));
-        return;
+    const fetchAdminProfile = async (token) => {
+      const endpoints = ['/api/me'];
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (!response.ok) continue;
+          const data = await response.json();
+          const restaurant =
+            data?.restaurant ||
+            data?.data?.restaurant ||
+            (Array.isArray(data?.data?.restaurants) ? data.data.restaurants[0] : null) ||
+            null;
+          const user = data?.user || data?.data?.user || data?.data || data;
+          if (!user || typeof user !== 'object') continue;
+          const normalized = normalizeAdmin(user);
+          setAdmin(normalized);
+          localStorage.setItem('adminUser', JSON.stringify(normalized));
+          if (restaurant?.id) {
+            localStorage.setItem('restaurant_id', String(restaurant.id));
+            localStorage.setItem('selectedRestaurantId', String(restaurant.id));
+          }
+          return true;
+        } catch {
+          // Keep trying fallback endpoint.
+        }
       }
-      const oldUser = localStorage.getItem('user');
-      if (oldUser) {
-        const u = JSON.parse(oldUser);
-        setAdmin({
-          name: u.name || u.full_name || `${u.f_name || u.first_name || ''} ${u.l_name || u.last_name || ''}`.trim() || 'Admin',
-          email: u.email || '',
-        });
+      return false;
+    };
+
+    const hydrateAdmin = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        await fetchAdminProfile(token);
+      } catch {
+        // Ignore storage/API failures for topbar rendering.
       }
-    } catch {}
+    };
+
+    hydrateAdmin();
   }, []);
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('adminUser');
+      localStorage.removeItem('user');
+      document.cookie = 'token=; path=/; max-age=0; SameSite=Lax';
+    } catch {
+      // Continue redirect even if storage cleanup fails.
+    }
+    setAdmin({ name: '', email: '' });
+    setProfileOpen(false);
+    router.push('/auth/login');
+  };
 
   const currentLang = LANGUAGES.find((l) => l.code === locale) || LANGUAGES[0];
 
@@ -102,14 +161,32 @@ export default function Topbar({ title, subtitle, rightContent }) {
             )}
           </div>
 
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-xs md:text-sm">
-              {admin.name ? admin.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : 'AD'}
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-sm font-semibold text-gray-900">{admin.name || 'Admin'}</p>
-              <p className="text-xs text-gray-500">{admin.email || ''}</p>
-            </div>
+          <div ref={profileRef} className="relative">
+            <button
+              onClick={() => setProfileOpen((prev) => !prev)}
+              className="flex min-w-[190px] items-center gap-2 md:gap-3 rounded-lg px-1.5 py-1 hover:bg-gray-50"
+            >
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-xs md:text-sm">
+                {admin.name ? admin.name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) : 'AD'}
+              </div>
+              <div className="hidden sm:block min-w-0 flex-1 text-left">
+                <p className="truncate text-sm font-semibold text-gray-900">{admin.name || 'Admin'}</p>
+                <p className="truncate text-xs text-gray-500">{admin.email || ''}</p>
+              </div>
+              <ChevronDown className={`hidden sm:block h-4 w-4 text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {profileOpen && (
+              <div className={`absolute top-full mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg z-50 ${isRTL ? 'left-0' : 'right-0'}`}>
+                <button
+                  onClick={handleLogout}
+                  className={`w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 ${isRTL ? 'justify-end text-right' : 'justify-start text-left'}`}
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

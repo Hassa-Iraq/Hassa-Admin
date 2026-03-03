@@ -1,30 +1,219 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Download, Pencil, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Download, Pencil, Search, SlidersHorizontal, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { API_BASE_URL } from '@/app/config';
 
-const MOCK_FOODS = [
-  { id: 1, name: 'Beef Stroganoff', category: 'varieties', price: '$ 95.00', rating: 4.9, reviews: 120, image: '/images/food.png', status: true },
-  { id: 2, name: 'Beef Stroganoff', category: 'varieties', price: '$ 95.00', rating: 4.9, reviews: 120, image: '/images/food.png', status: true },
-  { id: 3, name: 'Beef Stroganoff', category: 'varieties', price: '$ 95.00', rating: 4.9, reviews: 120, image: '/images/food.png', status: true },
-  { id: 4, name: 'Beef Stroganoff', category: 'varieties', price: '$ 95.00', rating: 4.9, reviews: 120, image: '/images/food.png', status: true },
+const PER_PAGE = 20;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const CATEGORY_OPTIONS = [
+  { id: '1', name: 'Burgers' },
+  { id: '2', name: 'Pizza' },
+  { id: '3', name: 'Drinks' },
 ];
 
+const SUBCATEGORY_OPTIONS = {
+  1: [
+    { id: '101', name: 'Chicken Burger' },
+    { id: '102', name: 'Beef Burger' },
+  ],
+  2: [
+    { id: '201', name: 'Classic Pizza' },
+    { id: '202', name: 'Special Pizza' },
+  ],
+  3: [
+    { id: '301', name: 'Cold Drinks' },
+    { id: '302', name: 'Juices' },
+  ],
+};
+
 export default function FoodListPage() {
+  const router = useRouter();
+  const [foods, setFoods] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState('');
+  const [fetchError, setFetchError] = useState('');
   const [search, setSearch] = useState('');
-  const [statuses, setStatuses] = useState(() =>
-    Object.fromEntries(MOCK_FOODS.map((item) => [item.id, item.status]))
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [subcategoryFilter, setSubcategoryFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [statuses, setStatuses] = useState({});
+
+  const selectedCategoryId = Number(categoryFilter);
+  const subcategoryOptions = useMemo(
+    () => SUBCATEGORY_OPTIONS[selectedCategoryId] || [],
+    [selectedCategoryId]
   );
 
-  const filteredFoods = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return MOCK_FOODS;
-    return MOCK_FOODS.filter((item) => item.name.toLowerCase().includes(query));
-  }, [search]);
+  useEffect(() => {
+    const toAbsoluteAssetUrl = (value) => {
+      if (!value || typeof value !== 'string') return '';
+      const trimmed = value.trim();
+      if (!trimmed) return '';
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+      if (trimmed.startsWith('//')) return `https:${trimmed}`;
+      if (trimmed.startsWith('/')) return `${API_BASE_URL}${trimmed}`;
+      return `${API_BASE_URL}/${trimmed}`;
+    };
+
+    const resolveText = (...values) =>
+      values.find((value) => typeof value === 'string' && value.trim().length > 0) || '';
+
+    const normalizeItem = (item, index) => {
+      const id = item?.id ?? item?.menu_item_id ?? item?.item_id ?? `${page}-${index}`;
+      const name = resolveText(item?.name, item?.title, item?.item_name, 'N/A');
+      const category = resolveText(
+        item?.category?.name,
+        item?.category_name,
+        item?.menu_category?.name,
+        'N/A'
+      );
+      const priceValue = Number(item?.price ?? item?.unit_price ?? 0);
+      const price = Number.isFinite(priceValue) ? `$ ${priceValue.toFixed(2)}` : '$ 0.00';
+      const rating = Number(item?.avg_rating ?? item?.rating ?? 0);
+      const reviews = Number(item?.rating_count ?? item?.reviews_count ?? item?.total_reviews ?? 0);
+      const image = toAbsoluteAssetUrl(
+        resolveText(item?.image_url, item?.image, item?.photo, '/images/food.png')
+      );
+      const status =
+        item?.is_available === true ||
+        item?.is_available === 1 ||
+        item?.status === true ||
+        item?.status === 1 ||
+        item?.status === 'active';
+
+      return { id, name, category, price, rating, reviews, image, status };
+    };
+
+    const fetchFoods = async () => {
+      setLoading(true);
+      setFetchError('');
+
+      try {
+        const restaurantId =
+          localStorage.getItem('restaurant_id') ||
+          localStorage.getItem('selectedRestaurantId') ||
+          '';
+        const token = localStorage.getItem('token') || '';
+
+        if (!restaurantId) {
+          setFoods([]);
+          setTotalCount(0);
+          setFetchError('Restaurant ID not found. Please select a restaurant first.');
+          return;
+        }
+
+        const params = new URLSearchParams({
+          restaurant_id: restaurantId,
+          page: String(page),
+          limit: String(PER_PAGE),
+        });
+        // Temporary: backend list endpoint is currently consumed with restaurant_id + pagination only.
+        // Category/subcategory filters will be sent once real UUID filter IDs are wired.
+
+        const { data } = await axios.get(`/api/restaurants/menu-items?${params.toString()}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const payload =
+          data?.data && typeof data.data === 'object'
+            ? data.data
+            : data;
+        const list =
+          payload?.menu_items ||
+          payload?.menuItems ||
+          payload?.items ||
+          payload?.list ||
+          data?.menu_items ||
+          data?.menuItems ||
+          data?.items ||
+          data?.list ||
+          [];
+
+        const normalized = (Array.isArray(list) ? list : []).map(normalizeItem);
+        setFoods(normalized);
+
+        const total =
+          payload?.pagination?.total ??
+          data?.pagination?.total ??
+          payload?.total ??
+          data?.total ??
+          payload?.total_size ??
+          data?.total_size ??
+          payload?.count ??
+          normalized.length;
+        const parsedTotal = Number(total);
+        setTotalCount(Number.isFinite(parsedTotal) ? parsedTotal : normalized.length);
+
+        setStatuses((prev) => {
+          const next = { ...prev };
+          normalized.forEach((item) => {
+            if (next[item.id] === undefined) next[item.id] = item.status;
+          });
+          return next;
+        });
+      } catch (error) {
+        setFoods([]);
+        setTotalCount(0);
+        setFetchError(
+          axios.isAxiosError(error)
+            ? error.response?.data?.message || error.message || 'Failed to load menu items'
+            : error?.message || 'Failed to load menu items'
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFoods();
+  }, [page, categoryFilter, subcategoryFilter, search]);
 
   const toggleStatus = (id) => {
     setStatuses((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const handleDeleteItem = async (menuItemId) => {
+    if (!menuItemId) return;
+    const confirmed = window.confirm('Are you sure you want to delete this food item?');
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(String(menuItemId));
+      setFetchError('');
+      const token = localStorage.getItem('token') || '';
+
+      await axios.delete(`/api/restaurants/menu-items/${menuItemId}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      setFoods((prev) => prev.filter((item) => String(item.id) !== String(menuItemId)));
+      setStatuses((prev) => {
+        const next = { ...prev };
+        delete next[menuItemId];
+        return next;
+      });
+      setTotalCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      setFetchError(
+        axios.isAxiosError(error)
+          ? error.response?.data?.message || error.message || 'Failed to delete menu item'
+          : error?.message || 'Failed to delete menu item'
+      );
+    } finally {
+      setDeletingId('');
+    }
+  };
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
 
   return (
     <div className="pt-36 pb-8">
@@ -41,6 +230,37 @@ export default function FoodListPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <select
+              value={categoryFilter}
+              onChange={(event) => {
+                setCategoryFilter(event.target.value);
+                setSubcategoryFilter('');
+                setPage(1);
+              }}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 focus:border-[#7C3AED] focus:outline-none"
+            >
+              <option value="">All Categories</option>
+              {CATEGORY_OPTIONS.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={subcategoryFilter}
+              onChange={(event) => {
+                setSubcategoryFilter(event.target.value);
+                setPage(1);
+              }}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 focus:border-[#7C3AED] focus:outline-none"
+            >
+              <option value="">All Subcategories</option>
+              {subcategoryOptions.map((subcategory) => (
+                <option key={subcategory.id} value={subcategory.id}>
+                  {subcategory.name}
+                </option>
+              ))}
+            </select>
             <button className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50">
               <Download size={12} />
               <span>Export</span>
@@ -66,9 +286,25 @@ export default function FoodListPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredFoods.map((food, index) => (
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-400">
+                    Loading menu items...
+                  </td>
+                </tr>
+              )}
+
+              {!loading && fetchError && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-red-500">
+                    {fetchError}
+                  </td>
+                </tr>
+              )}
+
+              {!loading && !fetchError && foods.map((food, index) => (
                 <tr key={food.id} className="border-b border-gray-100 last:border-b-0">
-                  <td className="px-4 py-3 text-xs text-gray-500">{index + 1}</td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{(page - 1) * PER_PAGE + index + 1}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
                       <div className="h-7 w-7 overflow-hidden rounded-lg bg-purple-100">
@@ -99,10 +335,17 @@ export default function FoodListPage() {
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
-                      <button className="flex h-6 w-6 items-center justify-center rounded-md border border-[#7C3AED] bg-[#F8F4FF] text-[#7C3AED]">
+                      <button
+                        onClick={() => router.push(`/dashboard/foods/add?menu_item_id=${food.id}`)}
+                        className="flex h-6 w-6 items-center justify-center rounded-md border border-[#7C3AED] bg-[#F8F4FF] text-[#7C3AED]"
+                      >
                         <Pencil size={12} />
                       </button>
-                      <button className="flex h-6 w-6 items-center justify-center rounded-md border border-[#FECACA] bg-[#FEF2F2] text-[#EF4444]">
+                      <button
+                        onClick={() => handleDeleteItem(food.id)}
+                        disabled={deletingId === String(food.id)}
+                        className="flex h-6 w-6 items-center justify-center rounded-md border border-[#FECACA] bg-[#FEF2F2] text-[#EF4444] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
                         <Trash2 size={12} />
                       </button>
                     </div>
@@ -110,7 +353,7 @@ export default function FoodListPage() {
                 </tr>
               ))}
 
-              {filteredFoods.length === 0 && (
+              {!loading && !fetchError && foods.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-400">
                     No foods found.
@@ -119,6 +362,32 @@ export default function FoodListPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3">
+          <p className="text-xs text-gray-400">
+            Showing {totalCount === 0 ? 0 : (page - 1) * PER_PAGE + 1}-
+            {Math.min(page * PER_PAGE, totalCount)} of {totalCount}
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={page === 1}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-[#7C3AED] disabled:opacity-40"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="px-2 text-xs font-semibold text-[#1E1E24]">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={page === totalPages}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-[#7C3AED] disabled:opacity-40"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

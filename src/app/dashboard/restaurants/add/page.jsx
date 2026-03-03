@@ -231,7 +231,7 @@ export default function AddRestaurantPage() {
     if (tinCertFile) formData.append('certificate', tinCertFile);
     if (licenseFile) formData.append('license_document', licenseFile);
 
-    const response = await axios.post('/backend-api/restaurants/uploads/restaurant-assets', formData, {
+    const response = await axios.post('/api/restaurants/uploads/restaurant-assets', formData, {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },

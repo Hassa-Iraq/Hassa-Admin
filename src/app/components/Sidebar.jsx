@@ -86,6 +86,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'List': '/dashboard/foods/list',
     'Category': '/dashboard/foods/categories',
     'Sub category': '/dashboard/foods/sub-categories',
+    'Add Category': '/dashboard/foods/categories/add',
+    'Add Subcategory': '/dashboard/foods/sub-categories/add',
     'Addons': '/dashboard/foods/addons',
     'Reviews': '/dashboard/foods/reviews',
     'Employee Role': '/dashboard/employees/role',
@@ -171,8 +173,20 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       return;
     }
 
+    if (pathname === '/dashboard/foods/categories/add') {
+      setActiveItem('Add Category');
+      setExpandedSections(prev => ({ ...prev, foodManagement: true, categoriesManagement: true }));
+      return;
+    }
+
     if (pathname === '/dashboard/foods/sub-categories') {
       setActiveItem('Sub category');
+      setExpandedSections(prev => ({ ...prev, foodManagement: true, categoriesManagement: true }));
+      return;
+    }
+
+    if (pathname === '/dashboard/foods/sub-categories/add') {
+      setActiveItem('Add Subcategory');
       setExpandedSections(prev => ({ ...prev, foodManagement: true, categoriesManagement: true }));
       return;
     }
@@ -263,6 +277,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Add New Item': 'addNewItem',
     'Category': 'category',
     'Sub category': 'subCategory',
+    'Add Category': 'addCategory',
+    'Add Subcategory': 'addSubcategory',
     'Employee Role': 'employeeRole',
     'Add New Employee': 'addNewEmployee',
     'Employee List': 'employeeList',
@@ -302,7 +318,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       isHeader: true,
       items: [
         { icon: UtensilsCrossed, label: 'Foods', tKey: 'foods', key: 'foodManagement', submenu: ['Add New Item', 'List'] },
-        { icon: FolderTree, label: 'Categories', tKey: 'categories', key: 'categoriesManagement', submenu: ['Category', 'Sub category'] },
+        { icon: FolderTree, label: 'Categories', tKey: 'categories', key: 'categoriesManagement', submenu: ['Add Category', 'Category', 'Add Subcategory', 'Sub category'] },
         { icon: Puzzle, label: 'Addons', tKey: 'addons', hasSubmenu: false },
         { icon: Star, label: 'Reviews', tKey: 'reviews', hasSubmenu: false },
       ]

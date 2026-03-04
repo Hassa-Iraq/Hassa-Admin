@@ -99,10 +99,10 @@ export default function LoginPage() {
 
                 {/* Header */}
                 <div className="text-center mb-6">
-                  <h1 className="text-[28px] font-medium text-gray-900 text-center leading-[24px] tracking-[0.15%] font-poppins mb-2">
+                  <h2 className="text-[28px] font-medium text-[#000000] text-center leading-[24px] tracking-[0.15%] font-poppins mb-2">
                     Sign In
-                  </h1>
-                  <p className="text-[20px] font-medium text-gray-900 text-center leading-[24px] tracking-[0.15%] font-poppins text-sm">
+                  </h2>
+                  <p className="text-[20px] font-medium text-[#000000] text-center leading-[24px] tracking-[0.15%] font-poppins text-sm">
                     Access Your Admin Panel
                   </p>
                 </div>

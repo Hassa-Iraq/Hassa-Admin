@@ -72,8 +72,7 @@ export default function CategoryListPage() {
         pickFirstUrl(
           item?.image_url,
           item?.image,
-          item?.url,
-          '/images/food.png'
+          item?.url
         )
       ),
       categoryId: (page - 1) * PER_PAGE + index + 1,
@@ -247,11 +246,12 @@ export default function CategoryListPage() {
                   <td className="px-3 py-3">
                     <div className="h-7 w-7 overflow-hidden rounded-lg bg-purple-100">
                       <img
-                        src={item.image || '/images/food.png'}
+                        src={item.image || ''}
                         alt={item.name}
                         className="h-full w-full object-cover"
                         onError={(event) => {
-                          event.currentTarget.src = '/images/food.png';
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.style.visibility = 'hidden';
                         }}
                       />
                     </div>

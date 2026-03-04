@@ -6,7 +6,7 @@ const REVIEWS = [
   {
     id: 1,
     foodName: 'Beef Stroganoff',
-    image: '/images/food.png',
+    image: '',
     customer: 'Hamza Khan',
     phone: '+8 ********',
     rating: 4.9,
@@ -18,7 +18,7 @@ const REVIEWS = [
   {
     id: 2,
     foodName: 'Beef Stroganoff',
-    image: '/images/food.png',
+    image: '',
     customer: 'Hamza Khan',
     phone: '+8 ********',
     rating: 4.9,
@@ -30,7 +30,7 @@ const REVIEWS = [
   {
     id: 3,
     foodName: 'Beef Stroganoff',
-    image: '/images/food.png',
+    image: '',
     customer: 'Hamza Khan',
     phone: '+8 ********',
     rating: 4.9,
@@ -42,7 +42,7 @@ const REVIEWS = [
   {
     id: 4,
     foodName: 'Beef Stroganoff',
-    image: '/images/food.png',
+    image: '',
     customer: 'Hamza Khan',
     phone: '+8 ********',
     rating: 4.9,

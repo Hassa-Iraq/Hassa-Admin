@@ -7,6 +7,10 @@ const nextConfig = {
         source: '/backend-api/:path*',
         destination: 'https://hassa.keydevs.pk/api/:path*',
       },
+      {
+        source: '/uploads/:path*',
+        destination: 'https://hassa.keydevs.pk/uploads/:path*',
+      },
     ];
   },
 };

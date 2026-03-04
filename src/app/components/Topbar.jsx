@@ -28,7 +28,8 @@ export default function Topbar({ title, subtitle, rightContent }) {
   const isRTL = dir === 'rtl';
   const [langOpen, setLangOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [admin, setAdmin] = useState({ name: 'Admin', email: '' });
+  const [admin, setAdmin] = useState({ name: '', email: '', image: '' });
+  const [profileReady, setProfileReady] = useState(false);
   const langRef = useRef(null);
   const profileRef = useRef(null);
 
@@ -67,21 +68,44 @@ export default function Topbar({ title, subtitle, rightContent }) {
             localStorage.setItem('restaurant_id', String(restaurant.id));
             localStorage.setItem('selectedRestaurantId', String(restaurant.id));
           }
+          setProfileReady(true);
           return true;
         } catch {
           // Keep trying fallback endpoint.
         }
       }
+      setProfileReady(true);
       return false;
     };
 
     const hydrateAdmin = async () => {
       try {
+        const cachedAdmin = localStorage.getItem('adminUser');
+        if (cachedAdmin) {
+          try {
+            const parsed = JSON.parse(cachedAdmin);
+            if (parsed && typeof parsed === 'object') {
+              setAdmin({
+                name: parsed.name || '',
+                email: parsed.email || '',
+                image: parsed.image || '',
+              });
+            }
+          } catch {
+            // Ignore invalid cache value.
+          }
+        }
         const token = localStorage.getItem('token');
-        if (!token) return;
+        if (!token) {
+          setProfileReady(true);
+          return;
+        }
+        // Keep token in cookie as well so same-origin image/API proxy routes can authorize.
+        document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
         await fetchAdminProfile(token);
       } catch {
         // Ignore storage/API failures for topbar rendering.
+        setProfileReady(true);
       }
     };
 
@@ -103,6 +127,9 @@ export default function Topbar({ title, subtitle, rightContent }) {
   };
 
   const currentLang = LANGUAGES.find((l) => l.code === locale) || LANGUAGES[0];
+  const adminInitials = admin.name
+    ? admin.name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+    : '';
 
   return (
     <div className={`fixed top-0 h-auto md:h-[144px] bg-white z-30 ${isRTL ? 'left-0 right-0 md:right-64' : 'left-0 right-0 md:left-64'}`}>
@@ -167,10 +194,12 @@ export default function Topbar({ title, subtitle, rightContent }) {
               className="flex min-w-[190px] items-center gap-2 md:gap-3 rounded-lg px-1.5 py-1 hover:bg-gray-50"
             >
               <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-xs md:text-sm">
-                {admin.name ? admin.name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) : 'AD'}
+                {adminInitials || (profileReady ? '' : '...')}
               </div>
               <div className="hidden sm:block min-w-0 flex-1 text-left">
-                <p className="truncate text-sm font-semibold text-gray-900">{admin.name || 'Admin'}</p>
+                <p className="truncate text-sm font-semibold text-gray-900">
+                  {admin.name || (profileReady ? '' : 'Loading...')}
+                </p>
                 <p className="truncate text-xs text-gray-500">{admin.email || ''}</p>
               </div>
               <ChevronDown className={`hidden sm:block h-4 w-4 text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />

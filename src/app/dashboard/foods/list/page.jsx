@@ -64,21 +64,47 @@ export default function FoodListPage() {
     const resolveText = (...values) =>
       values.find((value) => typeof value === 'string' && value.trim().length > 0) || '';
 
-    const normalizeItem = (item, index) => {
+    const normalizeCategory = (item) => ({
+      id: String(item?.id ?? item?.category_id ?? item?.menu_category_id ?? '').trim(),
+      name: resolveText(item?.name, item?.title, ''),
+      image: toAbsoluteAssetUrl(
+        resolveText(item?.image_url, item?.image, item?.photo)
+      ),
+    });
+
+    const normalizeItem = (item, index, categoriesById) => {
       const id = item?.id ?? item?.menu_item_id ?? item?.item_id ?? `${page}-${index}`;
+      const categoryId = String(
+        item?.category_id ??
+        item?.menu_category_id ??
+        item?.category?.id ??
+        item?.menu_category?.id ??
+        ''
+      ).trim();
+      const matchedCategory = categoriesById.get(categoryId) || null;
       const name = resolveText(item?.name, item?.title, item?.item_name, 'N/A');
       const category = resolveText(
+        matchedCategory?.name,
         item?.category?.name,
         item?.category_name,
         item?.menu_category?.name,
         'N/A'
+      );
+      const categoryImage = toAbsoluteAssetUrl(
+        resolveText(
+          matchedCategory?.image,
+          item?.category?.image_url,
+          item?.category?.image,
+          item?.menu_category?.image_url,
+          item?.menu_category?.image
+        )
       );
       const priceValue = Number(item?.price ?? item?.unit_price ?? 0);
       const price = Number.isFinite(priceValue) ? `$ ${priceValue.toFixed(2)}` : '$ 0.00';
       const rating = Number(item?.avg_rating ?? item?.rating ?? 0);
       const reviews = Number(item?.rating_count ?? item?.reviews_count ?? item?.total_reviews ?? 0);
       const image = toAbsoluteAssetUrl(
-        resolveText(item?.image_url, item?.image, item?.photo, '/images/food.png')
+        resolveText(item?.image_url, item?.image, item?.photo)
       );
       const status =
         item?.is_available === true ||
@@ -87,7 +113,7 @@ export default function FoodListPage() {
         item?.status === 1 ||
         item?.status === 'active';
 
-      return { id, name, category, price, rating, reviews, image, status };
+      return { id, name, category, categoryImage, price, rating, reviews, image, status };
     };
 
     const fetchFoods = async () => {
@@ -116,11 +142,42 @@ export default function FoodListPage() {
         // Temporary: backend list endpoint is currently consumed with restaurant_id + pagination only.
         // Category/subcategory filters will be sent once real UUID filter IDs are wired.
 
-        const { data } = await axios.get(`/api/restaurants/menu-items?${params.toString()}`, {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+        const categoriesParams = new URLSearchParams({
+          restaurant_id: restaurantId,
+          page: '1',
+          limit: '500',
         });
+
+        const [{ data }, { data: categoriesData }] = await Promise.all([
+          axios.get(`/api/restaurants/menu-items?${params.toString()}`, {
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          }),
+          axios.get(`/api/restaurants/categories?${categoriesParams.toString()}`, {
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          }),
+        ]);
+
+        const categoriesPayload =
+          categoriesData?.data && typeof categoriesData.data === 'object'
+            ? categoriesData.data
+            : categoriesData;
+        const categoriesList =
+          categoriesPayload?.categories ||
+          categoriesPayload?.list ||
+          categoriesData?.categories ||
+          categoriesData?.list ||
+          categoriesPayload ||
+          [];
+        const categoriesById = new Map(
+          (Array.isArray(categoriesList) ? categoriesList : [])
+            .map(normalizeCategory)
+            .filter((item) => Boolean(item.id))
+            .map((item) => [item.id, item])
+        );
 
         const payload =
           data?.data && typeof data.data === 'object'
@@ -137,7 +194,9 @@ export default function FoodListPage() {
           data?.list ||
           [];
 
-        const normalized = (Array.isArray(list) ? list : []).map(normalizeItem);
+        const normalized = (Array.isArray(list) ? list : []).map((item, index) =>
+          normalizeItem(item, index, categoriesById)
+        );
         setFoods(normalized);
 
         const total =
@@ -308,12 +367,31 @@ export default function FoodListPage() {
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
                       <div className="h-7 w-7 overflow-hidden rounded-lg bg-purple-100">
-                        <img src={food.image} alt={food.name} className="h-full w-full object-cover" />
+                        {food.image ? (
+                          <img src={food.image} alt={food.name} className="h-full w-full object-cover" />
+                        ) : null}
                       </div>
                       <p className="text-xs font-semibold text-[#1E1E24]">{food.name}</p>
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-xs text-[#1E1E24]">{food.category}</td>
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 overflow-hidden rounded-lg bg-purple-100">
+                        {food.categoryImage ? (
+                          <img
+                            src={food.categoryImage}
+                            alt={food.category}
+                            className="h-full w-full object-cover"
+                            onError={(event) => {
+                              event.currentTarget.onerror = null;
+                              event.currentTarget.style.visibility = 'hidden';
+                            }}
+                          />
+                        ) : null}
+                      </div>
+                      <p className="text-xs text-[#1E1E24]">{food.category}</p>
+                    </div>
+                  </td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">{food.price}</td>
                   <td className="px-3 py-3">
                     <button

@@ -25,27 +25,6 @@ const LANGUAGE_TABS = [
   { key: 'ar', label: 'Arabic (AR)' },
 ];
 
-const CATEGORY_OPTIONS = [
-  { id: 1, name: 'Burgers' },
-  { id: 2, name: 'Pizza' },
-  { id: 3, name: 'Drinks' },
-];
-
-const SUBCATEGORY_OPTIONS = {
-  1: [
-    { id: 101, name: 'Chicken Burger' },
-    { id: 102, name: 'Beef Burger' },
-  ],
-  2: [
-    { id: 201, name: 'Classic Pizza' },
-    { id: 202, name: 'Special Pizza' },
-  ],
-  3: [
-    { id: 301, name: 'Cold Drinks' },
-    { id: 302, name: 'Juices' },
-  ],
-};
-
 export default function AddFoodPage() {
   const router = useRouter();
   const [menuItemId, setMenuItemId] = useState('');
@@ -56,9 +35,12 @@ export default function AddFoodPage() {
   const [imagePreview, setImagePreview] = useState('');
   const [existingImageUrl, setExistingImageUrl] = useState('');
   const [loadingItem, setLoadingItem] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState('');
+  const [categoriesError, setCategoriesError] = useState('');
   const [apiSuccess, setApiSuccess] = useState('');
+  const [categories, setCategories] = useState([]);
   const imageRef = useRef(null);
 
   useEffect(() => {
@@ -66,10 +48,14 @@ export default function AddFoodPage() {
     setMenuItemId(params.get('menu_item_id') || '');
   }, []);
 
-  const selectedCategoryId = Number(form.categoryId);
+  const selectedCategoryId = String(form.categoryId || '');
+  const categoryOptions = useMemo(
+    () => categories.filter((category) => !category.parentId),
+    [categories]
+  );
   const subcategoryOptions = useMemo(
-    () => SUBCATEGORY_OPTIONS[selectedCategoryId] || [],
-    [selectedCategoryId]
+    () => categories.filter((category) => String(category.parentId) === selectedCategoryId),
+    [categories, selectedCategoryId]
   );
 
   const handleChange = (event) => {
@@ -95,14 +81,10 @@ export default function AddFoodPage() {
     if (file) handleImageSelect(file);
   };
 
-  const UUID_REGEX =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
   const parseId = (value) => {
     const raw = String(value ?? '').trim();
     if (!raw) return null;
-    if (UUID_REGEX.test(raw)) return raw;
-    return null;
+    return raw;
   };
 
   const parseNumber = (value, fallback = null) => {
@@ -160,6 +142,107 @@ export default function AddFoodPage() {
     }
     return uploadedImageUrl;
   };
+
+  useEffect(() => {
+    const normalizeCategory = (item, index, fallbackParentId = '') => {
+      const rawId = item?.id ?? item?.category_id ?? item?.menu_category_id ?? '';
+      const id = String(rawId || '').trim();
+      const parentId = item?.parent_id
+        ? String(item.parent_id)
+        : (fallbackParentId ? String(fallbackParentId) : '');
+      return {
+        id,
+        name: String(item?.name || item?.title || '').trim() || 'Untitled Category',
+        parentId,
+      };
+    };
+    const collectSubcategories = (category) => {
+      const collections = [
+        category?.subcategories,
+        category?.sub_categories,
+        category?.subCategories,
+        category?.children,
+      ];
+      const firstArray = collections.find((value) => Array.isArray(value));
+      return Array.isArray(firstArray) ? firstArray : [];
+    };
+
+    const loadCategories = async () => {
+      setCategoriesLoading(true);
+      setCategoriesError('');
+
+      try {
+        const restaurantId =
+          localStorage.getItem('restaurant_id') ||
+          localStorage.getItem('selectedRestaurantId') ||
+          '';
+        const token = localStorage.getItem('token') || '';
+
+        if (!restaurantId) {
+          setCategories([]);
+          setCategoriesError('Restaurant ID not found. Please select restaurant first.');
+          return;
+        }
+
+        const params = new URLSearchParams({
+          restaurant_id: restaurantId,
+          page: '1',
+          limit: '500',
+        });
+
+        const { data } = await axios.get(`/api/restaurants/categories?${params.toString()}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const payload =
+          data?.data && typeof data.data === 'object'
+            ? data.data
+            : data;
+        const list =
+          payload?.categories ||
+          payload?.list ||
+          data?.categories ||
+          data?.list ||
+          payload ||
+          [];
+        const rawList = Array.isArray(list) ? list : [];
+
+        const normalizedFromRoot = rawList.map((item, index) =>
+          normalizeCategory(item, index)
+        );
+
+        const normalizedFromNested = rawList.flatMap((item, parentIndex) => {
+          const parentId = String(item?.id || item?.category_id || item?.menu_category_id || '');
+          return collectSubcategories(item).map((sub, subIndex) =>
+            normalizeCategory(sub, parentIndex * 1000 + subIndex, parentId)
+          );
+        });
+
+        const uniqueById = new Map();
+        [...normalizedFromRoot, ...normalizedFromNested]
+          .filter((category) => Boolean(category.id))
+          .forEach((category) => {
+            if (!uniqueById.has(String(category.id))) {
+              uniqueById.set(String(category.id), category);
+            }
+          });
+
+        setCategories(Array.from(uniqueById.values()));
+      } catch (error) {
+        setCategories([]);
+        const message = axios.isAxiosError(error)
+          ? error.response?.data?.message || error.message || 'Failed to load categories'
+          : error?.message || 'Failed to load categories';
+        setCategoriesError(message);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     const loadMenuItem = async () => {
@@ -334,6 +417,11 @@ export default function AddFoodPage() {
             {apiSuccess}
           </div>
         )}
+        {categoriesError && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            {categoriesError}
+          </div>
+        )}
 
         <section className="rounded-xl border border-gray-200 bg-white p-4">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -417,10 +505,13 @@ export default function AddFoodPage() {
                 name="categoryId"
                 value={form.categoryId}
                 onChange={handleChange}
+                disabled={categoriesLoading}
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#7C3AED] focus:outline-none"
               >
-                <option value="">Select Category</option>
-                {CATEGORY_OPTIONS.map((category) => (
+                <option value="">
+                  {categoriesLoading ? 'Loading categories...' : 'Select Category'}
+                </option>
+                {categoryOptions.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
@@ -432,6 +523,7 @@ export default function AddFoodPage() {
                 name="subcategoryId"
                 value={form.subcategoryId}
                 onChange={handleChange}
+                disabled={!form.categoryId || categoriesLoading}
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#7C3AED] focus:outline-none"
               >
                 <option value="">Select Sub Category</option>

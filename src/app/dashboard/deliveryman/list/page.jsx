@@ -1,6 +1,7 @@
 'use client';
 
 import { Download, Pencil, Search, Trash2 } from 'lucide-react';
+import { formatPhoneWithFlag } from '@/app/lib/phone';
 
 const DELIVERYMEN = [
   {
@@ -110,7 +111,7 @@ export default function DeliverymanListPage() {
                   </td>
                   <td className="px-3 py-3">
                     <p className="text-xs text-[#1E1E24]">{item.contactName}</p>
-                    <p className="text-[11px] text-gray-500">{item.phone}</p>
+                    <p className="text-[11px] text-gray-500">{formatPhoneWithFlag(item.phone)}</p>
                   </td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">{item.radius}</td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">{item.totalOrders}</td>

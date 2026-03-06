@@ -246,7 +246,7 @@ export default function CategoryListPage() {
                   <td className="px-3 py-3">
                     <div className="h-7 w-7 overflow-hidden rounded-lg bg-purple-100">
                       <img
-                        src={item.image || ''}
+                        src={item.image || null}
                         alt={item.name}
                         className="h-full w-full object-cover"
                         onError={(event) => {

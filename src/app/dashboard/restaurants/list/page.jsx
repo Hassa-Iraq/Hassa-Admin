@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
+import { formatPhoneWithFlag } from '@/app/lib/phone';
 import {
   Search, Download,
   CreditCard, TrendingUp, ArrowDownLeft,
@@ -28,6 +29,8 @@ const TRANSACTIONS = [
 // ─── component ────────────────────────────────────────────────────────────────
 export default function RestaurantListPage() {
   const router = useRouter();
+  const [userRole, setUserRole] = useState('');
+  const canEditRestaurant = ['admin', 'super_admin', 'superadmin', 'restaurant'].includes(userRole);
   const [restaurants, setRestaurants] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [summary, setSummary] = useState({
@@ -45,6 +48,15 @@ export default function RestaurantListPage() {
   const [cuisineFilter, setCuisineFilter] = useState('');
   const [radiusFilter, setRadiusFilter]   = useState('');
   const [modelFilter, setModelFilter]     = useState('');
+
+  useEffect(() => {
+    try {
+      const role = localStorage.getItem('userRole') || '';
+      setUserRole(String(role).trim().toLowerCase());
+    } catch {
+      setUserRole('');
+    }
+  }, []);
 
   useEffect(() => {
     const toAbsoluteUrl = (value) => {
@@ -146,7 +158,7 @@ export default function RestaurantListPage() {
         reviews: Number(item?.rating_count || item?.reviews_count || item?.total_reviews || 0),
         owner: ownerName || item?.owner_name || 'N/A',
         ownerEmail: item?.vendor?.email || item?.owner_email || item?.email || '-',
-        phone: formatPhone(rawPhone, countryCode),
+        phone: formatPhoneWithFlag(formatPhone(rawPhone, countryCode), countryCode),
         radius: item?.radius || item?.delivery_time || item?.zone || '-',
         cuisine:
           (typeof item?.cuisine === 'string' && item.cuisine.trim()) ||
@@ -530,12 +542,15 @@ export default function RestaurantListPage() {
                       <button className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500 hover:bg-blue-100 transition">
                         <Eye size={13} />
                       </button>
-                      <button
-                        onClick={() => router.push('/add-restaurant')}
-                        className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500 hover:bg-amber-100 transition"
-                      >
-                        <Edit2 size={13} />
-                      </button>
+                      {canEditRestaurant && (
+                        <button
+                          onClick={() => router.push(`/dashboard/restaurants/add?restaurant_id=${r.id}`)}
+                          title="Edit restaurant"
+                          className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500 hover:bg-amber-100 transition"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                      )}
                       <button className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100 transition">
                         <Trash2 size={13} />
                       </button>

@@ -73,6 +73,16 @@ select {
   /* Sentence case */
 }
 
+th {
+  font-family: var(--font-primary);
+  font-weight: 600 !important;
+  text-transform: none;
+}
+
+th * {
+  font-weight: 600 !important;
+}
+
 /* ─── Button Text ───────────────────────────────────────────────────────── */
 button,
 [role="button"],
@@ -129,6 +139,12 @@ figcaption {
 .text-caption {
   font-size: 14px;
   font-weight: 400;
+}
+
+/* Ensure emoji flags render in phone code dropdowns */
+.phone-code-select,
+.phone-code-select option {
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', var(--font-primary) !important;
 }
 
 @theme inline {

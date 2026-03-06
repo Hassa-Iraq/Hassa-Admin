@@ -343,7 +343,7 @@ export default function SubCategoryListPage() {
                         <div className="flex items-center gap-3">
                           <div className="h-8 w-8 overflow-hidden rounded-lg bg-purple-100">
                             <img
-                              src={group.category.image || ''}
+                              src={group.category.image || null}
                               alt={group.category.name}
                               className="h-full w-full object-cover"
                               onError={(event) => {
@@ -371,7 +371,7 @@ export default function SubCategoryListPage() {
                       <td className="px-3 py-3">
                         <div className="h-7 w-7 overflow-hidden rounded-lg bg-purple-100">
                           <img
-                            src={item.image || ''}
+                            src={item.image || null}
                             alt={item.name}
                             className="h-full w-full object-cover"
                             onError={(event) => {

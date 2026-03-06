@@ -1,6 +1,7 @@
 'use client';
 
 import { Download, Search, SlidersHorizontal } from 'lucide-react';
+import { formatPhoneWithFlag } from '@/app/lib/phone';
 
 const REVIEWS = [
   {
@@ -104,7 +105,7 @@ export default function CustomerReviewsPage() {
                   </td>
                   <td className="px-3 py-3">
                     <p className="text-xs font-semibold text-[#1E1E24]">{item.customer}</p>
-                    <p className="text-[11px] text-gray-500">{item.phone}</p>
+                    <p className="text-[11px] text-gray-500">{formatPhoneWithFlag(item.phone)}</p>
                   </td>
                   <td className="px-3 py-3">
                     <p className="text-xs text-[#1E1E24]">

@@ -22,6 +22,45 @@ const normalizeAdmin = (user, fallbackEmail = '') => ({
   image: user?.image || user?.avatar || '',
 });
 
+const extractPermissions = (payload, user) => {
+  const candidates = [
+    user?.role?.permissions,
+    user?.employee_permissions,
+    user?.employee_role?.employee_permissions,
+    user?.permissions,
+    user?.employee?.employee_permissions,
+    payload?.role?.permissions,
+    payload?.employee_role?.employee_permissions,
+    payload?.data?.role?.permissions,
+    payload?.employee_permissions,
+    payload?.data?.employee_role?.employee_permissions,
+    payload?.data?.employee_permissions,
+    payload?.employee?.employee_permissions,
+    payload?.data?.employee?.employee_permissions,
+    payload?.data?.user?.employee_permissions,
+    payload?.data?.user?.employee_role?.employee_permissions,
+    payload?.data?.user?.role?.permissions,
+    payload?.employee?.role?.permissions,
+  ];
+  const matched = candidates.find((item) => item && typeof item === 'object' && !Array.isArray(item));
+  return matched || null;
+};
+
+const extractRoleKey = (payload, user) => {
+  const roleSource =
+    user?.role?.name ||
+    user?.role?.slug ||
+    user?.role?.key ||
+    user?.role ||
+    user?.user_type ||
+    payload?.role?.name ||
+    payload?.data?.role?.name ||
+    '';
+
+  if (typeof roleSource !== 'string') return '';
+  return roleSource.trim().toLowerCase().replace(/\s+/g, '_');
+};
+
 export default function Topbar({ title, subtitle, rightContent }) {
   const router = useRouter();
   const { locale, dir, t, changeLanguage } = useLanguage();
@@ -43,6 +82,82 @@ export default function Topbar({ title, subtitle, rightContent }) {
   }, []);
 
   useEffect(() => {
+    const emitSidebarAuthUpdate = () => {
+      try {
+        window.dispatchEvent(new Event('sidebar-auth-updated'));
+      } catch {
+        // Ignore event dispatch failures.
+      }
+    };
+
+    const resolveEmployeePermissions = async ({ token, user, payload }) => {
+      const directPermissions = extractPermissions(payload, user);
+      if (directPermissions) return directPermissions;
+
+      const roleKey = extractRoleKey(payload, user);
+      const userType = String(
+        user?.role ||
+        user?.user_type ||
+        payload?.role ||
+        payload?.data?.role ||
+        ''
+      ).toLowerCase();
+      const shouldLookupEmployeePermissions =
+        roleKey === 'employee' ||
+        userType === 'employee' ||
+        Boolean(user?.employee_role_id || payload?.employee_role_id || payload?.data?.employee_role_id);
+      if (!shouldLookupEmployeePermissions) return null;
+
+      const employeeId = String(
+        user?.id ||
+        payload?.employee?.id ||
+        payload?.data?.employee?.id ||
+        ''
+      ).trim();
+      const employeeEmail = String(
+        user?.email ||
+        payload?.employee?.email ||
+        payload?.data?.employee?.email ||
+        ''
+      ).trim();
+
+      try {
+        const params = new URLSearchParams({
+          page: '1',
+          limit: '50',
+          search: employeeEmail,
+          employee_role_id: '',
+          is_active: 'true',
+        });
+        const response = await fetch(`/api/auth/admin/employees?${params.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) return null;
+        const listData = await response.json();
+        const source =
+          listData?.data && typeof listData.data === 'object'
+            ? listData.data
+            : listData;
+        const employees = Array.isArray(source?.employees)
+          ? source.employees
+          : Array.isArray(source?.list)
+            ? source.list
+            : [];
+        const matchedEmployee = employees.find((item) => {
+          const idMatch = employeeId && String(item?.id || '').trim() === employeeId;
+          const emailMatch =
+            employeeEmail &&
+            String(item?.email || '').trim().toLowerCase() === employeeEmail.toLowerCase();
+          return idMatch || emailMatch;
+        });
+        return matchedEmployee?.employee_permissions || null;
+      } catch {
+        return null;
+      }
+    };
+
     const fetchAdminProfile = async (token) => {
       const endpoints = ['/api/me'];
       for (const endpoint of endpoints) {
@@ -64,6 +179,18 @@ export default function Topbar({ title, subtitle, rightContent }) {
           const normalized = normalizeAdmin(user);
           setAdmin(normalized);
           localStorage.setItem('adminUser', JSON.stringify(normalized));
+          const roleKey = extractRoleKey(data, user);
+          if (roleKey) {
+            localStorage.setItem('userRole', roleKey);
+          } else {
+            localStorage.removeItem('userRole');
+          }
+          emitSidebarAuthUpdate();
+          const permissions = await resolveEmployeePermissions({ token, user, payload: data });
+          if (permissions) {
+            localStorage.setItem('sidebarPermissions', JSON.stringify(permissions));
+            emitSidebarAuthUpdate();
+          }
           if (restaurant?.id) {
             localStorage.setItem('restaurant_id', String(restaurant.id));
             localStorage.setItem('selectedRestaurantId', String(restaurant.id));
@@ -117,7 +244,10 @@ export default function Topbar({ title, subtitle, rightContent }) {
       localStorage.removeItem('token');
       localStorage.removeItem('adminUser');
       localStorage.removeItem('user');
+      localStorage.removeItem('sidebarPermissions');
+      localStorage.removeItem('userRole');
       document.cookie = 'token=; path=/; max-age=0; SameSite=Lax';
+      window.dispatchEvent(new Event('sidebar-auth-updated'));
     } catch {
       // Continue redirect even if storage cleanup fails.
     }

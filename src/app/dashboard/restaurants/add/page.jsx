@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Upload, MapPin, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
+import PhoneCodeSelect from '@/app/components/PhoneCodeSelect';
 
 const INITIAL_FORM = {
   restaurantName: '',
@@ -31,8 +32,20 @@ const INITIAL_FORM = {
   confirmPassword: '',
 };
 
+const PHONE_CODE_OPTIONS = [
+  { value: '+1', code: 'US', flagUrl: 'https://flagcdn.com/w20/us.png' },
+  { value: '+44', code: 'GB', flagUrl: 'https://flagcdn.com/w20/gb.png' },
+  { value: '+92', code: 'PK', flagUrl: 'https://flagcdn.com/w20/pk.png' },
+  { value: '+966', code: 'SA', flagUrl: 'https://flagcdn.com/w20/sa.png' },
+  { value: '+971', code: 'AE', flagUrl: 'https://flagcdn.com/w20/ae.png' },
+  { value: '+964', code: 'IQ', flagUrl: 'https://flagcdn.com/w20/iq.png' },
+];
+
 export default function AddRestaurantPage() {
   const router = useRouter();
+  const [restaurantId, setRestaurantId] = useState('');
+  const [userRole, setUserRole] = useState('');
+  const isEditMode = Boolean(restaurantId);
 
   const [form, setForm] = useState(INITIAL_FORM);
   const [activeTab, setActiveTab] = useState('default');
@@ -51,6 +64,13 @@ export default function AddRestaurantPage() {
   const [tinCertPreview, setTinCertPreview] = useState(null);
   const [licenseFile, setLicenseFile] = useState(null);
   const [licensePreview, setLicensePreview] = useState(null);
+  const [existingAssetUrls, setExistingAssetUrls] = useState({
+    logo_url: null,
+    cover_image_url: null,
+    certificate_url: null,
+    license_document_url: null,
+  });
+  const [loadingRestaurant, setLoadingRestaurant] = useState(false);
 
   const logoRef = useRef(null);
   const coverRef = useRef(null);
@@ -59,6 +79,15 @@ export default function AddRestaurantPage() {
   const mapSearchDebounceRef = useRef(null);
 
   const [mapSearch, setMapSearch] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryRestaurantId = params.get('restaurant_id') || '';
+    setRestaurantId(queryRestaurantId);
+    const role = localStorage.getItem('userRole') || '';
+    const normalizedRole = String(role).trim().toLowerCase();
+    setUserRole(normalizedRole);
+  }, []);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -86,8 +115,12 @@ export default function AddRestaurantPage() {
     if (!form.lastName.trim()) newErrors.lastName = 'Required';
     if (!form.phone.trim()) newErrors.phone = 'Required';
     if (!form.email.trim()) newErrors.email = 'Required';
-    if (!form.password) newErrors.password = 'Required';
-    if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    if (!isEditMode) {
+      if (!form.password) newErrors.password = 'Required';
+      if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    } else if (form.password || form.confirmPassword) {
+      if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    }
     if (!form.latitude || !form.longitude) newErrors.location = 'Select location from map search';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -172,9 +205,12 @@ export default function AddRestaurantPage() {
 
   const toAbsoluteAssetUrl = (value) => {
     if (!value || typeof value !== 'string') return '';
-    if (value.startsWith('http://') || value.startsWith('https://')) return value;
-    if (value.startsWith('/')) return `${API_BASE_URL}${value}`;
-    return value;
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+    if (trimmed.startsWith('//')) return `https:${trimmed}`;
+    if (trimmed.startsWith('/')) return `${API_BASE_URL}${trimmed}`;
+    return trimmed;
   };
 
   const extractUploadedAssetUrls = (uploadData = {}) => {
@@ -184,33 +220,63 @@ export default function AddRestaurantPage() {
     const assets = source?.assets && typeof source.assets === 'object'
       ? source.assets
       : source;
+    const pickFirstRaw = (...values) => {
+      const matched = values.find((value) => typeof value === 'string' && value.trim());
+      return matched ? matched.trim() : '';
+    };
 
     return {
-      logo_url: toAbsoluteAssetUrl(pickFirstUrl(
+      // Keep raw value from upload API response for update payload.
+      logo_url: pickFirstRaw(
         assets?.logo_url,
         assets?.logo,
         assets?.logoUrl,
+        assets?.logo_full_url,
+        assets?.full_url,
+        assets?.url,
+        assets?.path,
+        assets?.image_url,
+        assets?.image?.url,
+        assets?.image?.path,
+        source?.assets?.logo_url,
         source?.logo_url
-      )),
-      cover_image_url: toAbsoluteAssetUrl(pickFirstUrl(
+      ),
+      cover_image_url: pickFirstRaw(
         assets?.cover_image_url,
         assets?.cover_url,
         assets?.cover,
         assets?.coverImageUrl,
+        assets?.cover_photo,
+        assets?.cover_photo_full_url,
+        assets?.cover_image_full_url,
+        assets?.full_url,
+        assets?.url,
+        assets?.path,
+        source?.assets?.cover_image_url,
         source?.cover_image_url
-      )),
-      certificate_url: toAbsoluteAssetUrl(pickFirstUrl(
+      ),
+      certificate_url: pickFirstRaw(
         assets?.certificate_url,
         assets?.tin_certificate_url,
         assets?.certificate,
+        assets?.certificate_full_url,
+        assets?.full_url,
+        assets?.url,
+        assets?.path,
+        source?.assets?.certificate_url,
         source?.certificate_url
-      )),
-      license_document_url: toAbsoluteAssetUrl(pickFirstUrl(
+      ),
+      license_document_url: pickFirstRaw(
         assets?.license_document_url,
         assets?.license_url,
         assets?.license,
+        assets?.license_document_full_url,
+        assets?.full_url,
+        assets?.url,
+        assets?.path,
+        source?.assets?.license_document_url,
         source?.license_document_url
-      )),
+      ),
     };
   };
 
@@ -246,7 +312,8 @@ export default function AddRestaurantPage() {
     return uploadedUrls;
   };
 
-  const buildPayload = (uploadedAssetUrls = {}) => {
+  const buildPayload = (uploadedAssetUrls = {}, options = {}) => {
+    const { isEdit = false } = options;
     const cleanedTags = form.tags
       .split(',')
       .map((tag) => tag.trim())
@@ -259,13 +326,17 @@ export default function AddRestaurantPage() {
     const tinExpiryDate = form.tinExpiry ? form.tinExpiry : null;
     const additionalDate = form.additionalDate ? form.additionalDate : null;
 
+    const ownerPayload = {
+      email: form.email.trim(),
+      phone: ownerPhone,
+      full_name: ownerFullName,
+    };
+    if (!isEdit || form.password) {
+      ownerPayload.password = form.password;
+    }
+
     return {
-      owner: {
-        email: form.email.trim(),
-        password: form.password,
-        phone: ownerPhone,
-        full_name: ownerFullName,
-      },
+      owner: ownerPayload,
       restaurant: {
         name: form.restaurantName.trim(),
         address: form.restaurantAddress.trim(),
@@ -297,6 +368,120 @@ export default function AddRestaurantPage() {
     };
   };
 
+  useEffect(() => {
+    const extractPhone = (rawPhone = '') => {
+      const raw = String(rawPhone || '').trim();
+      if (!raw) return { code: '+1', number: '' };
+      if (!raw.startsWith('+')) return { code: '+1', number: raw };
+      const digits = raw.replace(/[^\d]/g, '');
+      if (digits.length <= 3) return { code: `+${digits}`, number: '' };
+      const code = `+${digits.slice(0, 3)}`;
+      const number = digits.slice(3);
+      return { code, number };
+    };
+
+    const loadRestaurant = async () => {
+      if (!isEditMode) return;
+      setLoadingRestaurant(true);
+      setErrors((prev) => ({ ...prev, api: '' }));
+      try {
+        const token = localStorage.getItem('token') || '';
+        const { data } = await axios.get(`/api/restaurants/${restaurantId}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const payload =
+          data?.data && typeof data.data === 'object'
+            ? data.data
+            : data;
+        const restaurant =
+          payload?.restaurant ||
+          payload?.data?.restaurant ||
+          payload;
+        const owner =
+          payload?.owner ||
+          payload?.vendor ||
+          restaurant?.owner ||
+          restaurant?.vendor ||
+          {};
+
+        const ownerPhoneRaw = owner?.phone || restaurant?.phone || '';
+        const parsedPhone = extractPhone(ownerPhoneRaw);
+
+        const logoRawUrl = pickFirstUrl(
+          restaurant?.logo_url,
+          restaurant?.logo,
+          restaurant?.logo_full_url
+        );
+        const coverRawUrl = pickFirstUrl(
+          restaurant?.cover_image_url,
+          restaurant?.cover_image,
+          restaurant?.cover_photo
+        );
+        const certificateRawUrl = pickFirstUrl(
+          restaurant?.certificate_url,
+          restaurant?.tin_certificate_url
+        );
+        const licenseRawUrl = pickFirstUrl(
+          restaurant?.license_document_url,
+          restaurant?.license_url
+        );
+        const logoUrl = toAbsoluteAssetUrl(logoRawUrl);
+        const coverImageUrl = toAbsoluteAssetUrl(coverRawUrl);
+        const certificateUrl = toAbsoluteAssetUrl(certificateRawUrl);
+        const licenseUrl = toAbsoluteAssetUrl(licenseRawUrl);
+
+        setExistingAssetUrls({
+          logo_url: logoRawUrl || null,
+          cover_image_url: coverRawUrl || null,
+          certificate_url: certificateRawUrl || null,
+          license_document_url: licenseRawUrl || null,
+        });
+        setLogoPreview(logoUrl || null);
+        setCoverPreview(coverImageUrl || null);
+        setTinCertPreview(certificateUrl || null);
+        setLicensePreview(licenseUrl || null);
+
+        setForm((prev) => ({
+          ...prev,
+          restaurantName: restaurant?.name || '',
+          restaurantAddress: restaurant?.address || '',
+          zone: restaurant?.zone || '',
+          cuisine: restaurant?.cuisine || '',
+          radius: restaurant?.radius_km !== undefined && restaurant?.radius_km !== null ? String(restaurant.radius_km) : '',
+          latitude: restaurant?.lat !== undefined && restaurant?.lat !== null ? String(restaurant.lat) : '',
+          longitude: restaurant?.lng !== undefined && restaurant?.lng !== null ? String(restaurant.lng) : '',
+          minDeliveryTime: restaurant?.delivery_time_min !== undefined && restaurant?.delivery_time_min !== null ? String(restaurant.delivery_time_min) : '',
+          maxDeliveryTime: restaurant?.delivery_time_max !== undefined && restaurant?.delivery_time_max !== null ? String(restaurant.delivery_time_max) : '',
+          firstName: owner?.f_name || owner?.first_name || (owner?.full_name ? String(owner.full_name).split(' ')[0] : ''),
+          lastName: owner?.l_name || owner?.last_name || (owner?.full_name ? String(owner.full_name).split(' ').slice(1).join(' ') : ''),
+          phone: parsedPhone.number,
+          phoneCode: parsedPhone.code,
+          tags: Array.isArray(restaurant?.tags) ? restaurant.tags.join(', ') : '',
+          tinNumber: restaurant?.tin || '',
+          tinExpiry: restaurant?.tin_expiry_date ? String(restaurant.tin_expiry_date).slice(0, 10) : '',
+          additionalTin: restaurant?.additional_data?.additional_tin || '',
+          additionalDate: restaurant?.additional_data?.additional_date ? String(restaurant.additional_data.additional_date).slice(0, 10) : '',
+          email: owner?.email || restaurant?.contact_email || '',
+          password: '',
+          confirmPassword: '',
+        }));
+        setMapSearch(restaurant?.address || '');
+      } catch (error) {
+        const message = axios.isAxiosError(error)
+          ? error.response?.data?.message || error.message || 'Failed to load restaurant'
+          : error?.message || 'Failed to load restaurant';
+        setErrors((prev) => ({ ...prev, api: message }));
+      } finally {
+        setLoadingRestaurant(false);
+      }
+    };
+
+    loadRestaurant();
+  }, [isEditMode, restaurantId]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -305,14 +490,43 @@ export default function AddRestaurantPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const uploadedAssetUrls = await uploadRestaurantAssets(token);
-      const payload = buildPayload(uploadedAssetUrls);
-
-      await axios.post('/backend-api/restaurants/admin/onboard', payload, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      const hasChangedAssetFiles = [logoFile, coverFile, tinCertFile, licenseFile].some(Boolean);
+      const uploadedAssetUrls =
+        !isEditMode || hasChangedAssetFiles
+          ? await uploadRestaurantAssets(token)
+          : {
+              logo_url: null,
+              cover_image_url: null,
+              certificate_url: null,
+              license_document_url: null,
+            };
+      const resolveUpdatedAssetUrl = (uploadedValue, existingValue) =>
+        typeof uploadedValue === 'string' && uploadedValue.trim().length > 0
+          ? uploadedValue.trim()
+          : (existingValue || null);
+      const payload = buildPayload(
+        {
+          logo_url: resolveUpdatedAssetUrl(uploadedAssetUrls.logo_url, existingAssetUrls.logo_url),
+          cover_image_url: resolveUpdatedAssetUrl(uploadedAssetUrls.cover_image_url, existingAssetUrls.cover_image_url),
+          certificate_url: resolveUpdatedAssetUrl(uploadedAssetUrls.certificate_url, existingAssetUrls.certificate_url),
+          license_document_url: resolveUpdatedAssetUrl(uploadedAssetUrls.license_document_url, existingAssetUrls.license_document_url),
         },
-      });
+        { isEdit: isEditMode }
+      );
+
+      if (isEditMode) {
+        await axios.put(`/api/restaurants/${restaurantId}`, payload, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+      } else {
+        await axios.post('/backend-api/restaurants/admin/onboard', payload, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+      }
 
       router.push('/dashboard/restaurants/list');
     } catch (error) {
@@ -347,6 +561,11 @@ export default function AddRestaurantPage() {
   return (
     <div className="pt-36 pb-8">
       <form onSubmit={handleSubmit} className="space-y-6">
+        {loadingRestaurant && (
+          <div className="rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-700">
+            Loading restaurant details...
+          </div>
+        )}
         {errors.api && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {errors.api}
@@ -577,19 +796,13 @@ export default function AddRestaurantPage() {
                   Phone *
                 </label>
                 <div className="flex">
-                  <select
+                  <PhoneCodeSelect
                     name="phoneCode"
                     value={form.phoneCode}
                     onChange={handleChange}
-                    className="inline-flex items-center px-2 bg-white border border-gray-200 rounded-l-lg text-sm text-gray-600 border-r-0 focus:border-purple-400 focus:outline-none"
-                  >
-                    <option value="+1">+1</option>
-                    <option value="+44">+44</option>
-                    <option value="+92">+92</option>
-                    <option value="+966">+966</option>
-                    <option value="+971">+971</option>
-                    <option value="+964">+964</option>
-                  </select>
+                    options={PHONE_CODE_OPTIONS}
+                    className="w-32"
+                  />
                   <input
                     name="phone"
                     value={form.phone}
@@ -788,10 +1001,10 @@ export default function AddRestaurantPage() {
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || loadingRestaurant}
             className="px-8 py-2.5 text-sm font-semibold bg-[#7C3AED] hover:bg-[#6D28D9] disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
           >
-            {loading ? 'Saving...' : 'Save Restaurant'}
+            {loading ? 'Saving...' : isEditMode ? 'Update Restaurant' : 'Save Restaurant'}
           </button>
         </div>
       </form>

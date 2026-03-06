@@ -1,35 +1,109 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { Download, Pencil, Search, Trash2 } from 'lucide-react';
-
-const EMPLOYEE_ROWS = [
-  {
-    id: 1,
-    name: 'Hamza Khan',
-    phone: '+91**********',
-    email: 'h****@gmail.com',
-    createdAt: '07 Jan, 2026',
-    avatar: 'https://i.pravatar.cc/40?img=21',
-  },
-  {
-    id: 2,
-    name: 'Hamza Khan',
-    phone: '+91**********',
-    email: 'h****@gmail.com',
-    createdAt: '07 Jan, 2026',
-    avatar: 'https://i.pravatar.cc/40?img=22',
-  },
-  {
-    id: 3,
-    name: 'Hamza Khan',
-    phone: '+91**********',
-    email: 'h****@gmail.com',
-    createdAt: '07 Jan, 2026',
-    avatar: 'https://i.pravatar.cc/40?img=23',
-  },
-];
+import axios from 'axios';
+import { formatPhoneWithFlag } from '@/app/lib/phone';
 
 export default function EmployeeListPage() {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const normalizeDate = (value) => {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '-';
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    };
+
+    const normalizeRow = (item, index) => ({
+      id: String(item?.id || `row-${index}`),
+      name:
+        item?.full_name ||
+        item?.name ||
+        `${item?.f_name || item?.first_name || ''} ${item?.l_name || item?.last_name || ''}`.trim() ||
+        'N/A',
+      phone: item?.phone || '-',
+      email: item?.email || '-',
+      employeeRole: item?.employee_role_name || item?.role || '-',
+      createdAt: normalizeDate(item?.created_at || item?.createdAt),
+      avatar: item?.image_url || item?.image || item?.avatar || '',
+    });
+
+    const loadRows = async () => {
+      setLoading(true);
+      setApiError('');
+      try {
+        const token = localStorage.getItem('token') || '';
+        const params = new URLSearchParams({
+          page: '1',
+          limit: '20',
+          search: '',
+          employee_role_id: '',
+          is_active: 'true',
+        });
+        const { data } = await axios.get(`/api/auth/admin/employees?${params.toString()}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const payload =
+          data?.data && typeof data.data === 'object'
+            ? data.data
+            : data;
+        const list =
+          payload?.employees ||
+          payload?.roles ||
+          payload?.list ||
+          data?.employees ||
+          data?.roles ||
+          data?.list ||
+          [];
+
+        const normalized = (Array.isArray(list) ? list : []).map(normalizeRow);
+        setRows(normalized);
+      } catch (error) {
+        setRows([]);
+        const message = axios.isAxiosError(error)
+          ? error.response?.data?.message || error.message || 'Failed to load employee list'
+          : error?.message || 'Failed to load employee list';
+        setApiError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRows();
+  }, []);
+
+  const filteredRows = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return rows;
+    return rows.filter((row) =>
+      [row.name, row.email, row.phone].some((value) =>
+        String(value || '').toLowerCase().includes(query)
+      )
+    );
+  }, [rows, search]);
+
+  const getInitials = (name) =>
+    String(name || '')
+      .trim()
+      .split(' ')
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+
   return (
     <div className="pt-36 pb-8">
       <section className="rounded-xl border border-gray-200 bg-white">
@@ -41,6 +115,8 @@ export default function EmployeeListPage() {
               <Search size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7C3AED]" />
               <input
                 placeholder="Search by name..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
                 className="w-full rounded-lg border border-gray-200 py-2 pl-3 pr-8 text-xs text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
               />
             </div>
@@ -59,22 +135,51 @@ export default function EmployeeListPage() {
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Employee Name</th>
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Contact</th>
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Email</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Role</th>
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Created At</th>
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {EMPLOYEE_ROWS.map((row, index) => (
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="px-3 py-8 text-center text-xs text-gray-500">
+                    Loading employee list...
+                  </td>
+                </tr>
+              )}
+              {!loading && apiError && (
+                <tr>
+                  <td colSpan={7} className="px-3 py-8 text-center text-xs text-red-500">
+                    {apiError}
+                  </td>
+                </tr>
+              )}
+              {!loading && !apiError && filteredRows.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-3 py-8 text-center text-xs text-gray-500">
+                    No records found.
+                  </td>
+                </tr>
+              )}
+              {!loading && !apiError && filteredRows.map((row, index) => (
                 <tr key={row.id} className="border-b border-gray-100 last:border-b-0">
                   <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
-                      <img src={row.avatar} alt={row.name} className="h-7 w-7 rounded-full object-cover" />
+                      {row.avatar ? (
+                        <img src={row.avatar} alt={row.name} className="h-7 w-7 rounded-full object-cover" />
+                      ) : (
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-100 text-[10px] font-semibold text-purple-700">
+                          {getInitials(row.name) || 'NA'}
+                        </div>
+                      )}
                       <p className="text-xs font-semibold text-[#1E1E24]">{row.name}</p>
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-xs text-[#1E1E24]">{row.phone}</td>
+                  <td className="px-3 py-3 text-xs text-[#1E1E24]">{formatPhoneWithFlag(row.phone)}</td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">{row.email}</td>
+                  <td className="px-3 py-3 text-xs text-[#1E1E24]">{row.employeeRole}</td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">{row.createdAt}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">

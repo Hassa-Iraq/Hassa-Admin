@@ -2,12 +2,14 @@
 
 import { Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
+import PhoneCodeSelect from '@/app/components/PhoneCodeSelect';
 
 const INITIAL_FORM = {
   firstName: '',
   lastName: '',
   radius: '',
   deliverymanType: '',
+  phoneCode: '+1',
   phone: '',
   email: '',
   vehicleType: '',
@@ -18,6 +20,15 @@ const INITIAL_FORM = {
   password: '',
   confirmPassword: '',
 };
+
+const PHONE_CODE_OPTIONS = [
+  { value: '+1', code: 'US', flagUrl: 'https://flagcdn.com/w20/us.png' },
+  { value: '+44', code: 'GB', flagUrl: 'https://flagcdn.com/w20/gb.png' },
+  { value: '+92', code: 'PK', flagUrl: 'https://flagcdn.com/w20/pk.png' },
+  { value: '+966', code: 'SA', flagUrl: 'https://flagcdn.com/w20/sa.png' },
+  { value: '+971', code: 'AE', flagUrl: 'https://flagcdn.com/w20/ae.png' },
+  { value: '+964', code: 'IQ', flagUrl: 'https://flagcdn.com/w20/iq.png' },
+];
 
 export default function AddDeliverymanPage() {
   const [form, setForm] = useState(INITIAL_FORM);
@@ -82,7 +93,22 @@ export default function AddDeliverymanPage() {
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <Field label="Phone *">
-                  <Input name="phone" value={form.phone} onChange={handleChange} placeholder="123-456-987" />
+                  <div className="flex">
+                    <PhoneCodeSelect
+                      name="phoneCode"
+                      value={form.phoneCode}
+                      onChange={handleChange}
+                      options={PHONE_CODE_OPTIONS}
+                      className="w-32"
+                    />
+                    <Input
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                      placeholder="123-456-987"
+                      className="rounded-l-none"
+                    />
+                  </div>
                 </Field>
                 <Field label="Email">
                   <Input name="email" value={form.email} onChange={handleChange} placeholder="admin@admin.com" />
@@ -231,7 +257,7 @@ function Field({ label, children }) {
   );
 }
 
-function Input({ type = 'text', name, value, onChange, placeholder }) {
+function Input({ type = 'text', name, value, onChange, placeholder, className = '' }) {
   return (
     <input
       type={type}
@@ -239,7 +265,7 @@ function Input({ type = 'text', name, value, onChange, placeholder }) {
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
+      className={`w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none ${className}`}
     />
   );
 }

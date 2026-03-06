@@ -6,6 +6,7 @@ import {
   Eye, Check, X,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
+import { formatPhoneWithFlag } from '@/app/lib/phone';
 
 const REQUESTS = [
   {
@@ -274,7 +275,7 @@ export default function NewJoiningRequestsPage() {
                       <p className="text-xs font-medium text-[#1E1E24]">
                         {r.owner}
                       </p>
-                      <p className="text-[10px] text-gray-400">{r.phone}</p>
+                      <p className="text-[10px] text-gray-400">{formatPhoneWithFlag(r.phone)}</p>
                     </td>
 
                     {/* Radius */}

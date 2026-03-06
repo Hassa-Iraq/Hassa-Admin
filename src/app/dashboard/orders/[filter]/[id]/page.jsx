@@ -9,6 +9,7 @@ import {
   Mail,
   MapPin,
 } from 'lucide-react';
+import { formatPhoneWithFlag } from '@/app/lib/phone';
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -229,7 +230,7 @@ export default function OrderDetailPage() {
               <div className="text-xs text-gray-600 mt-4 space-y-2">
                 <p className="flex items-center gap-2">
                   <Phone size={14} className="text-gray-500" />
-                  {order.phone}
+                  {formatPhoneWithFlag(order.phone)}
                 </p>
 
                 <p className="flex items-center gap-2">
@@ -245,7 +246,7 @@ export default function OrderDetailPage() {
 
               <div className="text-xs text-gray-600 space-y-1.5">
                 <p>Name : {order.customer}</p>
-                <p>Contact : +1*********</p>
+                <p>Contact : {formatPhoneWithFlag('+1*********')}</p>
                 <p>House # :</p>
                 <p>Road # :</p>
                 <p>Floor # :</p>
@@ -287,7 +288,7 @@ export default function OrderDetailPage() {
               <div className="text-xs text-gray-500 mt-3 space-y-1.5">
                 <p className="flex items-center gap-1">
                   <Phone size={14} />
-                  +1**********
+                  {formatPhoneWithFlag('+1**********')}
                 </p>
 
                 <p className="flex items-center gap-1">

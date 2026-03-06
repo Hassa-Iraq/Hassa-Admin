@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Download, Eye, Search } from 'lucide-react';
+import { formatPhoneWithFlag } from '@/app/lib/phone';
 
 const CUSTOMER_ROWS = [
   { id: 1002, name: 'Hamza Khan', email: 'h********@gmail.com', phone: '+9*************', totalOrders: 22, joiningDate: '12 Jan 2026', totalAmount: '$12,242.45', active: true, avatar: 'https://i.pravatar.cc/40?img=12' },
@@ -149,7 +150,7 @@ export default function CustomersPage() {
                     </td>
                     <td className="px-3 py-3">
                       <p className="text-xs text-[#1E1E24]">{row.email}</p>
-                      <p className="text-[11px] text-gray-500">{row.phone}</p>
+                      <p className="text-[11px] text-gray-500">{formatPhoneWithFlag(row.phone)}</p>
                     </td>
                     <td className="px-3 py-3 text-xs text-[#1E1E24]">{row.totalOrders}</td>
                     <td className="px-3 py-3 text-xs text-[#1E1E24]">{row.joiningDate}</td>

@@ -16,6 +16,21 @@ export default function LoginPage() {
     password: ''
   });
 
+  const normalizeRole = (user, payload) => {
+    const roleSource =
+      user?.role?.name ||
+      user?.role?.slug ||
+      user?.role?.key ||
+      user?.role ||
+      user?.user_type ||
+      payload?.role?.name ||
+      payload?.data?.role?.name ||
+      '';
+
+    if (typeof roleSource !== 'string') return '';
+    return roleSource.trim().toLowerCase().replace(/\s+/g, '_');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -44,16 +59,48 @@ export default function LoginPage() {
       }
 
       const user = data.user || data.data?.user || data.data;
+      const normalizedRole = normalizeRole(user, data);
+      const permissions =
+        user?.role?.permissions ||
+        user?.employee_permissions ||
+        user?.employee?.employee_permissions ||
+        user?.permissions ||
+        data?.employee?.employee_permissions ||
+        data?.employee_permissions ||
+        data?.user?.employee_permissions ||
+        data?.user?.role?.permissions ||
+        data?.data?.user?.employee_permissions ||
+        data?.data?.user?.role?.permissions ||
+        data?.data?.employee?.employee_permissions ||
+        data?.data?.employee_permissions ||
+        data?.data?.role?.permissions ||
+        null;
       if (user && typeof user === 'object') {
         const adminInfo = {
           name: user.name || user.full_name || `${user.f_name || user.first_name || ''} ${user.l_name || user.last_name || ''}`.trim(),
           email: user.email || formData.email,
           phone: user.phone || '',
           image: user.image || user.avatar || '',
+          role: normalizedRole,
         };
         localStorage.setItem('adminUser', JSON.stringify(adminInfo));
       } else {
         localStorage.setItem('adminUser', JSON.stringify({ name: 'Admin', email: formData.email }));
+      }
+      if (normalizedRole) {
+        localStorage.setItem('userRole', normalizedRole);
+      } else {
+        localStorage.removeItem('userRole');
+      }
+      if (permissions && typeof permissions === 'object') {
+        localStorage.setItem('sidebarPermissions', JSON.stringify(permissions));
+      } else {
+        localStorage.removeItem('sidebarPermissions');
+      }
+      try {
+        window.dispatchEvent(new Event('sidebar-auth-updated'));
+      } catch {
+        // Ignore event dispatch failures.
       }
 
       setSuccess('Login successful! Redirecting...');

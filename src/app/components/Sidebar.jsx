@@ -9,6 +9,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { dir, t } = useLanguage();
   const isRTL = dir === 'rtl';
   const pathname = usePathname();
+  const [userRole, setUserRole] = useState('');
+  const [sidebarPermissions, setSidebarPermissions] = useState({});
   const [activeItem, setActiveItem] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
     orderManagement: true,
@@ -28,6 +30,228 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   });
     
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const hydrateSidebarAuth = () => {
+      try {
+        const roleFromStorage = localStorage.getItem('userRole') || '';
+        const normalized = String(roleFromStorage).trim().toLowerCase();
+        setUserRole(normalized);
+        const rawPermissions = localStorage.getItem('sidebarPermissions') || '';
+        if (rawPermissions) {
+          try {
+            const parsed = JSON.parse(rawPermissions);
+            setSidebarPermissions(parsed && typeof parsed === 'object' ? parsed : {});
+          } catch {
+            setSidebarPermissions({});
+          }
+        } else {
+          setSidebarPermissions({});
+        }
+      } catch {
+        setUserRole('');
+        setSidebarPermissions({});
+      }
+    };
+
+    hydrateSidebarAuth();
+
+    const handleStorage = (event) => {
+      if (!event?.key || event.key === 'userRole' || event.key === 'sidebarPermissions') {
+        hydrateSidebarAuth();
+      }
+    };
+    const handleAuthUpdate = () => hydrateSidebarAuth();
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('sidebar-auth-updated', handleAuthUpdate);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('sidebar-auth-updated', handleAuthUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    const hasPermissions =
+      sidebarPermissions &&
+      typeof sidebarPermissions === 'object' &&
+      Object.keys(sidebarPermissions).length > 0;
+    if (userRole !== 'employee' || hasPermissions) return;
+
+    const extractPermissionsFromMe = (payload = {}) => {
+      const user = payload?.user || payload?.data?.user || payload?.data || payload;
+      const candidates = [
+        user?.employee_permissions,
+        user?.employee_role?.employee_permissions,
+        user?.role?.permissions,
+        user?.permissions,
+        payload?.employee_permissions,
+        payload?.employee_role?.employee_permissions,
+        payload?.data?.employee_permissions,
+        payload?.data?.employee_role?.employee_permissions,
+        payload?.employee?.employee_permissions,
+        payload?.data?.employee?.employee_permissions,
+        payload?.data?.user?.employee_permissions,
+        payload?.data?.user?.employee_role?.employee_permissions,
+        payload?.data?.user?.role?.permissions,
+      ];
+      return candidates.find((item) => item && typeof item === 'object' && !Array.isArray(item)) || null;
+    };
+
+    const fetchEmployeePermissions = async () => {
+      try {
+        const token = localStorage.getItem('token') || '';
+        if (!token) return;
+        const response = await fetch('/api/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const permissions = extractPermissionsFromMe(data);
+          if (permissions) {
+            setSidebarPermissions(permissions);
+            localStorage.setItem('sidebarPermissions', JSON.stringify(permissions));
+            window.dispatchEvent(new Event('sidebar-auth-updated'));
+            return;
+          }
+        }
+
+        // Fallback: resolve employee permissions from employees listing API by current user email/id.
+        let currentEmail = '';
+        let currentId = '';
+        try {
+          const cachedUser = localStorage.getItem('adminUser') || '';
+          if (cachedUser) {
+            const parsedUser = JSON.parse(cachedUser);
+            currentEmail = String(parsedUser?.email || '').trim().toLowerCase();
+            currentId = String(parsedUser?.id || '').trim();
+          }
+        } catch {
+          currentEmail = '';
+          currentId = '';
+        }
+
+        const params = new URLSearchParams({
+          page: '1',
+          limit: '100',
+          search: currentEmail,
+          employee_role_id: '',
+          is_active: 'true',
+        });
+        const employeesResponse = await fetch(`/api/auth/admin/employees?${params.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!employeesResponse.ok) return;
+        const employeesData = await employeesResponse.json();
+        const source =
+          employeesData?.data && typeof employeesData.data === 'object'
+            ? employeesData.data
+            : employeesData;
+        const employees = Array.isArray(source?.employees)
+          ? source.employees
+          : Array.isArray(source?.list)
+            ? source.list
+            : [];
+        const matched = employees.find((item) => {
+          const emailMatch =
+            currentEmail &&
+            String(item?.email || '').trim().toLowerCase() === currentEmail;
+          const idMatch =
+            currentId &&
+            String(item?.id || '').trim() === currentId;
+          return emailMatch || idMatch;
+        });
+        const fallbackPermissions = matched?.employee_permissions;
+        if (!fallbackPermissions || typeof fallbackPermissions !== 'object') return;
+        setSidebarPermissions(fallbackPermissions);
+        localStorage.setItem('sidebarPermissions', JSON.stringify(fallbackPermissions));
+        window.dispatchEvent(new Event('sidebar-auth-updated'));
+      } catch {
+        // Keep dashboard-only fallback if permissions cannot be resolved.
+      }
+    };
+
+    fetchEmployeePermissions();
+  }, [userRole, sidebarPermissions]);
+
+  const EMPLOYEE_MENU_PERMISSION_MAP = useMemo(() => ({
+    Orders: ['orders'],
+    All: ['orders'],
+    Pending: ['orders'],
+    Accepted: ['orders'],
+    Processing: ['orders'],
+    Scheduled: ['orders'],
+    'Food On The Way': ['orders'],
+    Delivered: ['orders'],
+    Cancelled: ['orders'],
+    Refunded: ['orders'],
+    'Offline Payments': ['orders'],
+    'Payments Failed': ['orders'],
+    'Dispatch Management': ['orders', 'deliveryman'],
+    'Searching Deliverymen': ['orders', 'deliveryman'],
+    'Ongoing Orders': ['orders', 'deliveryman'],
+    'Order Refund': ['orders'],
+    'New Refund Request': ['orders'],
+    'Refund Cancelled': ['orders'],
+    'Refunded Orders': ['orders'],
+    Restaurants: ['restaurants'],
+    'Add Restaurants': ['restaurants'],
+    'Restaurant List': ['restaurants'],
+    'New Joining Request': ['restaurants'],
+    Foods: ['restaurants'],
+    'Add New Item': ['restaurants'],
+    List: ['restaurants'],
+    Categories: ['restaurants'],
+    Category: ['restaurants'],
+    'Sub category': ['restaurants'],
+    'Add Category': ['restaurants'],
+    'Add Subcategory': ['restaurants'],
+    Addons: ['restaurants'],
+    Reviews: ['restaurants'],
+    Customers: ['customers'],
+    Wallet: ['collect_cash', 'restaurant_withdraws', 'disbursement'],
+    'Customer Wallet': ['collect_cash', 'restaurant_withdraws', 'disbursement'],
+    'Vendor Wallet': ['collect_cash', 'restaurant_withdraws', 'disbursement'],
+    'Driver Wallet': ['collect_cash', 'restaurant_withdraws', 'disbursement'],
+    'Zip/Apartments': ['radius_setup'],
+    'All Apartments': ['radius_setup'],
+    'Add New': ['radius_setup'],
+    Deliveryman: ['deliveryman'],
+    'New Join Request': ['deliveryman'],
+    'Add New Deliveryman': ['deliveryman'],
+    'Deliveryman List': ['deliveryman'],
+    'Deliveryman Reviews': ['deliveryman'],
+    Employees: ['employee'],
+    'Employee Role': ['employee'],
+    'Add New Employee': ['employee'],
+    'Employee List': ['employee'],
+    'Riders Setup': ['radius_setup'],
+    'Collect Cash': ['collect_cash'],
+    'Restaurant Withdraw': ['restaurant_withdraws'],
+    'Deliveryman Payments': ['disbursement'],
+    'Withdraw Method': ['disbursement'],
+    'Tax Setup': ['business_setting'],
+    'Payment Method': ['business_setting'],
+    'Social Media': ['business_setting'],
+    'Deliveryman Settings': ['business_setting'],
+    'Transaction Report': ['report'],
+    'Food Report': ['report'],
+    'Order Report': ['report'],
+    'Restaurant Report': ['report'],
+    'Tax Report': ['report'],
+    'Customer Report': ['report'],
+    'Restaurant WP Report': ['report'],
+    'Daily Report': ['report'],
+    'Monthly Report': ['report'],
+    'Yearly Report': ['report'],
+    'Active Customers': ['report'],
+    'Inactive Customers': ['report'],
+    'Push Notification': ['push_notification'],
+  }), []);
 
   const ordersFilterSlugByLabel = useMemo(() => ({
     All: 'all',
@@ -413,11 +637,106 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     }
   ];
 
+  const roleFilteredMenuItems = useMemo(() => {
+    const isAdmin =
+      userRole === 'admin' ||
+      userRole === 'super_admin' ||
+      userRole === 'superadmin';
+    const isRestaurantRole = [
+      'restaurant',
+      'resturant',
+      'restaurant_admin',
+      'vendor',
+    ].includes(userRole);
+
+    if (isRestaurantRole) {
+      const restaurantVisibleSections = new Set([
+        'VENDOR MANAGEMENT',
+        'FOOD MANAGEMENT',
+        'DELIVERY MANAGEMENT',
+      ]);
+
+      return menuItems.filter((section) => {
+        if (!section?.isHeader) {
+          return section?.label === 'Dashboard';
+        }
+        return (
+          restaurantVisibleSections.has(section.label) &&
+          Array.isArray(section.items) &&
+          section.items.length > 0
+        );
+      });
+    }
+
+    if (!isAdmin) return menuItems;
+
+    return menuItems
+      .map((section) => {
+        if (section.isHeader && section.label === 'FOOD MANAGEMENT') {
+          return null;
+        }
+        return section;
+      })
+      .filter((section) => section && (!section.isHeader || (section.items && section.items.length > 0)));
+  }, [menuItems, userRole]);
+
+  const permissionFilteredMenuItems = useMemo(() => {
+    const isEmployee = userRole === 'employee';
+    if (!isEmployee) return roleFilteredMenuItems;
+    const hasPermissions =
+      sidebarPermissions &&
+      typeof sidebarPermissions === 'object' &&
+      Object.keys(sidebarPermissions).length > 0;
+    if (!hasPermissions) return roleFilteredMenuItems;
+
+    const canManagePermission = (permissionKey) => {
+      if (!permissionKey) return false;
+      const permissionValue = sidebarPermissions?.[permissionKey];
+      return (
+        permissionValue?.can_manage === true ||
+        permissionValue?.can_manage === 1 ||
+        permissionValue === true
+      );
+    };
+
+    const isLabelVisible = (label) => {
+      if (label === 'Dashboard') return true;
+      const permissionKeys = EMPLOYEE_MENU_PERMISSION_MAP[label];
+      if (!Array.isArray(permissionKeys) || permissionKeys.length === 0) {
+        return false;
+      }
+      return permissionKeys.some(canManagePermission);
+    };
+
+    return roleFilteredMenuItems
+      .map((section) => {
+        if (!section?.isHeader) {
+          return isLabelVisible(section?.label) ? section : null;
+        }
+
+        const filteredItems = (section.items || [])
+          .map((item) => {
+            if (Array.isArray(item.submenu) && item.submenu.length > 0) {
+              const filteredSubmenu = item.submenu.filter((submenuLabel) => isLabelVisible(submenuLabel));
+              const parentAllowed = isLabelVisible(item.label);
+              if (!parentAllowed && filteredSubmenu.length === 0) return null;
+              return { ...item, submenu: filteredSubmenu };
+            }
+            return isLabelVisible(item.label) ? item : null;
+          })
+          .filter(Boolean);
+
+        if (filteredItems.length === 0) return null;
+        return { ...section, items: filteredItems };
+      })
+      .filter(Boolean);
+  }, [roleFilteredMenuItems, userRole, sidebarPermissions, EMPLOYEE_MENU_PERMISSION_MAP]);
+
   // Filter menu items based on search
   const filteredMenuItems = useMemo(() => {
-    if (!searchQuery.trim()) return menuItems;
+    if (!searchQuery.trim()) return permissionFilteredMenuItems;
     const q = searchQuery.toLowerCase();
-    return menuItems.map(section => {
+    return permissionFilteredMenuItems.map(section => {
       if (!section.isHeader) {
         const translated = (t[section.tKey] || section.label).toLowerCase();
         if (section.label.toLowerCase().includes(q) || translated.includes(q)) return section;
@@ -435,7 +754,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       if (matchedItems.length === 0) return null;
       return { ...section, items: matchedItems };
     }).filter(Boolean);
-  }, [searchQuery, t]);
+  }, [searchQuery, t, permissionFilteredMenuItems]);
 
   const handleSubItemClick = (item, hasSubmenu) => {
     setActiveItem(item.label);

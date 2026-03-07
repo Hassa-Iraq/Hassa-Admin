@@ -8,6 +8,17 @@ import { API_BASE_URL } from '@/app/config';
 
 const PER_PAGE = 20;
 
+const getShortDisplayId = (value, fallback) => {
+  if (value === null || value === undefined || value === '') return fallback;
+  const normalized = String(value).trim();
+  if (!normalized) return fallback;
+
+  // Keep only alphanumeric characters to avoid trailing hyphens from UUIDs.
+  const compact = normalized.replace(/[^a-zA-Z0-9]/g, '');
+  const shortPart = (compact || normalized).slice(-4);
+  return shortPart ? `ID# ${shortPart}` : fallback;
+};
+
 export default function CategoryListPage() {
   const router = useRouter();
   const [categories, setCategories] = useState([]);
@@ -60,8 +71,11 @@ export default function CategoryListPage() {
       return '';
     };
 
-    const normalizeCategory = (item, index) => ({
-      id: item?.id ?? `${page}-${index}`,
+    const normalizeCategory = (item, index) => {
+      const rawId = item?.id ?? item?.category_id ?? item?.categoryId ?? '';
+      const fallbackId = `ID# ${(page - 1) * PER_PAGE + index + 1}`;
+      return {
+      id: rawId || `${page}-${index}`,
       image:
         normalizeImage(item?.image_url) ||
         normalizeImage(item?.imageUrl) ||
@@ -75,9 +89,10 @@ export default function CategoryListPage() {
           item?.url
         )
       ),
-      categoryId: (page - 1) * PER_PAGE + index + 1,
+      categoryId: getShortDisplayId(rawId, fallbackId),
       name: item?.name || 'N/A',
-    });
+    };
+    };
 
     const fetchCategories = async () => {
       setLoading(true);

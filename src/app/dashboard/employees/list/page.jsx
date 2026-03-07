@@ -1,11 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Download, Pencil, Search, Trash2 } from 'lucide-react';
+import { Download, Pencil, Search } from 'lucide-react';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 
+const DEFAULT_EMPLOYEE_IMAGE = '/default-image.svg';
+
 export default function EmployeeListPage() {
+  const router = useRouter();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
@@ -25,6 +29,7 @@ export default function EmployeeListPage() {
 
     const normalizeRow = (item, index) => ({
       id: String(item?.id || `row-${index}`),
+      employeeUserId: String(item?.user_id || item?.userId || item?.id || '').trim(),
       name:
         item?.full_name ||
         item?.name ||
@@ -94,16 +99,6 @@ export default function EmployeeListPage() {
     );
   }, [rows, search]);
 
-  const getInitials = (name) =>
-    String(name || '')
-      .trim()
-      .split(' ')
-      .filter(Boolean)
-      .map((part) => part[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
-
   return (
     <div className="pt-36 pb-8">
       <section className="rounded-xl border border-gray-200 bg-white">
@@ -167,13 +162,15 @@ export default function EmployeeListPage() {
                   <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
-                      {row.avatar ? (
-                        <img src={row.avatar} alt={row.name} className="h-7 w-7 rounded-full object-cover" />
-                      ) : (
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-100 text-[10px] font-semibold text-purple-700">
-                          {getInitials(row.name) || 'NA'}
-                        </div>
-                      )}
+                      <img
+                        src={row.avatar || DEFAULT_EMPLOYEE_IMAGE}
+                        alt={row.name}
+                        className="h-7 w-7 rounded-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = DEFAULT_EMPLOYEE_IMAGE;
+                        }}
+                      />
                       <p className="text-xs font-semibold text-[#1E1E24]">{row.name}</p>
                     </div>
                   </td>
@@ -183,11 +180,14 @@ export default function EmployeeListPage() {
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">{row.createdAt}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
-                      <button className="flex h-6 w-6 items-center justify-center rounded-md border border-[#C4B5FD] bg-[#F5F3FF] text-[#7C3AED]">
+                      <button
+                        onClick={() => {
+                          if (!row.employeeUserId) return;
+                          router.push(`/dashboard/employees/add?employee_user_id=${row.employeeUserId}`);
+                        }}
+                        className="flex h-6 w-6 items-center justify-center rounded-md border border-[#C4B5FD] bg-[#F5F3FF] text-[#7C3AED]"
+                      >
                         <Pencil size={12} />
-                      </button>
-                      <button className="flex h-6 w-6 items-center justify-center rounded-md border border-[#FECACA] bg-[#FEF2F2] text-[#EF4444]">
-                        <Trash2 size={12} />
                       </button>
                     </div>
                   </td>

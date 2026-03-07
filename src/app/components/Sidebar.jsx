@@ -13,9 +13,9 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const [sidebarPermissions, setSidebarPermissions] = useState({});
   const [activeItem, setActiveItem] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
-    orderManagement: true,
-    dispatchManagement: true,
-    orderRefunds: true,
+    orderManagement: false,
+    dispatchManagement: false,
+    orderRefunds: false,
     vendorManagement: false,
     walletManagement: false,
     apartmentManagement: false,
@@ -25,8 +25,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     businessSettings: false,
     reportLog: false,
     marketing: false,
-    foodManagement: true,
-    categoriesManagement: true
+    foodManagement: false,
+    categoriesManagement: false
   });
     
   const [searchQuery, setSearchQuery] = useState('');
@@ -333,139 +333,116 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
 
     if (pathname === '/dashboard/restaurants/add') {
       setActiveItem('Add Restaurants');
-      setExpandedSections(prev => ({ ...prev, vendorManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/restaurants/list') {
       setActiveItem('Restaurant List');
-      setExpandedSections(prev => ({ ...prev, vendorManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/restaurants/requests') {
       setActiveItem('New Joining Request');
-      setExpandedSections(prev => ({ ...prev, vendorManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/dispatch/searching') {
       setActiveItem('Searching Deliverymen');
-      setExpandedSections(prev => ({ ...prev, orderManagement: true, dispatchManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/dispatch/ongoing') {
       setActiveItem('Ongoing Orders');
-      setExpandedSections(prev => ({ ...prev, orderManagement: true, dispatchManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/order-refund/new-request') {
       setActiveItem('New Refund Request');
-      setExpandedSections(prev => ({ ...prev, orderManagement: true, orderRefunds: true }));
       return;
     }
 
     if (pathname === '/dashboard/order-refund/cancelled') {
       setActiveItem('Refund Cancelled');
-      setExpandedSections(prev => ({ ...prev, orderManagement: true, orderRefunds: true }));
       return;
     }
 
     if (pathname === '/dashboard/order-refund/refunded') {
       setActiveItem('Refunded Orders');
-      setExpandedSections(prev => ({ ...prev, orderManagement: true, orderRefunds: true }));
       return;
     }
 
     if (pathname === '/dashboard/foods/add') {
       setActiveItem('Add New Item');
-      setExpandedSections(prev => ({ ...prev, foodManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/foods/list') {
       setActiveItem('List');
-      setExpandedSections(prev => ({ ...prev, foodManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/foods/categories') {
       setActiveItem('Category');
-      setExpandedSections(prev => ({ ...prev, foodManagement: true, categoriesManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/foods/categories/add') {
       setActiveItem('Add Category');
-      setExpandedSections(prev => ({ ...prev, foodManagement: true, categoriesManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/foods/sub-categories') {
       setActiveItem('Sub category');
-      setExpandedSections(prev => ({ ...prev, foodManagement: true, categoriesManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/foods/sub-categories/add') {
       setActiveItem('Add Subcategory');
-      setExpandedSections(prev => ({ ...prev, foodManagement: true, categoriesManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/foods/addons') {
       setActiveItem('Addons');
-      setExpandedSections(prev => ({ ...prev, foodManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/foods/reviews') {
       setActiveItem('Reviews');
-      setExpandedSections(prev => ({ ...prev, foodManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/employees/role') {
       setActiveItem('Employee Role');
-      setExpandedSections(prev => ({ ...prev, employeeManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/employees/add') {
       setActiveItem('Add New Employee');
-      setExpandedSections(prev => ({ ...prev, employeeManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/employees/list') {
       setActiveItem('Employee List');
-      setExpandedSections(prev => ({ ...prev, employeeManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/deliveryman/new-join-request') {
       setActiveItem('New Join Request');
-      setExpandedSections(prev => ({ ...prev, deliveryManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/deliveryman/add') {
       setActiveItem('Add New Deliveryman');
-      setExpandedSections(prev => ({ ...prev, deliveryManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/deliveryman/list') {
       setActiveItem('Deliveryman List');
-      setExpandedSections(prev => ({ ...prev, deliveryManagement: true }));
       return;
     }
 
     if (pathname === '/dashboard/deliveryman/reviews') {
       setActiveItem('Deliveryman Reviews');
-      setExpandedSections(prev => ({ ...prev, deliveryManagement: true }));
       return;
     }
 
@@ -474,7 +451,6 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       const slug = match[1];
       const label = ordersFilterLabelBySlug[slug] ?? 'All';
       setActiveItem(label);
-      setExpandedSections(prev => ({ ...prev, orderManagement: true }));
     }
   }, [pathname, ordersFilterLabelBySlug]);
 

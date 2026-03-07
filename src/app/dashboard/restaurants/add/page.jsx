@@ -82,7 +82,7 @@ export default function AddRestaurantPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const queryRestaurantId = params.get('restaurant_id') || '';
+    const queryRestaurantId = params.get('restaurant_id') || params.get('id') || '';
     setRestaurantId(queryRestaurantId);
     const role = localStorage.getItem('userRole') || '';
     const normalizedRole = String(role).trim().toLowerCase();
@@ -200,8 +200,69 @@ export default function AddRestaurantPage() {
     };
   }, [mapSearch]);
 
-  const pickFirstUrl = (...values) =>
-    values.find((value) => typeof value === 'string' && value.trim().length > 0) || '';
+  const pickFirstUrl = useCallback((...values) =>
+    values.find((value) => typeof value === 'string' && value.trim().length > 0) || ''
+  , []);
+
+  const extractPhone = useCallback((rawPhone = '') => {
+    const raw = String(rawPhone || '').trim();
+    if (!raw) return { code: '+1', number: '' };
+    if (!raw.startsWith('+')) return { code: '+1', number: raw };
+    const digits = raw.replace(/[^\d]/g, '');
+    if (digits.length <= 3) return { code: `+${digits}`, number: '' };
+    const code = `+${digits.slice(0, 3)}`;
+    const number = digits.slice(3);
+    return { code, number };
+  }, []);
+
+  const getRestaurantAndOwnerFromResponse = useCallback((apiResponseData) => {
+    const payload =
+      apiResponseData?.data && typeof apiResponseData.data === 'object'
+        ? apiResponseData.data
+        : apiResponseData;
+    const restaurant =
+      payload?.restaurant ||
+      payload?.data?.restaurant ||
+      payload;
+    const owner =
+      payload?.owner ||
+      payload?.vendor ||
+      restaurant?.owner ||
+      restaurant?.vendor ||
+      {};
+
+    return { restaurant, owner };
+  }, []);
+
+  const extractExistingRestaurantAssets = useCallback((restaurant = {}) => ({
+    logo_url: pickFirstUrl(
+      restaurant?.logo_url,
+      restaurant?.logo,
+      restaurant?.logo_full_url
+    ) || null,
+    cover_image_url: pickFirstUrl(
+      restaurant?.cover_image_url,
+      restaurant?.cover_image,
+      restaurant?.cover_photo
+    ) || null,
+    certificate_url: pickFirstUrl(
+      restaurant?.certificate_url,
+      restaurant?.tin_certificate_url
+    ) || null,
+    license_document_url: pickFirstUrl(
+      restaurant?.license_document_url,
+      restaurant?.license_url
+    ) || null,
+  }), [pickFirstUrl]);
+
+  const fetchRestaurantById = useCallback(async (token = '') => {
+    const { data } = await axios.get(`/api/restaurants/${restaurantId}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    return getRestaurantAndOwnerFromResponse(data);
+  }, [getRestaurantAndOwnerFromResponse, restaurantId]);
 
   const toAbsoluteAssetUrl = (value) => {
     if (!value || typeof value !== 'string') return '';
@@ -213,7 +274,7 @@ export default function AddRestaurantPage() {
     return trimmed;
   };
 
-  const extractUploadedAssetUrls = (uploadData = {}) => {
+  const extractUploadedAssetUrls = (uploadData = {}, changedAssetKeys = []) => {
     const source = uploadData?.data && typeof uploadData.data === 'object'
       ? uploadData.data
       : uploadData;
@@ -225,16 +286,12 @@ export default function AddRestaurantPage() {
       return matched ? matched.trim() : '';
     };
 
-    return {
-      // Keep raw value from upload API response for update payload.
+    const uploaded = {
       logo_url: pickFirstRaw(
         assets?.logo_url,
         assets?.logo,
         assets?.logoUrl,
         assets?.logo_full_url,
-        assets?.full_url,
-        assets?.url,
-        assets?.path,
         assets?.image_url,
         assets?.image?.url,
         assets?.image?.path,
@@ -249,9 +306,6 @@ export default function AddRestaurantPage() {
         assets?.cover_photo,
         assets?.cover_photo_full_url,
         assets?.cover_image_full_url,
-        assets?.full_url,
-        assets?.url,
-        assets?.path,
         source?.assets?.cover_image_url,
         source?.cover_image_url
       ),
@@ -260,9 +314,6 @@ export default function AddRestaurantPage() {
         assets?.tin_certificate_url,
         assets?.certificate,
         assets?.certificate_full_url,
-        assets?.full_url,
-        assets?.url,
-        assets?.path,
         source?.assets?.certificate_url,
         source?.certificate_url
       ),
@@ -271,17 +322,43 @@ export default function AddRestaurantPage() {
         assets?.license_url,
         assets?.license,
         assets?.license_document_full_url,
-        assets?.full_url,
-        assets?.url,
-        assets?.path,
         source?.assets?.license_document_url,
         source?.license_document_url
       ),
     };
+
+    const fallbackGenericUrl = pickFirstRaw(
+      assets?.full_url,
+      assets?.url,
+      assets?.path,
+      source?.full_url,
+      source?.url,
+      source?.path
+    );
+    const changedUniqueKeys = Array.from(new Set(changedAssetKeys.filter(Boolean)));
+    if (changedUniqueKeys.length === 1 && fallbackGenericUrl) {
+      const uploadedFieldMap = {
+        logo: 'logo_url',
+        cover_image: 'cover_image_url',
+        certificate: 'certificate_url',
+        license_document: 'license_document_url',
+      };
+      const outputField = uploadedFieldMap[changedUniqueKeys[0]];
+      if (outputField && !uploaded[outputField]) {
+        uploaded[outputField] = fallbackGenericUrl;
+      }
+    }
+
+    return uploaded;
   };
 
   const uploadRestaurantAssets = async (token) => {
-    const hasAnyAssetFile = [logoFile, coverFile, tinCertFile, licenseFile].some(Boolean);
+    const changedAssetKeys = [];
+    if (logoFile) changedAssetKeys.push('logo');
+    if (coverFile) changedAssetKeys.push('cover_image');
+    if (tinCertFile) changedAssetKeys.push('certificate');
+    if (licenseFile) changedAssetKeys.push('license_document');
+    const hasAnyAssetFile = changedAssetKeys.length > 0;
     if (!hasAnyAssetFile) {
       return {
         logo_url: null,
@@ -303,7 +380,7 @@ export default function AddRestaurantPage() {
       },
     });
 
-    const uploadedUrls = extractUploadedAssetUrls(response.data);
+    const uploadedUrls = extractUploadedAssetUrls(response.data, changedAssetKeys);
     if (logoFile && !uploadedUrls.logo_url) throw new Error('Logo upload failed. URL not returned.');
     if (coverFile && !uploadedUrls.cover_image_url) throw new Error('Cover upload failed. URL not returned.');
     if (tinCertFile && !uploadedUrls.certificate_url) throw new Error('Certificate upload failed. URL not returned.');
@@ -368,77 +445,77 @@ export default function AddRestaurantPage() {
     };
   };
 
-  useEffect(() => {
-    const extractPhone = (rawPhone = '') => {
-      const raw = String(rawPhone || '').trim();
-      if (!raw) return { code: '+1', number: '' };
-      if (!raw.startsWith('+')) return { code: '+1', number: raw };
-      const digits = raw.replace(/[^\d]/g, '');
-      if (digits.length <= 3) return { code: `+${digits}`, number: '' };
-      const code = `+${digits.slice(0, 3)}`;
-      const number = digits.slice(3);
-      return { code, number };
-    };
+  const buildEditPayload = (basePayload) => {
+    const restaurant = basePayload?.restaurant || {};
+    const owner = basePayload?.owner || {};
 
+    // Update endpoint commonly expects flat fields; keep aliases to satisfy backend variants.
+    return {
+      name: restaurant?.name || '',
+      address: restaurant?.address || '',
+      zone: restaurant?.zone || '',
+      lat: restaurant?.lat ?? null,
+      lng: restaurant?.lng ?? null,
+      latitude: restaurant?.lat ?? null,
+      longitude: restaurant?.lng ?? null,
+      radius_km: restaurant?.radius_km ?? null,
+      service_radius_km: restaurant?.radius_km ?? null,
+      cuisine: restaurant?.cuisine || '',
+      logo_url: restaurant?.logo_url || null,
+      cover_image_url: restaurant?.cover_image_url || null,
+      delivery_time_min: restaurant?.delivery_time_min ?? null,
+      delivery_time_max: restaurant?.delivery_time_max ?? null,
+      tags: Array.isArray(restaurant?.tags) ? restaurant.tags : [],
+      tin: restaurant?.tin || '',
+      tin_expiry_date: restaurant?.tin_expiry_date || null,
+      certificate_url: restaurant?.certificate_url || null,
+      additional_data: restaurant?.additional_data || {},
+      contact_email: restaurant?.contact_email || owner?.email || '',
+      phone: restaurant?.phone || owner?.phone || '',
+      owner_name: owner?.full_name || '',
+      owner_email: owner?.email || '',
+      owner_phone: owner?.phone || '',
+      tax_type: restaurant?.tax_type || 'exclusive',
+      tax_rate: restaurant?.tax_rate ?? 5,
+      free_delivery_enabled: Boolean(restaurant?.free_delivery_enabled),
+      description: restaurant?.description || '',
+      // Keep nested object as fallback for backends expecting this shape.
+      owner,
+      restaurant,
+    };
+  };
+
+  useEffect(() => {
     const loadRestaurant = async () => {
       if (!isEditMode) return;
       setLoadingRestaurant(true);
       setErrors((prev) => ({ ...prev, api: '' }));
       try {
         const token = localStorage.getItem('token') || '';
-        const { data } = await axios.get(`/api/restaurants/${restaurantId}`, {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-
-        const payload =
-          data?.data && typeof data.data === 'object'
-            ? data.data
-            : data;
-        const restaurant =
-          payload?.restaurant ||
-          payload?.data?.restaurant ||
-          payload;
-        const owner =
-          payload?.owner ||
-          payload?.vendor ||
-          restaurant?.owner ||
-          restaurant?.vendor ||
-          {};
+        const { restaurant, owner } = await fetchRestaurantById(token);
 
         const ownerPhoneRaw = owner?.phone || restaurant?.phone || '';
         const parsedPhone = extractPhone(ownerPhoneRaw);
+        const ownerNameRaw =
+          owner?.full_name ||
+          owner?.name ||
+          restaurant?.owner_name ||
+          '';
+        const ownerNameParts = String(ownerNameRaw).trim().split(/\s+/).filter(Boolean);
+        const ownerFirstNameFromFull = ownerNameParts[0] || '';
+        const ownerLastNameFromFull = ownerNameParts.slice(1).join(' ');
 
-        const logoRawUrl = pickFirstUrl(
-          restaurant?.logo_url,
-          restaurant?.logo,
-          restaurant?.logo_full_url
-        );
-        const coverRawUrl = pickFirstUrl(
-          restaurant?.cover_image_url,
-          restaurant?.cover_image,
-          restaurant?.cover_photo
-        );
-        const certificateRawUrl = pickFirstUrl(
-          restaurant?.certificate_url,
-          restaurant?.tin_certificate_url
-        );
-        const licenseRawUrl = pickFirstUrl(
-          restaurant?.license_document_url,
-          restaurant?.license_url
-        );
+        const extractedAssets = extractExistingRestaurantAssets(restaurant);
+        const logoRawUrl = extractedAssets.logo_url;
+        const coverRawUrl = extractedAssets.cover_image_url;
+        const certificateRawUrl = extractedAssets.certificate_url;
+        const licenseRawUrl = extractedAssets.license_document_url;
         const logoUrl = toAbsoluteAssetUrl(logoRawUrl);
         const coverImageUrl = toAbsoluteAssetUrl(coverRawUrl);
         const certificateUrl = toAbsoluteAssetUrl(certificateRawUrl);
         const licenseUrl = toAbsoluteAssetUrl(licenseRawUrl);
 
-        setExistingAssetUrls({
-          logo_url: logoRawUrl || null,
-          cover_image_url: coverRawUrl || null,
-          certificate_url: certificateRawUrl || null,
-          license_document_url: licenseRawUrl || null,
-        });
+        setExistingAssetUrls(extractedAssets);
         setLogoPreview(logoUrl || null);
         setCoverPreview(coverImageUrl || null);
         setTinCertPreview(certificateUrl || null);
@@ -450,13 +527,28 @@ export default function AddRestaurantPage() {
           restaurantAddress: restaurant?.address || '',
           zone: restaurant?.zone || '',
           cuisine: restaurant?.cuisine || '',
-          radius: restaurant?.radius_km !== undefined && restaurant?.radius_km !== null ? String(restaurant.radius_km) : '',
-          latitude: restaurant?.lat !== undefined && restaurant?.lat !== null ? String(restaurant.lat) : '',
-          longitude: restaurant?.lng !== undefined && restaurant?.lng !== null ? String(restaurant.lng) : '',
+          radius:
+            restaurant?.radius_km !== undefined && restaurant?.radius_km !== null
+              ? String(restaurant.radius_km)
+              : (restaurant?.service_radius_km !== undefined && restaurant?.service_radius_km !== null
+                ? String(restaurant.service_radius_km)
+                : ''),
+          latitude:
+            restaurant?.lat !== undefined && restaurant?.lat !== null
+              ? String(restaurant.lat)
+              : (restaurant?.latitude !== undefined && restaurant?.latitude !== null
+                ? String(restaurant.latitude)
+                : ''),
+          longitude:
+            restaurant?.lng !== undefined && restaurant?.lng !== null
+              ? String(restaurant.lng)
+              : (restaurant?.longitude !== undefined && restaurant?.longitude !== null
+                ? String(restaurant.longitude)
+                : ''),
           minDeliveryTime: restaurant?.delivery_time_min !== undefined && restaurant?.delivery_time_min !== null ? String(restaurant.delivery_time_min) : '',
           maxDeliveryTime: restaurant?.delivery_time_max !== undefined && restaurant?.delivery_time_max !== null ? String(restaurant.delivery_time_max) : '',
-          firstName: owner?.f_name || owner?.first_name || (owner?.full_name ? String(owner.full_name).split(' ')[0] : ''),
-          lastName: owner?.l_name || owner?.last_name || (owner?.full_name ? String(owner.full_name).split(' ').slice(1).join(' ') : ''),
+          firstName: owner?.f_name || owner?.first_name || ownerFirstNameFromFull,
+          lastName: owner?.l_name || owner?.last_name || ownerLastNameFromFull,
           phone: parsedPhone.number,
           phoneCode: parsedPhone.code,
           tags: Array.isArray(restaurant?.tags) ? restaurant.tags.join(', ') : '',
@@ -480,7 +572,7 @@ export default function AddRestaurantPage() {
     };
 
     loadRestaurant();
-  }, [isEditMode, restaurantId]);
+  }, [extractExistingRestaurantAssets, extractPhone, fetchRestaurantById, isEditMode]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -490,6 +582,17 @@ export default function AddRestaurantPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      let latestExistingAssets = existingAssetUrls;
+      if (isEditMode) {
+        try {
+          const { restaurant } = await fetchRestaurantById(token || '');
+          latestExistingAssets = extractExistingRestaurantAssets(restaurant);
+          setExistingAssetUrls(latestExistingAssets);
+        } catch {
+          // Keep update flow alive even if pre-refresh GET fails temporarily.
+          latestExistingAssets = existingAssetUrls;
+        }
+      }
       const hasChangedAssetFiles = [logoFile, coverFile, tinCertFile, licenseFile].some(Boolean);
       const uploadedAssetUrls =
         !isEditMode || hasChangedAssetFiles
@@ -506,16 +609,17 @@ export default function AddRestaurantPage() {
           : (existingValue || null);
       const payload = buildPayload(
         {
-          logo_url: resolveUpdatedAssetUrl(uploadedAssetUrls.logo_url, existingAssetUrls.logo_url),
-          cover_image_url: resolveUpdatedAssetUrl(uploadedAssetUrls.cover_image_url, existingAssetUrls.cover_image_url),
-          certificate_url: resolveUpdatedAssetUrl(uploadedAssetUrls.certificate_url, existingAssetUrls.certificate_url),
-          license_document_url: resolveUpdatedAssetUrl(uploadedAssetUrls.license_document_url, existingAssetUrls.license_document_url),
+          logo_url: resolveUpdatedAssetUrl(uploadedAssetUrls.logo_url, latestExistingAssets.logo_url),
+          cover_image_url: resolveUpdatedAssetUrl(uploadedAssetUrls.cover_image_url, latestExistingAssets.cover_image_url),
+          certificate_url: resolveUpdatedAssetUrl(uploadedAssetUrls.certificate_url, latestExistingAssets.certificate_url),
+          license_document_url: resolveUpdatedAssetUrl(uploadedAssetUrls.license_document_url, latestExistingAssets.license_document_url),
         },
         { isEdit: isEditMode }
       );
 
       if (isEditMode) {
-        await axios.put(`/api/restaurants/${restaurantId}`, payload, {
+        const editPayload = buildEditPayload(payload);
+        await axios.put(`/api/restaurants/${restaurantId}`, editPayload, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },

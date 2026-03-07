@@ -42,7 +42,6 @@ export default function FoodListPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [subcategoryFilter, setSubcategoryFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [statuses, setStatuses] = useState({});
 
   const selectedCategoryId = Number(categoryFilter);
   const subcategoryOptions = useMemo(
@@ -211,13 +210,6 @@ export default function FoodListPage() {
         const parsedTotal = Number(total);
         setTotalCount(Number.isFinite(parsedTotal) ? parsedTotal : normalized.length);
 
-        setStatuses((prev) => {
-          const next = { ...prev };
-          normalized.forEach((item) => {
-            if (next[item.id] === undefined) next[item.id] = item.status;
-          });
-          return next;
-        });
       } catch (error) {
         setFoods([]);
         setTotalCount(0);
@@ -233,10 +225,6 @@ export default function FoodListPage() {
 
     fetchFoods();
   }, [page, categoryFilter, subcategoryFilter, search]);
-
-  const toggleStatus = (id) => {
-    setStatuses((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
 
   const handleDeleteItem = async (menuItemId) => {
     if (!menuItemId) return;
@@ -255,11 +243,6 @@ export default function FoodListPage() {
       });
 
       setFoods((prev) => prev.filter((item) => String(item.id) !== String(menuItemId)));
-      setStatuses((prev) => {
-        const next = { ...prev };
-        delete next[menuItemId];
-        return next;
-      });
       setTotalCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       setFetchError(
@@ -394,18 +377,11 @@ export default function FoodListPage() {
                   </td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">{food.price}</td>
                   <td className="px-3 py-3">
-                    <button
-                      onClick={() => toggleStatus(food.id)}
-                      className={`relative inline-flex h-4.5 w-8 items-center rounded-full transition-colors ${
-                        statuses[food.id] ? 'bg-[#7C3AED]' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                          statuses[food.id] ? 'translate-x-[17px]' : 'translate-x-0.5'
-                        }`}
-                      />
-                    </button>
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-medium ${
+                      food.status ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {food.status ? 'Available' : 'Out of stock'}
+                    </span>
                   </td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">
                     <span className="text-[#F59E0B]">★</span>

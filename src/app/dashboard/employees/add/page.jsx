@@ -28,15 +28,24 @@ const PHONE_CODE_OPTIONS = [
 
 export default function AddEmployeePage() {
   const router = useRouter();
+  const [employeeUserId, setEmployeeUserId] = useState('');
+  const isEditMode = Boolean(employeeUserId);
   const [form, setForm] = useState(INITIAL_FORM);
   const [preview, setPreview] = useState('');
   const [imageFile, setImageFile] = useState(null);
+  const [existingImageUrl, setExistingImageUrl] = useState('');
+  const [loadingEmployee, setLoadingEmployee] = useState(false);
   const [roles, setRoles] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(false);
   const [rolesError, setRolesError] = useState('');
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setEmployeeUserId(params.get('employee_user_id') || '');
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -80,11 +89,11 @@ export default function AddEmployeePage() {
     if (!form.role) nextErrors.role = 'Employee role is required';
     if (!form.phone.trim()) nextErrors.phone = 'Phone is required';
     if (!form.email.trim()) nextErrors.email = 'Email is required';
-    if (!form.password) nextErrors.password = 'Password is required';
-    if (form.password !== form.confirmPassword) {
+    if (!isEditMode && !form.password) nextErrors.password = 'Password is required';
+    if ((form.password || form.confirmPassword) && form.password !== form.confirmPassword) {
       nextErrors.confirmPassword = 'Passwords do not match';
     }
-    if (!imageFile) nextErrors.image = 'Employee image is required';
+    if (!isEditMode && !imageFile && !existingImageUrl) nextErrors.image = 'Employee image is required';
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -125,6 +134,90 @@ export default function AddEmployeePage() {
     return imagePath;
   };
 
+  useEffect(() => {
+    const splitPhoneNumber = (phoneValue = '') => {
+      const raw = String(phoneValue || '').trim();
+      if (!raw) return { phoneCode: '+1', phone: '' };
+
+      const sortedCodes = [...PHONE_CODE_OPTIONS]
+        .map((item) => String(item.value || '').trim())
+        .filter(Boolean)
+        .sort((a, b) => b.length - a.length);
+
+      const matchedCode = sortedCodes.find((code) => raw.startsWith(code));
+      if (!matchedCode) {
+        return { phoneCode: '+1', phone: raw.replace(/^\+/, '') };
+      }
+
+      return {
+        phoneCode: matchedCode,
+        phone: raw.slice(matchedCode.length),
+      };
+    };
+
+    const loadEmployeeForEdit = async () => {
+      if (!isEditMode) return;
+      setLoadingEmployee(true);
+      setErrors((prev) => ({ ...prev, api: '' }));
+      try {
+        const token = localStorage.getItem('token') || '';
+        const { data } = await axios.get(`/api/auth/admin/employees/${employeeUserId}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const payload =
+          data?.data && typeof data.data === 'object'
+            ? data.data
+            : data;
+        const employee =
+          payload?.employee ||
+          payload?.user ||
+          payload?.data?.employee ||
+          payload?.data?.user ||
+          payload;
+
+        const fullName =
+          employee?.full_name ||
+          `${employee?.f_name || employee?.first_name || ''} ${employee?.l_name || employee?.last_name || ''}`.trim();
+        const [firstName = '', ...restName] = String(fullName || '').trim().split(' ');
+        const lastName = restName.join(' ');
+
+        const phoneData = splitPhoneNumber(employee?.phone || '');
+        const roleId =
+          String(
+            employee?.employee_role_id ||
+            employee?.employee_role?.id ||
+            ''
+          ).trim();
+        const imageUrl = String(employee?.image_url || employee?.image || employee?.avatar || '').trim();
+
+        setForm((prev) => ({
+          ...prev,
+          firstName: firstName || '',
+          lastName: lastName || '',
+          role: roleId,
+          phoneCode: phoneData.phoneCode,
+          phone: phoneData.phone,
+          email: String(employee?.email || '').trim(),
+          password: '',
+          confirmPassword: '',
+        }));
+        setExistingImageUrl(imageUrl);
+        setPreview(imageUrl);
+      } catch (error) {
+        const rawMessage = axios.isAxiosError(error)
+          ? error.response?.data?.message || error.message || 'Failed to load employee details'
+          : error?.message || 'Failed to load employee details';
+        setErrors((prev) => ({ ...prev, api: rawMessage }));
+      } finally {
+        setLoadingEmployee(false);
+      }
+    };
+
+    loadEmployeeForEdit();
+  }, [isEditMode, employeeUserId]);
+
   const onSubmit = async (event) => {
     event.preventDefault();
     if (!validate()) return;
@@ -133,18 +226,27 @@ export default function AddEmployeePage() {
 
     try {
       const token = localStorage.getItem('token') || '';
-      const imageUrl = await uploadEmployeeImage(token);
+      let imageUrl = existingImageUrl;
+      if (imageFile) {
+        // Keep same behavior as add flow: upload first, then submit employee payload.
+        imageUrl = await uploadEmployeeImage(token);
+      }
       const payload = {
         email: form.email.trim(),
-        password: form.password,
         phone: buildPhoneNumber(),
         full_name: `${form.firstName} ${form.lastName}`.trim(),
         image_url: imageUrl,
         employee_role_id: form.role,
         is_active: true,
       };
+      if (form.password) payload.password = form.password;
 
-      await axios.post('/api/auth/admin/employees', payload, {
+      await axios({
+        method: isEditMode ? 'patch' : 'post',
+        url: isEditMode
+          ? `/api/auth/admin/employees/${employeeUserId}`
+          : '/api/auth/admin/employees',
+        data: payload,
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
@@ -213,6 +315,11 @@ export default function AddEmployeePage() {
   return (
     <div className="pt-36 pb-8">
       <form onSubmit={onSubmit} className="space-y-4">
+        {loadingEmployee && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            Loading employee details...
+          </div>
+        )}
         {errors.api && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {errors.api}
@@ -355,10 +462,10 @@ export default function AddEmployeePage() {
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || loadingEmployee}
             className="rounded-md bg-[#7C3AED] px-6 py-2 text-xs font-semibold text-white hover:bg-[#6D28D9]"
           >
-            {submitting ? 'Submitting...' : 'Submit'}
+            {submitting ? 'Submitting...' : (isEditMode ? 'Update' : 'Submit')}
           </button>
         </div>
       </form>

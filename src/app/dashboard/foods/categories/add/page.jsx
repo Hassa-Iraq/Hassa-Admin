@@ -8,7 +8,6 @@ import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
 
 const INITIAL_FORM = {
-  parentId: '',
   name: '',
   description: '',
   displayOrder: '1',
@@ -146,7 +145,6 @@ export default function AddCategoryPage() {
         setImagePreview(normalizedImageUrl);
 
         setForm({
-          parentId: category?.parent_id ? String(category.parent_id) : '',
           name: category?.name || '',
           description: category?.description || '',
           displayOrder:
@@ -189,7 +187,7 @@ export default function AddCategoryPage() {
 
       const payload = {
         restaurant_id: resolvedRestaurantId,
-        parent_id: parseId(form.parentId),
+        parent_id: null,
         name: form.name.trim() || '',
         description: form.description.trim() || '',
         image_url: imageUrl,
@@ -247,24 +245,6 @@ export default function AddCategoryPage() {
 
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="space-y-3 lg:col-span-2">
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label className="mb-1.5 block text-[11px] font-medium text-gray-700">
-                    Parent Category ID (Optional)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    name="parentId"
-                    value={form.parentId}
-                    onChange={handleChange}
-                    placeholder="Leave empty for main category"
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
-                  />
-                </div>
-              </div>
-
               <div>
                 <label className="mb-1.5 block text-[11px] font-medium text-gray-700">Category Name</label>
                 <input

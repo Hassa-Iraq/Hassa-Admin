@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, Pencil, Search, Trash2 } from 'lucide-react';
+import { Download, Pencil, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 
@@ -399,9 +399,6 @@ export default function EmployeeRolePage() {
                           className="flex h-6 w-6 items-center justify-center rounded-md border border-[#C4B5FD] bg-[#F5F3FF] text-[#7C3AED]"
                         >
                           <Pencil size={12} />
-                        </button>
-                        <button className="flex h-6 w-6 items-center justify-center rounded-md border border-[#FECACA] bg-[#FEF2F2] text-[#EF4444]">
-                          <Trash2 size={12} />
                         </button>
                       </div>
                     </td>

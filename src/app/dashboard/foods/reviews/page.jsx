@@ -98,7 +98,7 @@ export default function CustomerReviewsPage() {
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
                       <div className="h-7 w-7 overflow-hidden rounded-lg bg-purple-100">
-                        <img src={item.image} alt={item.foodName} className="h-full w-full object-cover" />
+                        <img src={item.image || null} alt={item.foodName} className="h-full w-full object-cover" />
                       </div>
                       <p className="text-xs font-semibold text-[#1E1E24]">{item.foodName}</p>
                     </div>

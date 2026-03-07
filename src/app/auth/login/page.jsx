@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
@@ -229,12 +230,12 @@ export default function LoginPage() {
 
                   {/* Forgot Password Link */}
                   <div className="text-right">
-                    <a
-                      href="#"
+                    <Link
+                      href="/auth/forgot-password"
                       className="text-sm text-[#6001D2] underline font-medium"
                     >
                       Forgot Password?
-                    </a>
+                    </Link>
                   </div>
 
                   {/* Sign In Button */}

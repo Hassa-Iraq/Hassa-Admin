@@ -7,11 +7,12 @@ import { formatPhoneWithFlag } from '@/app/lib/phone';
 import {
   Search, Download,
   CreditCard, TrendingUp, ArrowDownLeft,
-  Eye, Edit2, Trash2,
+  Eye, Edit2,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 const PER_PAGE = 20;
+const DEFAULT_RESTAURANT_IMAGE = '/default-image.svg';
 
 const STATS = [
   { key: 'total', label: 'Total Restaurants',        icon: '/images/mdi.png',    bg: 'bg-[#F3EAFF]', border: 'border-[#6001D2]' },
@@ -31,6 +32,7 @@ export default function RestaurantListPage() {
   const router = useRouter();
   const [userRole, setUserRole] = useState('');
   const canEditRestaurant = ['admin', 'super_admin', 'superadmin', 'restaurant'].includes(userRole);
+  const canToggleRestaurantOpenStatus = userRole === 'restaurant';
   const [restaurants, setRestaurants] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [summary, setSummary] = useState({
@@ -44,6 +46,8 @@ export default function RestaurantListPage() {
   const [search, setSearch] = useState('');
   const [statuses, setStatuses] = useState({});
   const [baseStatuses, setBaseStatuses] = useState({});
+  const [statusUpdating, setStatusUpdating] = useState({});
+  const [statusError, setStatusError] = useState('');
   const [page, setPage] = useState(1);
   const [cuisineFilter, setCuisineFilter] = useState('');
   const [radiusFilter, setRadiusFilter]   = useState('');
@@ -124,7 +128,49 @@ export default function RestaurantListPage() {
       return `${countryCode}${raw.startsWith('0') ? raw.slice(1) : raw}`;
     };
 
+    const toBoolean = (value) => {
+      if (value === true || value === 1 || value === '1') return true;
+      if (value === false || value === 0 || value === '0') return false;
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'active' || normalized === 'true') return true;
+        if (normalized === 'inactive' || normalized === 'false') return false;
+      }
+      return null;
+    };
+
+    const resolveRestaurantOpenStatus = (item) => {
+      // Toggle controls open/close state, so prefer explicit is_open fields.
+      const isOpenRaw =
+        item?.is_open ??
+        item?.isOpen ??
+        item?.open;
+      const isOpen = toBoolean(isOpenRaw);
+      if (isOpen !== null) return isOpen;
+
+      // Backward compatibility if some responses still expose active/inactive only.
+      const isActiveRaw =
+        item?.is_active ??
+        item?.isActive ??
+        item?.active;
+      const isActive = toBoolean(isActiveRaw);
+      if (isActive !== null) return isActive;
+
+      const statusRaw = item?.status;
+      const status = toBoolean(statusRaw);
+      if (status !== null) return status;
+
+      return false;
+    };
+
     const normalizeRestaurant = (item, index) => {
+      const editId =
+        item?.id ??
+        item?.restaurant_id ??
+        item?.restaurantId ??
+        item?.restaurant?.id ??
+        item?.restaurant?.restaurant_id ??
+        '';
       const firstName = item?.vendor?.f_name || item?.vendor?.first_name || '';
       const lastName = item?.vendor?.l_name || item?.vendor?.last_name || '';
       const ownerName = `${firstName} ${lastName}`.trim();
@@ -141,7 +187,8 @@ export default function RestaurantListPage() {
       const rawPhone = item?.phone || item?.vendor?.phone || '';
 
       return {
-        id: item?.id ?? item?.restaurant_id ?? `${page}-${index}`,
+        id: editId || `${page}-${index}`,
+        editId: editId || '',
         name: item?.name || item?.restaurant_name || item?.translations?.[0]?.name || 'N/A',
         image:
           normalizeImage(item?.logo_url) ||
@@ -165,12 +212,7 @@ export default function RestaurantListPage() {
           item?.cuisine?.name ||
           item?.cuisine_name ||
           'Cuisine not found',
-        status:
-          item?.is_active === true ||
-          item?.is_active === 1 ||
-          item?.status === 1 ||
-          item?.status === true ||
-          item?.status === 'active',
+        status: resolveRestaurantOpenStatus(item),
         createdAt: item?.created_at || item?.createdAt || null,
       };
     };
@@ -314,7 +356,40 @@ export default function RestaurantListPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
   const paginated = restaurants;
 
-  const toggle = (id) => setStatuses(p => ({ ...p, [id]: !p[id] }));
+  const toggle = async (restaurant) => {
+    if (!canToggleRestaurantOpenStatus) return;
+    const localId = restaurant?.id;
+    const apiRestaurantId = restaurant?.editId;
+    if (!localId || !apiRestaurantId) return;
+    if (statusUpdating[localId]) return;
+
+    const nextStatus = !Boolean(statuses[localId]);
+    setStatusError('');
+    setStatuses((prev) => ({ ...prev, [localId]: nextStatus }));
+    setStatusUpdating((prev) => ({ ...prev, [localId]: true }));
+
+    try {
+      const token = localStorage.getItem('token') || '';
+      const requestConfig = {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      };
+      const action = nextStatus ? 'open' : 'close';
+      await axios.patch(`/api/restaurants/${apiRestaurantId}/${action}`, {}, requestConfig);
+
+      setStatuses((prev) => ({ ...prev, [localId]: nextStatus }));
+      setBaseStatuses((prev) => ({ ...prev, [localId]: nextStatus }));
+    } catch (error) {
+      setStatuses((prev) => ({ ...prev, [localId]: !nextStatus }));
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message || error.message || 'Failed to update status'
+        : error?.message || 'Failed to update status';
+      setStatusError(message);
+    } finally {
+      setStatusUpdating((prev) => ({ ...prev, [localId]: false }));
+    }
+  };
 
   const handleExport = () => {
     if (!restaurants.length) return;
@@ -415,6 +490,11 @@ export default function RestaurantListPage() {
 
       {/* ── Table Card ── */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        {statusError && (
+          <div className="mx-6 mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {statusError}
+          </div>
+        )}
 
         {/* Table Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -483,9 +563,13 @@ export default function RestaurantListPage() {
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-purple-100 overflow-hidden flex-shrink-0">
                         <img
-                          src={r.image || '/images/food.png'}
+                          src={r.image || DEFAULT_RESTAURANT_IMAGE}
                           alt={r.name}
                           className="w-full h-full object-cover"
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = DEFAULT_RESTAURANT_IMAGE;
+                          }}
                         />
                       </div>
                       <div>
@@ -520,13 +604,15 @@ export default function RestaurantListPage() {
                     </span>
                   </td>
 
-                  {/* Status Toggle */}
+                  {/* Status Toggle (view-only for admin roles) */}
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => toggle(r.id)}
+                      onClick={() => toggle(r)}
+                      disabled={!canToggleRestaurantOpenStatus || Boolean(statusUpdating[r.id]) || !r.editId}
                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
                         statuses[r.id] ? 'bg-purple-600' : 'bg-gray-200'
-                      }`}
+                      } disabled:opacity-60 disabled:cursor-not-allowed`}
+                      title={canToggleRestaurantOpenStatus ? 'Toggle open/close status' : 'Only restaurant role can change open/close'}
                     >
                       <span
                         className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
@@ -544,16 +630,17 @@ export default function RestaurantListPage() {
                       </button>
                       {canEditRestaurant && (
                         <button
-                          onClick={() => router.push(`/dashboard/restaurants/add?restaurant_id=${r.id}`)}
+                          onClick={() => {
+                            if (!r.editId) return;
+                            router.push(`/dashboard/restaurants/add?restaurant_id=${r.editId}`);
+                          }}
                           title="Edit restaurant"
-                          className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500 hover:bg-amber-100 transition"
+                          disabled={!r.editId}
+                          className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500 hover:bg-amber-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <Edit2 size={13} />
                         </button>
                       )}
-                      <button className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100 transition">
-                        <Trash2 size={13} />
-                      </button>
                     </div>
                   </td>
                 </tr>

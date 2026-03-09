@@ -78,6 +78,9 @@ export default function AddRestaurantPage() {
   const tinCertRef = useRef(null);
   const licenseRef = useRef(null);
   const mapSearchDebounceRef = useRef(null);
+  const mapContainerRef = useRef(null);
+  const leafletMapRef = useRef(null);
+  const leafletMarkerRef = useRef(null);
 
   const [mapSearch, setMapSearch] = useState('');
 
@@ -127,7 +130,7 @@ export default function AddRestaurantPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const getZoneFromAddress = (address = {}) =>
+  const getZoneFromAddress = useCallback((address = {}) =>
     address.suburb ||
     address.neighbourhood ||
     address.city_district ||
@@ -135,7 +138,7 @@ export default function AddRestaurantPage() {
     address.city ||
     address.state_district ||
     address.state ||
-    '';
+    '', []);
 
   const handleMapLookup = async (queryOverride) => {
     const query = (queryOverride ?? mapSearch).trim();
@@ -176,6 +179,13 @@ export default function AddRestaurantPage() {
     setMapSearch(item?.display_name || '');
     setMapResults([]);
     setErrors((prev) => ({ ...prev, location: '' }));
+
+    const marker = leafletMarkerRef.current;
+    const map = leafletMapRef.current;
+    if (marker && map && Number.isFinite(lat) && Number.isFinite(lng)) {
+      marker.setLatLng([lat, lng]);
+      map.setView([lat, lng], 14, { animate: false });
+    }
   };
 
   useEffect(() => {
@@ -200,6 +210,117 @@ export default function AddRestaurantPage() {
       }
     };
   }, [mapSearch]);
+
+  const setMapPoint = useCallback(async (lat, lng, options = {}) => {
+    const { updateSearch = true } = options;
+    const safeLat = Number(lat);
+    const safeLng = Number(lng);
+    if (!Number.isFinite(safeLat) || !Number.isFinite(safeLng)) return;
+
+    setForm((prev) => ({
+      ...prev,
+      latitude: safeLat.toFixed(6),
+      longitude: safeLng.toFixed(6),
+    }));
+    setErrors((prev) => ({ ...prev, location: '' }));
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${safeLat}&lon=${safeLng}`
+      );
+      const reverse = await response.json();
+      const zone = getZoneFromAddress(reverse?.address || {});
+      const displayName = typeof reverse?.display_name === 'string' ? reverse.display_name : '';
+
+      setForm((prev) => ({
+        ...prev,
+        zone: zone || prev.zone,
+      }));
+
+      if (updateSearch) {
+        setMapSearch(displayName || '');
+      }
+    } catch {
+      // Keep coordinates even if reverse geocoding fails.
+    }
+  }, [getZoneFromAddress]);
+
+  useEffect(() => {
+    let disposed = false;
+
+    const loadLeaflet = async () => {
+      if (typeof window === 'undefined' || !mapContainerRef.current) return;
+
+      if (!document.getElementById('leaflet-css')) {
+        const css = document.createElement('link');
+        css.id = 'leaflet-css';
+        css.rel = 'stylesheet';
+        css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(css);
+      }
+
+      if (!window.L) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          script.async = true;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
+        });
+      }
+
+      if (disposed || leafletMapRef.current || !window.L || !mapContainerRef.current) return;
+
+      const initialLat = Number(form.latitude) || 33.6844;
+      const initialLng = Number(form.longitude) || 73.0479;
+      const map = window.L.map(mapContainerRef.current, {
+        zoomControl: true,
+      }).setView([initialLat, initialLng], 13);
+
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(map);
+
+      const marker = window.L.marker([initialLat, initialLng], { draggable: true }).addTo(map);
+      marker.on('dragend', async () => {
+        const position = marker.getLatLng();
+        await setMapPoint(position.lat, position.lng, { updateSearch: true });
+      });
+
+      map.on('click', async (event) => {
+        const { lat, lng } = event.latlng;
+        marker.setLatLng([lat, lng]);
+        await setMapPoint(lat, lng, { updateSearch: true });
+      });
+
+      leafletMapRef.current = map;
+      leafletMarkerRef.current = marker;
+    };
+
+    loadLeaflet();
+
+    return () => {
+      disposed = true;
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+        leafletMarkerRef.current = null;
+      }
+    };
+  }, [setMapPoint]);
+
+  useEffect(() => {
+    const map = leafletMapRef.current;
+    const marker = leafletMarkerRef.current;
+    const lat = Number(form.latitude);
+    const lng = Number(form.longitude);
+    if (!map || !marker || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    marker.setLatLng([lat, lng]);
+    map.setView([lat, lng], map.getZoom(), { animate: false });
+  }, [form.latitude, form.longitude]);
 
   const pickFirstUrl = useCallback((...values) =>
     values.find((value) => typeof value === 'string' && value.trim().length > 0) || ''
@@ -787,20 +908,12 @@ export default function AddRestaurantPage() {
                 </div>
               )}
 
-              {/* Map Embed */}
-              <div className="w-full h-48 sm:h-56 rounded-xl overflow-hidden border border-gray-200">
-                <iframe
-                  title="map"
-                  width="100%"
-                  height="100%"
-                  loading="lazy"
-                  style={{ border: 0 }}
-                  src={
-                    form.latitude && form.longitude
-                      ? `https://www.openstreetmap.org/export/embed.html?bbox=${Number(form.longitude) - 0.02},${Number(form.latitude) - 0.01},${Number(form.longitude) + 0.02},${Number(form.latitude) + 0.01}&layer=mapnik&marker=${form.latitude},${form.longitude}`
-                      : 'https://www.openstreetmap.org/export/embed.html?bbox=46.5,24.6,46.8,24.8&layer=mapnik'
-                  }
-                />
+              {/* Interactive Map */}
+              <div className="w-full rounded-xl overflow-hidden border border-gray-200">
+                <div ref={mapContainerRef} className="h-56 w-full" />
+                <div className="px-3 py-2 text-xs text-gray-500 border-t border-gray-100 bg-gray-50">
+                  Move map, click location, or drag marker to select exact point.
+                </div>
               </div>
             </div>
 

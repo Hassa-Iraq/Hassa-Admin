@@ -410,18 +410,15 @@ export default function RestaurantListPage() {
   };
 
   return (
-     <div className="min-h-screen bg-gray-50">
-  <div className="pt-36">
+    <div className="min-h-screen bg-gray-50">
+      <div className="pt-36">
+          {/* ── Header ── */}
+          <div className="flex items-center justify-between mb-6">
+            <div />
+          </div>
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-        </div>
-
-      </div>
-
-      {/* ── Filter Bar ── */}
-      <div className="flex flex-wrap gap-3 mb-6">
+          {/* ── Filter Bar ── */}
+          <div className="flex flex-wrap gap-3 mb-6">
         {[
           { label: 'All', value: '', setter: setModelFilter,  state: modelFilter },
         ].map(f => (
@@ -462,10 +459,10 @@ export default function RestaurantListPage() {
           <option>5 km</option>
           <option>All over the world</option>
         </select>
-      </div>
+          </div>
 
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          {/* ── Stat Cards ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {STATS.map(s => (
           <div key={s.label} className={`${s.bg} rounded-2xl border ${s.border} p-5 flex items-start justify-between`}>
             <div>
@@ -475,10 +472,10 @@ export default function RestaurantListPage() {
             <img src={s.icon} alt={s.label} className="w-6 h-6 flex-shrink-0" />
           </div>
         ))}
-      </div>
+          </div>
 
-      {/* ── Transaction Bar ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 px-6 py-4 mb-6 flex flex-wrap items-center justify-between">
+          {/* ── Transaction Bar ── */}
+          <div className="bg-white rounded-2xl border border-gray-100 px-6 py-4 mb-6 flex flex-wrap items-center justify-between">
         {TRANSACTIONS.map(t => (
           <div key={t.label} className="flex items-center gap-2">
             <span className={`w-2.5 h-2.5 rounded-full ${t.dot} flex-shrink-0`} />
@@ -486,7 +483,7 @@ export default function RestaurantListPage() {
             <span className={`text-sm font-bold ${t.color}`}>{t.value}</span>
           </div>
         ))}
-      </div>
+          </div>
 
       {/* ── Table Card ── */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -520,7 +517,7 @@ export default function RestaurantListPage() {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-[52vh]">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -553,7 +550,11 @@ export default function RestaurantListPage() {
               {!loading && !fetchError && paginated.map((r, idx) => (
                 <tr
                   key={r.id}
-                  className="border-b border-gray-50 hover:bg-purple-50/30 transition-colors"
+                  onClick={() => {
+                    if (!r.editId) return;
+                    router.push(`/dashboard/restaurants/details/${r.editId}`);
+                  }}
+                  className="border-b border-gray-50 hover:bg-purple-50/30 transition-colors cursor-pointer"
                 >
                   {/* SI */}
                   <td className="px-6 py-3 text-gray-400 text-xs">{(page - 1) * PER_PAGE + idx + 1}</td>
@@ -595,7 +596,7 @@ export default function RestaurantListPage() {
 
                   {/* Cuisine */}
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                    <span className={`inline-flex whitespace-nowrap text-xs px-2.5 py-1 rounded-full font-medium ${
                       r.cuisine === 'Cuisine not found'
                         ? 'bg-gray-100 text-gray-400'
                         : 'bg-purple-50 text-purple-700'
@@ -607,17 +608,21 @@ export default function RestaurantListPage() {
                   {/* Status Toggle (view-only for admin roles) */}
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => toggle(r)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggle(r);
+                      }}
+                      type="button"
+                      role="switch"
+                      aria-checked={Boolean(statuses[r.id])}
                       disabled={!canToggleRestaurantOpenStatus || Boolean(statusUpdating[r.id]) || !r.editId}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
-                        statuses[r.id] ? 'bg-purple-600' : 'bg-gray-200'
-                      } disabled:opacity-60 disabled:cursor-not-allowed`}
+                      data-state={statuses[r.id] ? 'checked' : 'unchecked'}
+                      className="peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 data-[state=checked]:bg-[#7C3AED] data-[state=unchecked]:bg-gray-200"
                       title={canToggleRestaurantOpenStatus ? 'Toggle open/close status' : 'Only restaurant role can change open/close'}
                     >
                       <span
-                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
-                          statuses[r.id] ? 'translate-x-4' : 'translate-x-1'
-                        }`}
+                        data-state={statuses[r.id] ? 'checked' : 'unchecked'}
+                        className="pointer-events-none block h-4 w-4 rounded-full bg-white shadow transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
                       />
                     </button>
                   </td>
@@ -625,12 +630,21 @@ export default function RestaurantListPage() {
                   {/* Actions */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
-                      <button className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500 hover:bg-blue-100 transition">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!r.editId) return;
+                          router.push(`/dashboard/restaurants/details/${r.editId}`);
+                        }}
+                        disabled={!r.editId}
+                        className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500 hover:bg-blue-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
                         <Eye size={13} />
                       </button>
                       {canEditRestaurant && (
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             if (!r.editId) return;
                             router.push(`/dashboard/restaurants/add?restaurant_id=${r.editId}`);
                           }}
@@ -655,7 +669,7 @@ export default function RestaurantListPage() {
               )}
             </tbody>
           </table>
-        </div>
+            </div>
 
         {/* Pagination */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
@@ -693,7 +707,7 @@ export default function RestaurantListPage() {
           </div>
         </div>
       </div>
-          </div>
-          </div>
+      </div>
+    </div>
   );
 }

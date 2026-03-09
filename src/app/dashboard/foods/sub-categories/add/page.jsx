@@ -6,6 +6,7 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { API_BASE_URL } from '@/app/config';
+import { toast } from 'sonner';
 
 export default function AddSubcategoryPage() {
   const router = useRouter();
@@ -22,8 +23,6 @@ export default function AddSubcategoryPage() {
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [loadingSubcategory, setLoadingSubcategory] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [apiError, setApiError] = useState('');
-  const [apiSuccess, setApiSuccess] = useState('');
   const imageRef = useRef(null);
 
   const handleImageSelect = (file) => {
@@ -106,7 +105,6 @@ export default function AddSubcategoryPage() {
       }
 
       setCategoriesLoading(true);
-      setApiError('');
 
       try {
         const token = localStorage.getItem('token') || '';
@@ -145,7 +143,7 @@ export default function AddSubcategoryPage() {
         setCategories(normalized);
       } catch (error) {
         setCategories([]);
-        setApiError(
+        toast.error(
           axios.isAxiosError(error)
             ? error.response?.data?.message || error.message || 'Failed to load categories'
             : error?.message || 'Failed to load categories'
@@ -163,7 +161,6 @@ export default function AddSubcategoryPage() {
       if (!isEditMode) return;
 
       setLoadingSubcategory(true);
-      setApiError('');
       try {
         const token = localStorage.getItem('token') || '';
         const { data } = await axios.get(`/api/restaurants/categories/${subcategoryId}`, {
@@ -198,7 +195,7 @@ export default function AddSubcategoryPage() {
         setName(subcategory?.name || '');
         setDescription(subcategory?.description || '');
       } catch (error) {
-        setApiError(
+        toast.error(
           axios.isAxiosError(error)
             ? error.response?.data?.message || error.message || 'Failed to load subcategory'
             : error?.message || 'Failed to load subcategory'
@@ -213,19 +210,17 @@ export default function AddSubcategoryPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setApiError('');
-    setApiSuccess('');
 
     if (!restaurantId) {
-      setApiError('Restaurant ID not found. Please select restaurant first.');
+      toast.error('Restaurant ID not found. Please select restaurant first.');
       return;
     }
     if (!parentCategoryId) {
-      setApiError('Please select a parent category.');
+      toast.error('Please select a parent category.');
       return;
     }
     if (!name.trim()) {
-      setApiError('Please enter subcategory name.');
+      toast.error('Please enter subcategory name.');
       return;
     }
 
@@ -258,7 +253,7 @@ export default function AddSubcategoryPage() {
         },
       });
 
-      setApiSuccess(
+      toast.success(
         response?.data?.message ||
         (isEditMode ? 'Subcategory updated successfully.' : 'Subcategory created successfully.')
       );
@@ -270,7 +265,7 @@ export default function AddSubcategoryPage() {
       setParentCategoryId('');
       router.push('/dashboard/foods/sub-categories');
     } catch (error) {
-      setApiError(
+      toast.error(
         axios.isAxiosError(error)
           ? error.response?.data?.message || error.message || 'Failed to save subcategory'
           : error?.message || 'Failed to save subcategory'
@@ -291,17 +286,6 @@ export default function AddSubcategoryPage() {
           {loadingSubcategory && (
             <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
               Loading subcategory details...
-            </div>
-          )}
-
-          {apiError && (
-            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {apiError}
-            </div>
-          )}
-          {apiSuccess && (
-            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              {apiSuccess}
             </div>
           )}
 

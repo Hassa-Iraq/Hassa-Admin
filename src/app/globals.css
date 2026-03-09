@@ -186,6 +186,16 @@ input[type="password"]::-webkit-textfield-decoration-container {
   box-shadow: none !important;
 }
 
+/* Keep a visible border on focused form controls globally */
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+select:focus,
+select:focus-visible {
+  border: 1px solid #6001d2 !important;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
 }

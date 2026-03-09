@@ -1,6 +1,7 @@
 import { Fredoka, Cairo } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "./i18n/LanguageContext";
+import AppToaster from "./components/AppToaster";
 
 const fredoka = Fredoka({
   subsets: ["latin"],
@@ -27,6 +28,7 @@ export default function RootLayout({ children }) {
       >
         <LanguageProvider>
           {children}
+          <AppToaster />
         </LanguageProvider>
       </body>
     </html>

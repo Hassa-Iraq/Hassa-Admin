@@ -5,6 +5,7 @@ import { Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
+import { toast } from 'sonner';
 
 const INITIAL_FORM = {
   itemName: '',
@@ -37,9 +38,6 @@ export default function AddFoodPage() {
   const [loadingItem, setLoadingItem] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [apiError, setApiError] = useState('');
-  const [categoriesError, setCategoriesError] = useState('');
-  const [apiSuccess, setApiSuccess] = useState('');
   const [categories, setCategories] = useState([]);
   const imageRef = useRef(null);
 
@@ -169,7 +167,6 @@ export default function AddFoodPage() {
 
     const loadCategories = async () => {
       setCategoriesLoading(true);
-      setCategoriesError('');
 
       try {
         const restaurantId =
@@ -180,7 +177,7 @@ export default function AddFoodPage() {
 
         if (!restaurantId) {
           setCategories([]);
-          setCategoriesError('Restaurant ID not found. Please select restaurant first.');
+          toast.error('Restaurant ID not found. Please select restaurant first.');
           return;
         }
 
@@ -235,7 +232,7 @@ export default function AddFoodPage() {
         const message = axios.isAxiosError(error)
           ? error.response?.data?.message || error.message || 'Failed to load categories'
           : error?.message || 'Failed to load categories';
-        setCategoriesError(message);
+        toast.error(message);
       } finally {
         setCategoriesLoading(false);
       }
@@ -249,7 +246,6 @@ export default function AddFoodPage() {
       if (!isEditMode) return;
 
       setLoadingItem(true);
-      setApiError('');
       try {
         const token = localStorage.getItem('token') || '';
         const { data } = await axios.get(`/api/restaurants/menu-items/${menuItemId}`, {
@@ -306,7 +302,7 @@ export default function AddFoodPage() {
         const message = axios.isAxiosError(error)
           ? error.response?.data?.message || error.message || 'Failed to load menu item'
           : error?.message || 'Failed to load menu item';
-        setApiError(message);
+        toast.error(message);
       } finally {
         setLoadingItem(false);
       }
@@ -317,8 +313,6 @@ export default function AddFoodPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setApiError('');
-    setApiSuccess('');
     setSubmitting(true);
 
     try {
@@ -374,18 +368,16 @@ export default function AddFoodPage() {
         },
       });
 
-      setApiSuccess(
+      toast.success(
         response?.data?.message ||
         (isEditMode ? 'Food item updated successfully.' : 'Food item created successfully.')
       );
-      if (isEditMode) {
-        router.push('/dashboard/foods/list');
-      }
+      router.push('/dashboard/foods/list');
     } catch (error) {
       const cleanedMessage = axios.isAxiosError(error)
         ? (error.response?.data?.message || error.message || 'Failed to save menu item')
         : (error?.message || 'Failed to save menu item');
-      setApiError(cleanedMessage);
+      toast.error(cleanedMessage);
     } finally {
       setSubmitting(false);
     }
@@ -395,8 +387,6 @@ export default function AddFoodPage() {
     setForm(INITIAL_FORM);
     setImageFile(null);
     setImagePreview('');
-    setApiError('');
-    setApiSuccess('');
   };
 
   return (
@@ -407,22 +397,6 @@ export default function AddFoodPage() {
             Loading menu item details...
           </div>
         )}
-        {apiError && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {apiError}
-          </div>
-        )}
-        {apiSuccess && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {apiSuccess}
-          </div>
-        )}
-        {categoriesError && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            {categoriesError}
-          </div>
-        )}
-
         <section className="rounded-xl border border-gray-200 bg-white p-4">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="space-y-4 lg:col-span-2">

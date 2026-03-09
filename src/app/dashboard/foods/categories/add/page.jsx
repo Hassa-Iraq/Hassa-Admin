@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
+import { toast } from 'sonner';
 
 const INITIAL_FORM = {
   name: '',
@@ -23,8 +24,6 @@ export default function AddCategoryPage() {
   const [existingImageUrl, setExistingImageUrl] = useState('');
   const [loadingCategory, setLoadingCategory] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [apiError, setApiError] = useState('');
-  const [apiSuccess, setApiSuccess] = useState('');
   const imageRef = useRef(null);
 
   useEffect(() => {
@@ -115,7 +114,6 @@ export default function AddCategoryPage() {
       if (!isEditMode) return;
 
       setLoadingCategory(true);
-      setApiError('');
       try {
         const token = localStorage.getItem('token') || '';
         const { data } = await axios.get(`/api/restaurants/categories/${categoryId}`, {
@@ -156,7 +154,7 @@ export default function AddCategoryPage() {
         const message = axios.isAxiosError(error)
           ? error.response?.data?.message || error.message || 'Failed to load category'
           : error?.message || 'Failed to load category';
-        setApiError(message);
+        toast.error(message);
       } finally {
         setLoadingCategory(false);
       }
@@ -167,8 +165,6 @@ export default function AddCategoryPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setApiError('');
-    setApiSuccess('');
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
@@ -204,18 +200,16 @@ export default function AddCategoryPage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
-      setApiSuccess(
+      toast.success(
         response?.data?.message ||
         (isEditMode ? 'Category updated successfully.' : 'Category created successfully.')
       );
-      if (isEditMode) {
-        router.push('/dashboard/foods/categories');
-      }
+      router.push('/dashboard/foods/categories');
     } catch (error) {
       const cleanedMessage = axios.isAxiosError(error)
         ? (error.response?.data?.message || error.message || 'Failed to save category')
         : (error?.message || 'Failed to save category');
-      setApiError(cleanedMessage);
+      toast.error(cleanedMessage);
     } finally {
       setSubmitting(false);
     }
@@ -229,17 +223,6 @@ export default function AddCategoryPage() {
             Loading category details...
           </div>
         )}
-        {apiError && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {apiError}
-          </div>
-        )}
-        {apiSuccess && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {apiSuccess}
-          </div>
-        )}
-
         <section className="rounded-xl border border-gray-200 bg-white p-4">
           <h3 className="text-sm font-semibold text-[#1E1E24]">Add Category</h3>
 

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import PhoneCodeSelect from '@/app/components/PhoneCodeSelect';
+import { toast } from 'sonner';
 
 const INITIAL_FORM = {
   firstName: '',
@@ -209,7 +210,7 @@ export default function AddEmployeePage() {
         const rawMessage = axios.isAxiosError(error)
           ? error.response?.data?.message || error.message || 'Failed to load employee details'
           : error?.message || 'Failed to load employee details';
-        setErrors((prev) => ({ ...prev, api: rawMessage }));
+        toast.error(rawMessage);
       } finally {
         setLoadingEmployee(false);
       }
@@ -252,6 +253,7 @@ export default function AddEmployeePage() {
         },
       });
 
+      toast.success(isEditMode ? 'Employee updated successfully.' : 'Employee created successfully.');
       router.push('/dashboard/employees/list');
     } catch (error) {
       const rawMessage = axios.isAxiosError(error)
@@ -261,7 +263,7 @@ export default function AddEmployeePage() {
         typeof rawMessage === 'string' && rawMessage.includes('<!DOCTYPE html>')
           ? 'Image upload failed. Please verify backend upload endpoint and permissions.'
           : rawMessage;
-      setErrors((prev) => ({ ...prev, api: cleanedMessage }));
+      toast.error(cleanedMessage);
     } finally {
       setSubmitting(false);
     }
@@ -318,11 +320,6 @@ export default function AddEmployeePage() {
         {loadingEmployee && (
           <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
             Loading employee details...
-          </div>
-        )}
-        {errors.api && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errors.api}
           </div>
         )}
         <section className="rounded-xl border border-gray-200 bg-white">

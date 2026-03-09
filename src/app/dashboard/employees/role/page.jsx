@@ -3,6 +3,7 @@
 import { Download, Pencil, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 const TABS = ['Default', 'English (EN)', 'Arabic (AR)'];
 const MODULES = [
@@ -63,7 +64,6 @@ export default function EmployeeRolePage() {
   const [editingRoleId, setEditingRoleId] = useState('');
   const [search, setSearch] = useState('');
   const [apiError, setApiError] = useState('');
-  const [apiSuccess, setApiSuccess] = useState('');
   const [selectedModules, setSelectedModules] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [form, setForm] = useState({
@@ -145,7 +145,6 @@ export default function EmployeeRolePage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setApiError('');
-    setApiSuccess('');
 
     if (!form.name.trim()) {
       setApiError('Role name is required.');
@@ -182,7 +181,7 @@ export default function EmployeeRolePage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
-      setApiSuccess(
+      toast.success(
         response?.data?.message ||
         (editingRoleId ? 'Employee role updated successfully.' : 'Employee role created successfully.')
       );
@@ -232,7 +231,6 @@ export default function EmployeeRolePage() {
     setSelectedModules(selected);
     setSelectAll(selected.length === MODULES.length);
     setApiError('');
-    setApiSuccess('');
   };
 
   return (
@@ -250,12 +248,6 @@ export default function EmployeeRolePage() {
                 {apiError}
               </div>
             )}
-            {apiSuccess && (
-              <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-                {apiSuccess}
-              </div>
-            )}
-
             <div className="mb-3 flex items-center gap-4 border-b border-gray-200">
               {TABS.map((tab) => (
                 <button

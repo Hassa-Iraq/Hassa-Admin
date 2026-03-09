@@ -6,6 +6,7 @@ import { Upload, MapPin, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
 import PhoneCodeSelect from '@/app/components/PhoneCodeSelect';
+import { toast } from 'sonner';
 
 const INITIAL_FORM = {
   restaurantName: '',
@@ -68,7 +69,7 @@ export default function AddRestaurantPage() {
     logo_url: null,
     cover_image_url: null,
     certificate_url: null,
-    license_document_url: null,
+    additional_certificate: null,
   });
   const [loadingRestaurant, setLoadingRestaurant] = useState(false);
 
@@ -249,9 +250,11 @@ export default function AddRestaurantPage() {
       restaurant?.certificate_url,
       restaurant?.tin_certificate_url
     ) || null,
-    license_document_url: pickFirstUrl(
+    additional_certificate: pickFirstUrl(
       restaurant?.license_document_url,
-      restaurant?.license_url
+      restaurant?.license_url,
+      restaurant?.additional_data?.additional_certificate,
+      restaurant?.additional_data?.additional_certificate_url
     ) || null,
   }), [pickFirstUrl]);
 
@@ -317,11 +320,17 @@ export default function AddRestaurantPage() {
         source?.assets?.certificate_url,
         source?.certificate_url
       ),
-      license_document_url: pickFirstRaw(
+      additional_certificate: pickFirstRaw(
         assets?.license_document_url,
+        assets?.additional_certificate,
+        assets?.additional_certificate_url,
         assets?.license_url,
         assets?.license,
         assets?.license_document_full_url,
+        source?.assets?.additional_certificate,
+        source?.assets?.additional_certificate_url,
+        source?.additional_certificate,
+        source?.additional_certificate_url,
         source?.assets?.license_document_url,
         source?.license_document_url
       ),
@@ -341,7 +350,7 @@ export default function AddRestaurantPage() {
         logo: 'logo_url',
         cover_image: 'cover_image_url',
         certificate: 'certificate_url',
-        license_document: 'license_document_url',
+        additional_certificate: 'additional_certificate',
       };
       const outputField = uploadedFieldMap[changedUniqueKeys[0]];
       if (outputField && !uploaded[outputField]) {
@@ -357,14 +366,14 @@ export default function AddRestaurantPage() {
     if (logoFile) changedAssetKeys.push('logo');
     if (coverFile) changedAssetKeys.push('cover_image');
     if (tinCertFile) changedAssetKeys.push('certificate');
-    if (licenseFile) changedAssetKeys.push('license_document');
+    if (licenseFile) changedAssetKeys.push('additional_certificate');
     const hasAnyAssetFile = changedAssetKeys.length > 0;
     if (!hasAnyAssetFile) {
       return {
         logo_url: null,
         cover_image_url: null,
         certificate_url: null,
-        license_document_url: null,
+        additional_certificate: null,
       };
     }
 
@@ -372,7 +381,7 @@ export default function AddRestaurantPage() {
     if (logoFile) formData.append('logo', logoFile);
     if (coverFile) formData.append('cover_image', coverFile);
     if (tinCertFile) formData.append('certificate', tinCertFile);
-    if (licenseFile) formData.append('license_document', licenseFile);
+    if (licenseFile) formData.append('additional_certificate', licenseFile);
 
     const response = await axios.post('/api/restaurants/uploads/restaurant-assets', formData, {
       headers: {
@@ -384,7 +393,7 @@ export default function AddRestaurantPage() {
     if (logoFile && !uploadedUrls.logo_url) throw new Error('Logo upload failed. URL not returned.');
     if (coverFile && !uploadedUrls.cover_image_url) throw new Error('Cover upload failed. URL not returned.');
     if (tinCertFile && !uploadedUrls.certificate_url) throw new Error('Certificate upload failed. URL not returned.');
-    if (licenseFile && !uploadedUrls.license_document_url) throw new Error('License upload failed. URL not returned.');
+    if (licenseFile && !uploadedUrls.additional_certificate) throw new Error('Additional certificate upload failed. URL not returned.');
 
     return uploadedUrls;
   };
@@ -433,7 +442,7 @@ export default function AddRestaurantPage() {
         additional_data: {
           additional_tin: form.additionalTin.trim(),
           additional_date: additionalDate,
-          license_document_url: uploadedAssetUrls.license_document_url || null,
+          additional_certificate: uploadedAssetUrls.additional_certificate || null,
         },
         contact_email: form.email.trim(),
         phone: ownerPhone,
@@ -489,7 +498,6 @@ export default function AddRestaurantPage() {
     const loadRestaurant = async () => {
       if (!isEditMode) return;
       setLoadingRestaurant(true);
-      setErrors((prev) => ({ ...prev, api: '' }));
       try {
         const token = localStorage.getItem('token') || '';
         const { restaurant, owner } = await fetchRestaurantById(token);
@@ -509,7 +517,7 @@ export default function AddRestaurantPage() {
         const logoRawUrl = extractedAssets.logo_url;
         const coverRawUrl = extractedAssets.cover_image_url;
         const certificateRawUrl = extractedAssets.certificate_url;
-        const licenseRawUrl = extractedAssets.license_document_url;
+        const licenseRawUrl = extractedAssets.additional_certificate;
         const logoUrl = toAbsoluteAssetUrl(logoRawUrl);
         const coverImageUrl = toAbsoluteAssetUrl(coverRawUrl);
         const certificateUrl = toAbsoluteAssetUrl(certificateRawUrl);
@@ -565,7 +573,7 @@ export default function AddRestaurantPage() {
         const message = axios.isAxiosError(error)
           ? error.response?.data?.message || error.message || 'Failed to load restaurant'
           : error?.message || 'Failed to load restaurant';
-        setErrors((prev) => ({ ...prev, api: message }));
+        toast.error(message);
       } finally {
         setLoadingRestaurant(false);
       }
@@ -578,7 +586,6 @@ export default function AddRestaurantPage() {
     e.preventDefault();
     if (!validate()) return;
 
-    setErrors((prev) => ({ ...prev, api: '' }));
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -601,7 +608,7 @@ export default function AddRestaurantPage() {
               logo_url: null,
               cover_image_url: null,
               certificate_url: null,
-              license_document_url: null,
+              additional_certificate: null,
             };
       const resolveUpdatedAssetUrl = (uploadedValue, existingValue) =>
         typeof uploadedValue === 'string' && uploadedValue.trim().length > 0
@@ -612,7 +619,7 @@ export default function AddRestaurantPage() {
           logo_url: resolveUpdatedAssetUrl(uploadedAssetUrls.logo_url, latestExistingAssets.logo_url),
           cover_image_url: resolveUpdatedAssetUrl(uploadedAssetUrls.cover_image_url, latestExistingAssets.cover_image_url),
           certificate_url: resolveUpdatedAssetUrl(uploadedAssetUrls.certificate_url, latestExistingAssets.certificate_url),
-          license_document_url: resolveUpdatedAssetUrl(uploadedAssetUrls.license_document_url, latestExistingAssets.license_document_url),
+          additional_certificate: resolveUpdatedAssetUrl(uploadedAssetUrls.additional_certificate, latestExistingAssets.additional_certificate),
         },
         { isEdit: isEditMode }
       );
@@ -632,12 +639,13 @@ export default function AddRestaurantPage() {
         });
       }
 
+      toast.success(isEditMode ? 'Restaurant updated successfully.' : 'Restaurant created successfully.');
       router.push('/dashboard/restaurants/list');
     } catch (error) {
       const cleanedMessage = axios.isAxiosError(error)
         ? (error.response?.data?.message || error.message || 'Something went wrong. Please try again.')
         : (error?.message || 'Something went wrong. Please try again.');
-      setErrors((prev) => ({ ...prev, api: cleanedMessage }));
+      toast.error(cleanedMessage);
     } finally {
       setLoading(false);
     }
@@ -668,11 +676,6 @@ export default function AddRestaurantPage() {
         {loadingRestaurant && (
           <div className="rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-700">
             Loading restaurant details...
-          </div>
-        )}
-        {errors.api && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errors.api}
           </div>
         )}
 

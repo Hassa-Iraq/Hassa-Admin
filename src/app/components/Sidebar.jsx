@@ -1,10 +1,44 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronDown, LayoutDashboard, ShoppingCart, Store, Users, FileText, Wallet, DollarSign, CreditCard, Building2, UserCircle, Settings, Bell, ChevronUp, Search, UtensilsCrossed, FolderTree, Puzzle, Star } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { useLanguage } from '@/app/i18n/LanguageContext';
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
+  const SIDEBAR_ICONS = {
+    dashboard: '/icons/Vector.png',
+    orders: '/icons/orders.png',
+    dispatch: '/icons/dispatch.png',
+    refund: '/icons/orderRefund.png',
+    restaurants: '/icons/restaurant.png',
+    foods: '/icons/food.png',
+    categories: '/icons/orders.png',
+    addons: '/icons/customer.png',
+    reviews: '/icons/customers.png',
+    customers: '/icons/customer.png',
+    wallet: '/icons/material-symbols_wallet.png',
+    apartments: '/icons/iocn4.png',
+    deliveryman: '/icons/driver.png',
+    employees: '/icons/employee.png',
+    riders: '/icons/radius.png',
+    collectCash: '/icons/cash.png',
+    restaurantWithdraw: '/icons/withdraw.png',
+    deliverymanPayments: '/icons/deliveryman.png',
+    withdrawMethod: '/icons/withdraw-method.png',
+    tax: '/icons/tax.png',
+    businessSetup: '/icons/business.png',
+    paymentMethod: '/icons/pay.png',
+    socialMedia: '/icons/social.png',
+    deliverymanSettings: '/icons/driver.png',
+    transactionReport: '/icons/cash.png',
+    foodReport: '/icons/food.png',
+    orderReport: '/icons/orders.png',
+    restaurantReport: '/icons/resReport.png',
+    taxReport: '/icons/taxReport.png',
+    customerReport: '/icons/customers.png',
+    restaurantWpReport: '/icons/dispatch.png',
+    marketing: '/icons/notification.png',
+  };
   const router = useRouter();
   const { dir, t } = useLanguage();
   const isRTL = dir === 'rtl';
@@ -171,7 +205,6 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         localStorage.setItem('sidebarPermissions', JSON.stringify(fallbackPermissions));
         window.dispatchEvent(new Event('sidebar-auth-updated'));
       } catch {
-        // Keep dashboard-only fallback if permissions cannot be resolved.
       }
     };
 
@@ -296,6 +329,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Deliveryman Payments': '/dashboard/transactions/deliveryman-payments',
     'Withdraw Method': '/dashboard/transactions/withdraw-method',
     'Tax Setup': '/dashboard/tax',
+    'Business Setup': '/dashboard/settings/business-setup',
     'Payment Method': '/dashboard/settings/payment-method',
     'Social Media': '/dashboard/settings/social-media',
     'Deliveryman Settings': '/dashboard/settings/deliveryman',
@@ -446,6 +480,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       return;
     }
 
+    if (pathname === '/dashboard/settings/business-setup') {
+      setActiveItem('Business Setup');
+      return;
+    }
+
     const match = pathname.match(/^\/dashboard\/orders\/([^/]+)$/);
     if (match) {
       const slug = match[1];
@@ -486,6 +525,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Add New Deliveryman': 'addNewDeliveryman',
     'Deliveryman List': 'deliverymanList',
     'Deliveryman Reviews': 'deliverymanReviews',
+    'Business Setup': 'businessSetup',
     'All Employees': 'allEmployees', 'Roles': 'roles', 'Permissions': 'permissions',
     'Daily Report': 'dailyReport', 'Monthly Report': 'monthlyReport', 'Yearly Report': 'yearlyReport',
     'Active Customers': 'activeCustomers', 'Inactive Customers': 'inactiveCustomers',
@@ -493,7 +533,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
 
   const menuItems = [
     {
-      icon: LayoutDashboard,
+      icon: SIDEBAR_ICONS.dashboard,
       label: 'Dashboard', tKey: 'dashboard',
       hasSubmenu: false
     },
@@ -501,114 +541,108 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       label: 'ORDER MANAGEMENT', tKey: 'orderManagement',
       isHeader: true,
       items: [
-        { icon: ShoppingCart, label: 'Orders', tKey: 'orders', key: 'orderManagement', submenu: ['All', 'Pending', 'Accepted', 'Processing', 'Scheduled', 'Food On The Way', 'Delivered', 'Cancelled', 'Refunded', 'Offline Payments', 'Payments Failed'] },
-        { icon: Store, label: 'Dispatch Management', tKey: 'dispatchManagement', key: 'dispatchManagement', submenu: ['Searching Deliverymen', 'Ongoing Orders'] },
-        { icon: ShoppingCart, label: 'Order Refund', tKey: 'orderRefund', key: 'orderRefunds', submenu: ['New Refund Request', 'Refund Cancelled', 'Refunded Orders'] }
+        { icon: SIDEBAR_ICONS.orders, label: 'Orders', tKey: 'orders', key: 'orderManagement', submenu: ['All', 'Pending', 'Accepted', 'Processing', 'Scheduled', 'Food On The Way', 'Delivered', 'Cancelled', 'Refunded', 'Offline Payments', 'Payments Failed'] },
+        { icon: SIDEBAR_ICONS.dispatch, label: 'Dispatch Management', tKey: 'dispatchManagement', key: 'dispatchManagement', submenu: ['Searching Deliverymen', 'Ongoing Orders'] },
+        { icon: SIDEBAR_ICONS.refund, label: 'Order Refund', tKey: 'orderRefund', key: 'orderRefunds', submenu: ['New Refund Request', 'Refund Cancelled', 'Refunded Orders'] }
       ]
     },
     {
       label: 'VENDOR MANAGEMENT', tKey: 'vendorManagement',
       isHeader: true,
       items: [
-        { icon: Store, label: 'Restaurants', tKey: 'restaurants', key: 'vendorManagement', submenu: ['Add Restaurants', 'Restaurant List', 'New Joining Request'] },
+        { icon: SIDEBAR_ICONS.restaurants, label: 'Restaurants', tKey: 'restaurants', key: 'vendorManagement', submenu: ['Add Restaurants', 'Restaurant List', 'New Joining Request'] },
       ]
     },
     {
       label: 'FOOD MANAGEMENT', tKey: 'foodManagement',
       isHeader: true,
       items: [
-        { icon: UtensilsCrossed, label: 'Foods', tKey: 'foods', key: 'foodManagement', submenu: ['Add New Item', 'List'] },
-        { icon: FolderTree, label: 'Categories', tKey: 'categories', key: 'categoriesManagement', submenu: ['Add Category', 'Category', 'Add Subcategory', 'Sub category'] },
-        { icon: Puzzle, label: 'Addons', tKey: 'addons', hasSubmenu: false },
-        { icon: Star, label: 'Reviews', tKey: 'reviews', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.foods, label: 'Foods', tKey: 'foods', key: 'foodManagement', submenu: ['Add New Item', 'List'] },
+        { icon: SIDEBAR_ICONS.categories, label: 'Categories', tKey: 'categories', key: 'categoriesManagement', submenu: ['Add Category', 'Category', 'Add Subcategory', 'Sub category'] },
+        { icon: SIDEBAR_ICONS.addons, label: 'Addons', tKey: 'addons', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.reviews, label: 'Reviews', tKey: 'reviews', hasSubmenu: false },
       ]
     },
     {
       label: 'CUSTOMER MANAGEMENT', tKey: 'customerManagement',
       isHeader: true,
       items: [
-        { icon: Users, label: 'Customers', tKey: 'customers', hasSubmenu: false }
+        { icon: SIDEBAR_ICONS.customers, label: 'Customers', tKey: 'customers', hasSubmenu: false }
       ]
     },
     {
       label: 'WALLET MANAGEMENT', tKey: 'walletManagement',
       isHeader: true,
       items: [
-        { icon: Wallet, label: 'Wallet', tKey: 'wallet', key: 'walletManagement', submenu: ['Customer Wallet', 'Vendor Wallet', 'Driver Wallet'] }
-      ]
-    },
-    {
-      label: 'APARTMENT MANAGEMENT', tKey: 'radiusManagement',
-      isHeader: true,
-      items: [
-        { icon: Building2, label: 'Zip/Apartments', tKey: 'ridersSetup', key: 'apartmentManagement', submenu: ['All Apartments', 'Add New'] }
+        { icon: SIDEBAR_ICONS.wallet, label: 'Wallet', tKey: 'wallet', key: 'walletManagement', submenu: ['Customer Wallet', 'Vendor Wallet', 'Driver Wallet'] }
       ]
     },
     {
       label: 'DELIVERY MANAGEMENT', tKey: 'deliveryManagement',
       isHeader: true,
       items: [
-        { icon: UserCircle, label: 'Deliveryman', tKey: 'deliveryman', key: 'deliveryManagement', submenu: ['New Join Request', 'Add New Deliveryman', 'Deliveryman List', 'Deliveryman Reviews'] },
+        { icon: SIDEBAR_ICONS.deliveryman, label: 'Deliveryman', tKey: 'deliveryman', key: 'deliveryManagement', submenu: ['New Join Request', 'Add New Deliveryman', 'Deliveryman List', 'Deliveryman Reviews'] },
       ]
     },
     {
       label: 'EMPLOYEE MANAGEMENT', tKey: 'employeeManagement',
       isHeader: true,
       items: [
-        { icon: UserCircle, label: 'Employees', tKey: 'employees', key: 'employeeManagement', submenu: ['Employee Role', 'Add New Employee', 'Employee List'] },
+        { icon: SIDEBAR_ICONS.employees, label: 'Employees', tKey: 'employees', key: 'employeeManagement', submenu: ['Employee Role', 'Add New Employee', 'Employee List'] },
       ]
     },
     {
       label: 'RADIUS MANAGEMENT', tKey: 'radiusManagement',
       isHeader: true,
       items: [
-        { icon: Users, label: 'Riders Setup', tKey: 'ridersSetup', hasSubmenu: false }
+        { icon: SIDEBAR_ICONS.riders, label: 'Riders Setup', tKey: 'ridersSetup', hasSubmenu: false }
       ]
     },
     {
       label: 'TRANSACTION MANAGEMENT', tKey: 'transactionManagement',
       isHeader: true,
       items: [
-        { icon: DollarSign, label: 'Collect Cash', tKey: 'collectCash', hasSubmenu: false },
-        { icon: CreditCard, label: 'Restaurant Withdraw', tKey: 'restaurantWithdraw', hasSubmenu: false },
-        { icon: CreditCard, label: 'Deliveryman Payments', tKey: 'deliverymanPayments', hasSubmenu: false },
-        { icon: FileText, label: 'Withdraw Method', tKey: 'withdrawMethod', hasSubmenu: false }
+        { icon: SIDEBAR_ICONS.collectCash, label: 'Collect Cash', tKey: 'collectCash', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.restaurantWithdraw, label: 'Restaurant Withdraw', tKey: 'restaurantWithdraw', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.deliverymanPayments, label: 'Deliveryman Payments', tKey: 'deliverymanPayments', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.withdrawMethod, label: 'Withdraw Method', tKey: 'withdrawMethod', hasSubmenu: false }
       ]
     },
     {
       label: 'TAX MANAGEMENT', tKey: 'taxManagement',
       isHeader: true,
       items: [
-        { icon: FileText, label: 'Tax Setup', tKey: 'taxSetup', hasSubmenu: false }
+        { icon: SIDEBAR_ICONS.tax, label: 'Tax Setup', tKey: 'taxSetup', hasSubmenu: false }
       ]
     },
     {
       label: 'BUSINESS SETTINGS', tKey: 'businessSettings',
       isHeader: true,
       items: [
-        { icon: Settings, label: 'Payment Method', tKey: 'paymentMethod', hasSubmenu: false },
-        { icon: Settings, label: 'Social Media', tKey: 'socialMedia', hasSubmenu: false },
-        { icon: Settings, label: 'Deliveryman Settings', tKey: 'deliverymanSettings', hasSubmenu: false }
+        { icon: SIDEBAR_ICONS.businessSetup, label: 'Business Setup', tKey: 'businessSetup', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.paymentMethod, label: 'Payment Method', tKey: 'paymentMethod', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.socialMedia, label: 'Social Media', tKey: 'socialMedia', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.deliverymanSettings, label: 'Deliveryman Settings', tKey: 'deliverymanSettings', hasSubmenu: false }
       ]
     },
     {
       label: 'REPORT MANAGEMENT', tKey: 'reportManagement',
       isHeader: true,
       items: [
-        { icon: FileText, label: 'Transaction Report', tKey: 'transactionReport', hasSubmenu: false },
-        { icon: FileText, label: 'Food Report', tKey: 'foodReport', hasSubmenu: false },
-        { icon: FileText, label: 'Order Report', tKey: 'orderReport', key: 'reportLog', submenu: ['Daily Report', 'Monthly Report', 'Yearly Report'] },
-        { icon: FileText, label: 'Restaurant Report', tKey: 'restaurantReport', hasSubmenu: false },
-        { icon: FileText, label: 'Tax Report', tKey: 'taxReport', hasSubmenu: false },
-        { icon: FileText, label: 'Customer Report', tKey: 'customerReport', key: 'customerReport', submenu: ['Active Customers', 'Inactive Customers'] },
-        { icon: FileText, label: 'Restaurant WP Report', tKey: 'restaurantWPReport', hasSubmenu: false }
+        { icon: SIDEBAR_ICONS.transactionReport, label: 'Transaction Report', tKey: 'transactionReport', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.foodReport, label: 'Food Report', tKey: 'foodReport', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.orderReport, label: 'Order Report', tKey: 'orderReport', key: 'reportLog', submenu: ['Daily Report', 'Monthly Report', 'Yearly Report'] },
+        { icon: SIDEBAR_ICONS.restaurantReport, label: 'Restaurant Report', tKey: 'restaurantReport', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.taxReport, label: 'Tax Report', tKey: 'taxReport', hasSubmenu: false },
+        { icon: SIDEBAR_ICONS.customerReport, label: 'Customer Report', tKey: 'customerReport', key: 'customerReport', submenu: ['Active Customers', 'Inactive Customers'] },
+        { icon: SIDEBAR_ICONS.restaurantWpReport, label: 'Restaurant WP Report', tKey: 'restaurantWPReport', hasSubmenu: false }
       ]
     },
     {
       label: 'MARKETING', tKey: 'marketing',
       isHeader: true,
       items: [
-        { icon: Bell, label: 'Push Notification', tKey: 'pushNotification', hasSubmenu: false }
+        { icon: SIDEBAR_ICONS.marketing, label: 'Push Notification', tKey: 'pushNotification', hasSubmenu: false }
       ]
     }
   ];
@@ -771,7 +805,11 @@ ${activeItem === item.label
 }`}
           onClick={() => handleSubItemClick(item, hasSubmenu)}
         >
-          {Icon && <Icon size={18} />}
+          {typeof Icon === 'string' ? (
+            <img src={Icon} alt={item.label} className="h-4 w-4 object-contain" />
+          ) : Icon ? (
+            <Icon size={18} />
+          ) : null}
           <span className="min-w-0 flex-1 truncate font-semibold text-[#1E1E24]">
             {t[item.tKey] || item.label}
           </span>
@@ -830,7 +868,11 @@ ${activeItem === item.label
           if (item.label === 'Dashboard') router.push('/dashboard');
         }}
       >
-        {Icon && <Icon size={18} />}
+        {typeof Icon === 'string' ? (
+          <img src={Icon} alt={item.label} className="h-4 w-4 object-contain" />
+        ) : Icon ? (
+          <Icon size={18} />
+        ) : null}
         <span>{t[item.tKey] || item.label}</span>
       </div>
     );

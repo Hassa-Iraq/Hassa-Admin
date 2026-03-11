@@ -36,6 +36,7 @@ const en = {
   allEmployees: 'All Employees',
   roles: 'Roles',
   permissions: 'Permissions',
+  apartmentManagement: 'APARTMENT MANAGEMENT',
   radiusManagement: 'RADIUS MANAGEMENT',
   ridersSetup: 'Riders Setup',
   transactionManagement: 'TRANSACTION MANAGEMENT',

@@ -36,6 +36,7 @@ const ar = {
   allEmployees: 'جميع الموظفين',
   roles: 'الأدوار',
   permissions: 'الصلاحيات',
+  apartmentManagement: 'إدارة الشقق',
   radiusManagement: 'إدارة النطاق',
   ridersSetup: 'إعداد السائقين',
   transactionManagement: 'إدارة المعاملات',

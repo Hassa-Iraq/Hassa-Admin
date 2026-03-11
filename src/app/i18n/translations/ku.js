@@ -36,6 +36,7 @@ const ku = {
   allEmployees: 'هەموو کارمەندەکان',
   roles: 'ڕۆڵەکان',
   permissions: 'مۆڵەتەکان',
+  apartmentManagement: 'بەڕێوەبردنی بینا',
   radiusManagement: 'بەڕێوەبردنی مەودا',
   ridersSetup: 'ڕێکخستنی شۆفێرەکان',
   transactionManagement: 'بەڕێوەبردنی مامەڵەکان',

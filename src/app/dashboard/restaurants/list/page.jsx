@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 const PER_PAGE = 20;
-const DEFAULT_RESTAURANT_IMAGE = '/default-image.svg';
+const DEFAULT_RESTAURANT_IMAGE = '/default-restaurant-image.svg';
 
 const STATS = [
   { key: 'total', label: 'Total Restaurants',        icon: '/images/mdi.png',    bg: 'bg-[#F3EAFF]', border: 'border-[#6001D2]' },

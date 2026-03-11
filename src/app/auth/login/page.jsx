@@ -53,14 +53,28 @@ export default function LoginPage() {
         throw new Error(data.message || 'Invalid email or password');
       }
 
+      const user = data.user || data.data?.user || data.data;
+      const normalizedRole = normalizeRole(user, data);
+      if (normalizedRole === 'driver') {
+        // Block driver role from admin panel access.
+        try {
+          localStorage.removeItem('token');
+          localStorage.removeItem('adminUser');
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('sidebarPermissions');
+          document.cookie = 'token=; path=/; max-age=0; SameSite=Lax';
+        } catch {
+          // Ignore storage cleanup failures.
+        }
+        throw new Error('Driver role is not allowed to login in admin panel.');
+      }
+
       const token = data.token || data.accessToken || data.data?.token;
       if (token) {
         document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
         localStorage.setItem('token', token);
       }
 
-      const user = data.user || data.data?.user || data.data;
-      const normalizedRole = normalizeRole(user, data);
       const permissions =
         user?.role?.permissions ||
         user?.employee_permissions ||

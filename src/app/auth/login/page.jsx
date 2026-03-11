@@ -5,13 +5,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -34,7 +33,6 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
@@ -118,10 +116,10 @@ export default function LoginPage() {
         // Ignore event dispatch failures.
       }
 
-      setSuccess('Login successful! Redirecting...');
+      toast.success('Login successful! Redirecting...');
       setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.');
+      toast.error(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -168,19 +166,6 @@ export default function LoginPage() {
                     Access Your Admin Panel
                   </p>
                 </div>
-
-                {/* Error Message */}
-                {error && (
-                  <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
-                    {error}
-                  </div>
-                )}
-
-                {success && (
-                  <div className="mb-4 px-4 py-3 rounded-lg bg-green-50 border border-green-200 text-green-600 text-sm">
-                    {success}
-                  </div>
-                )}
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">

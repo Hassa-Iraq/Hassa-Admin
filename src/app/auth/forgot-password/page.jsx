@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import PhoneCodeSelect from '@/app/components/PhoneCodeSelect';
+import { toast } from 'sonner';
 
 const PHONE_CODE_OPTIONS = [
   { value: '+1', code: 'US', flagUrl: 'https://flagcdn.com/w20/us.png' },
@@ -20,8 +21,6 @@ export default function ForgotPasswordPage() {
   const router = useRouter();
   const [step, setStep] = useState(1); // 1: request OTP, 2: verify OTP, 3: reset password
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -31,11 +30,6 @@ export default function ForgotPasswordPage() {
     newPassword: '',
     confirmPassword: '',
   });
-
-  const clearAlerts = () => {
-    setError('');
-    setSuccess('');
-  };
 
   const updateField = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -53,11 +47,10 @@ export default function ForgotPasswordPage() {
 
   const handleSendOtp = async (event) => {
     event.preventDefault();
-    clearAlerts();
 
     const phoneNumber = buildPhoneNumber();
     if (!phoneNumber) {
-      setError('Phone number is required.');
+      toast.error('Phone number is required.');
       return;
     }
 
@@ -75,10 +68,10 @@ export default function ForgotPasswordPage() {
         throw new Error(data?.message || 'Failed to send OTP.');
       }
 
-      setSuccess(data?.message || 'OTP sent successfully.');
+      toast.success(data?.message || 'OTP sent successfully.');
       setStep(2);
     } catch (apiError) {
-      setError(apiError?.message || 'Failed to send OTP.');
+      toast.error(apiError?.message || 'Failed to send OTP.');
     } finally {
       setLoading(false);
     }
@@ -86,11 +79,10 @@ export default function ForgotPasswordPage() {
 
   const handleVerifyOtp = async (event) => {
     event.preventDefault();
-    clearAlerts();
 
     const phoneNumber = buildPhoneNumber();
     if (!phoneNumber || !formData.otp.trim()) {
-      setError('Phone number and OTP are required.');
+      toast.error('Phone number and OTP are required.');
       return;
     }
 
@@ -109,10 +101,10 @@ export default function ForgotPasswordPage() {
         throw new Error(data?.message || 'Invalid OTP.');
       }
 
-      setSuccess(data?.message || 'OTP verified successfully.');
+      toast.success(data?.message || 'OTP verified successfully.');
       setStep(3);
     } catch (apiError) {
-      setError(apiError?.message || 'Invalid OTP.');
+      toast.error(apiError?.message || 'Invalid OTP.');
     } finally {
       setLoading(false);
     }
@@ -120,19 +112,18 @@ export default function ForgotPasswordPage() {
 
   const handleResetPassword = async (event) => {
     event.preventDefault();
-    clearAlerts();
 
     const phoneNumber = buildPhoneNumber();
     if (!phoneNumber) {
-      setError('Phone number is required.');
+      toast.error('Phone number is required.');
       return;
     }
     if (!formData.newPassword) {
-      setError('New password is required.');
+      toast.error('New password is required.');
       return;
     }
     if (formData.newPassword !== formData.confirmPassword) {
-      setError('Passwords do not match.');
+      toast.error('Passwords do not match.');
       return;
     }
 
@@ -152,10 +143,10 @@ export default function ForgotPasswordPage() {
         throw new Error(data?.message || 'Failed to reset password.');
       }
 
-      setSuccess(data?.message || 'Password reset successful. Redirecting to login...');
+      toast.success(data?.message || 'Password reset successful. Redirecting to login...');
       setTimeout(() => router.push('/auth/login'), 1200);
     } catch (apiError) {
-      setError(apiError?.message || 'Failed to reset password.');
+      toast.error(apiError?.message || 'Failed to reset password.');
     } finally {
       setLoading(false);
     }
@@ -198,18 +189,6 @@ export default function ForgotPasswordPage() {
                     {step === 3 && 'Set your new password'}
                   </p>
                 </div>
-
-                {error && (
-                  <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
-                    {error}
-                  </div>
-                )}
-
-                {success && (
-                  <div className="mb-4 px-4 py-3 rounded-lg bg-green-50 border border-green-200 text-green-600 text-sm">
-                    {success}
-                  </div>
-                )}
 
                 {step === 1 && (
                   <form onSubmit={handleSendOtp} className="space-y-4">

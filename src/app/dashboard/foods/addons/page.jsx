@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Download, Pencil, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const INITIAL_FORM = {
   name: 'Cheese',
@@ -44,7 +45,7 @@ export default function AddonsPage() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    alert('Addon form is ready to connect with API.');
+    toast.info('Addon form is ready to connect with API.');
   };
 
   return (

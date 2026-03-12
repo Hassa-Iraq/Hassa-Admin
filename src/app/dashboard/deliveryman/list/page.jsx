@@ -6,6 +6,7 @@ import axios from 'axios';
 import { Download, Eye, Search, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import { API_BASE_URL } from '@/app/config';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const PER_PAGE = 20;
 const RESTAURANT_ROLES = ['restaurant', 'resturant', 'restaurant_admin', 'vendor'];
@@ -291,11 +292,7 @@ export default function DeliverymanListPage() {
             </thead>
             <tbody>
               {loading && (
-                <tr>
-                  <td colSpan={7} className="px-3 py-10 text-center text-xs text-gray-400">
-                    Loading deliverymen...
-                  </td>
-                </tr>
+                <TableLoadingSkeleton colSpan={7} rows={8} />
               )}
 
               {!loading && fetchError && (

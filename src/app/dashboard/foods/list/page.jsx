@@ -5,6 +5,7 @@ import { Download, Pencil, Search, SlidersHorizontal, Trash2, ChevronLeft, Chevr
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const PER_PAGE = 20;
 const UUID_REGEX =
@@ -329,11 +330,7 @@ export default function FoodListPage() {
             </thead>
             <tbody>
               {loading && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-400">
-                    Loading menu items...
-                  </td>
-                </tr>
+                <TableLoadingSkeleton colSpan={7} rows={8} />
               )}
 
               {!loading && fetchError && (

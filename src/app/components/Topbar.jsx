@@ -61,6 +61,41 @@ const extractRoleKey = (payload, user) => {
   return roleSource.trim().toLowerCase().replace(/\s+/g, '_');
 };
 
+const isRestaurantBlocked = (payload, user) => {
+  const normalizeBlocked = (value) => {
+    if (value === true || value === 1 || value === '1') return true;
+    if (value === false || value === 0 || value === '0') return false;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'blocked') return true;
+      if (normalized === 'unblocked') return false;
+    }
+    return null;
+  };
+
+  const restaurant =
+    payload?.restaurant ||
+    payload?.data?.restaurant ||
+    payload?.data?.restaurants?.[0] ||
+    user?.restaurant ||
+    user?.restaurants?.[0] ||
+    null;
+
+  const direct =
+    normalizeBlocked(restaurant?.is_blocked) ??
+    normalizeBlocked(restaurant?.isBlocked) ??
+    normalizeBlocked(restaurant?.blocked) ??
+    normalizeBlocked(restaurant?.status);
+  if (direct !== null) return direct;
+
+  const activeValue =
+    normalizeBlocked(restaurant?.is_active) ??
+    normalizeBlocked(restaurant?.active);
+  if (activeValue !== null) return !activeValue;
+
+  return false;
+};
+
 export default function Topbar({ title, subtitle, rightContent }) {
   const router = useRouter();
   const { locale, dir, t, changeLanguage } = useLanguage();
@@ -180,6 +215,19 @@ export default function Topbar({ title, subtitle, rightContent }) {
           setAdmin(normalized);
           localStorage.setItem('adminUser', JSON.stringify(normalized));
           const roleKey = extractRoleKey(data, user);
+          if (roleKey === 'restaurant' && isRestaurantBlocked(data, user)) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('adminUser');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('sidebarPermissions');
+            localStorage.removeItem('restaurant_id');
+            localStorage.removeItem('selectedRestaurantId');
+            document.cookie = 'token=; path=/; max-age=0; SameSite=Lax';
+            emitSidebarAuthUpdate();
+            router.push('/auth/restaurant-blocked');
+            setProfileReady(true);
+            return true;
+          }
           if (roleKey) {
             localStorage.setItem('userRole', roleKey);
           } else {
@@ -262,7 +310,7 @@ export default function Topbar({ title, subtitle, rightContent }) {
     : '';
 
   return (
-    <div className={`fixed top-0 h-auto md:h-[144px] bg-white z-30 ${isRTL ? 'left-0 right-0 md:right-64' : 'left-0 right-0 md:left-64'}`}>
+    <div className="w-full h-auto md:h-[144px] bg-white z-30">
       <div className="h-full flex flex-col">
 
         {/* ===== ROW 1 ===== */}

@@ -4,12 +4,14 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 import {
   Search, Download,
   CreditCard, TrendingUp, ArrowDownLeft,
   Eye, Edit2,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const PER_PAGE = 20;
 const DEFAULT_RESTAURANT_IMAGE = '/default-restaurant-image.svg';
@@ -31,7 +33,9 @@ const TRANSACTIONS = [
 export default function RestaurantListPage() {
   const router = useRouter();
   const [userRole, setUserRole] = useState('');
+  const [currentRestaurantId, setCurrentRestaurantId] = useState('');
   const canEditRestaurant = ['admin', 'super_admin', 'superadmin', 'restaurant'].includes(userRole);
+  const canManageRestaurantBlockStatus = ['admin', 'super_admin', 'superadmin'].includes(userRole);
   const canToggleRestaurantOpenStatus = userRole === 'restaurant';
   const [restaurants, setRestaurants] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -47,6 +51,9 @@ export default function RestaurantListPage() {
   const [statuses, setStatuses] = useState({});
   const [baseStatuses, setBaseStatuses] = useState({});
   const [statusUpdating, setStatusUpdating] = useState({});
+  const [blockedStatuses, setBlockedStatuses] = useState({});
+  const [baseBlockedStatuses, setBaseBlockedStatuses] = useState({});
+  const [blockUpdating, setBlockUpdating] = useState({});
   const [statusError, setStatusError] = useState('');
   const [page, setPage] = useState(1);
   const [cuisineFilter, setCuisineFilter] = useState('');
@@ -57,8 +64,14 @@ export default function RestaurantListPage() {
     try {
       const role = localStorage.getItem('userRole') || '';
       setUserRole(String(role).trim().toLowerCase());
+      const restaurantId =
+        localStorage.getItem('restaurant_id') ||
+        localStorage.getItem('selectedRestaurantId') ||
+        '';
+      setCurrentRestaurantId(String(restaurantId).trim());
     } catch {
       setUserRole('');
+      setCurrentRestaurantId('');
     }
   }, []);
 
@@ -163,6 +176,34 @@ export default function RestaurantListPage() {
       return false;
     };
 
+    const resolveRestaurantBlockedStatus = (item) => {
+      const normalize = (value) => {
+        if (value === true || value === 1 || value === '1') return true;
+        if (value === false || value === 0 || value === '0') return false;
+        if (typeof value === 'string') {
+          const v = value.trim().toLowerCase();
+          if (v === 'blocked') return true;
+          if (v === 'unblocked') return false;
+        }
+        return null;
+      };
+
+      const directBlocked =
+        normalize(item?.is_blocked) ??
+        normalize(item?.isBlocked) ??
+        normalize(item?.blocked) ??
+        normalize(item?.is_block);
+      if (directBlocked !== null) return directBlocked;
+
+      const isActive =
+        toBoolean(item?.is_active) ??
+        toBoolean(item?.isActive) ??
+        toBoolean(item?.active);
+      if (isActive !== null) return !isActive;
+
+      return false;
+    };
+
     const normalizeRestaurant = (item, index) => {
       const editId =
         item?.id ??
@@ -185,10 +226,21 @@ export default function RestaurantListPage() {
         item?.vendor?.dialCode ||
         '';
       const rawPhone = item?.phone || item?.vendor?.phone || '';
+      const parentRestaurantIdRaw =
+        item?.parent_restaurant_id ??
+        item?.parent_id ??
+        item?.branch_of_restaurant_id ??
+        item?.main_restaurant_id ??
+        item?.restaurant?.parent_restaurant_id ??
+        item?.restaurant?.parent_id ??
+        '';
+      const parentRestaurantId = parentRestaurantIdRaw ? String(parentRestaurantIdRaw).trim() : '';
 
       return {
         id: editId || `${page}-${index}`,
         editId: editId || '',
+        parentRestaurantId,
+        isBranch: Boolean(parentRestaurantId),
         name: item?.name || item?.restaurant_name || item?.translations?.[0]?.name || 'N/A',
         image:
           normalizeImage(item?.logo_url) ||
@@ -206,12 +258,20 @@ export default function RestaurantListPage() {
         owner: ownerName || item?.owner_name || 'N/A',
         ownerEmail: item?.vendor?.email || item?.owner_email || item?.email || '-',
         phone: formatPhoneWithFlag(formatPhone(rawPhone, countryCode), countryCode),
-        radius: item?.radius || item?.delivery_time || item?.zone || '-',
+        address:
+          item?.address ||
+          item?.location ||
+          item?.street ||
+          item?.vendor?.address ||
+          item?.zone?.name ||
+          item?.zone ||
+          '-',
         cuisine:
           (typeof item?.cuisine === 'string' && item.cuisine.trim()) ||
           item?.cuisine?.name ||
           item?.cuisine_name ||
           'Cuisine not found',
+        blocked: resolveRestaurantBlockedStatus(item),
         status: resolveRestaurantOpenStatus(item),
         createdAt: item?.created_at || item?.createdAt || null,
       };
@@ -240,7 +300,41 @@ export default function RestaurantListPage() {
           data?.data ||
           [];
 
-        const normalized = (Array.isArray(list) ? list : []).map(normalizeRestaurant);
+        const toBranchArray = (value) => {
+          if (Array.isArray(value)) return value;
+          if (value && typeof value === 'object') {
+            if (Array.isArray(value?.data)) return value.data;
+            return Object.values(value).filter((item) => item && typeof item === 'object');
+          }
+          return [];
+        };
+
+        const flattenedList = (Array.isArray(list) ? list : []).flatMap((item) => {
+          const parentId =
+            item?.id ??
+            item?.restaurant_id ??
+            item?.restaurantId ??
+            item?.restaurant?.id ??
+            item?.restaurant?.restaurant_id ??
+            '';
+          const branches = toBranchArray(
+            item?.branches ??
+            item?.restaurant_branches ??
+            item?.branches_data ??
+            item?.branch_list
+          ).map((branchItem) => ({
+            ...branchItem,
+            parent_restaurant_id:
+              branchItem?.parent_restaurant_id ??
+              branchItem?.parent_id ??
+              branchItem?.branch_of_restaurant_id ??
+              parentId,
+          }));
+
+          return [item, ...branches];
+        });
+
+        const normalized = flattenedList.map(normalizeRestaurant);
         setRestaurants(normalized);
 
         const toNumber = (value, fallback = null) => {
@@ -331,6 +425,23 @@ export default function RestaurantListPage() {
     });
   }, [restaurants]);
 
+  useEffect(() => {
+    setBlockedStatuses((prev) => {
+      const next = { ...prev };
+      restaurants.forEach((r) => {
+        if (next[r.id] === undefined) next[r.id] = Boolean(r.blocked);
+      });
+      return next;
+    });
+    setBaseBlockedStatuses((prev) => {
+      const next = { ...prev };
+      restaurants.forEach((r) => {
+        if (next[r.id] === undefined) next[r.id] = Boolean(r.blocked);
+      });
+      return next;
+    });
+  }, [restaurants]);
+
   const displaySummary = useMemo(() => {
     let activeDelta = 0;
 
@@ -354,7 +465,25 @@ export default function RestaurantListPage() {
   }, [summary, statuses, baseStatuses]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
-  const paginated = restaurants;
+  const orderedRestaurants = useMemo(() => {
+    if (userRole !== 'restaurant') return restaurants;
+    if (!currentRestaurantId) return restaurants;
+
+    const mainRestaurant = restaurants.find((item) => String(item.editId) === currentRestaurantId) || null;
+    const branches = restaurants.filter((item) => String(item.parentRestaurantId) === currentRestaurantId);
+    const consumed = new Set([
+      ...(mainRestaurant ? [String(mainRestaurant.editId)] : []),
+      ...branches.map((item) => String(item.editId)),
+    ]);
+    const others = restaurants.filter((item) => !consumed.has(String(item.editId)));
+
+    return [
+      ...(mainRestaurant ? [{ ...mainRestaurant, isBranch: false }] : []),
+      ...branches.map((item) => ({ ...item, isBranch: true })),
+      ...others,
+    ];
+  }, [restaurants, userRole, currentRestaurantId]);
+  const paginated = orderedRestaurants;
 
   const toggle = async (restaurant) => {
     if (!canToggleRestaurantOpenStatus) return;
@@ -380,12 +509,14 @@ export default function RestaurantListPage() {
 
       setStatuses((prev) => ({ ...prev, [localId]: nextStatus }));
       setBaseStatuses((prev) => ({ ...prev, [localId]: nextStatus }));
+      toast.success(`Restaurant ${nextStatus ? 'opened' : 'closed'} successfully.`);
     } catch (error) {
       setStatuses((prev) => ({ ...prev, [localId]: !nextStatus }));
       const message = axios.isAxiosError(error)
         ? error.response?.data?.message || error.message || 'Failed to update status'
         : error?.message || 'Failed to update status';
       setStatusError(message);
+      toast.error(message);
     } finally {
       setStatusUpdating((prev) => ({ ...prev, [localId]: false }));
     }
@@ -393,9 +524,15 @@ export default function RestaurantListPage() {
 
   const handleExport = () => {
     if (!restaurants.length) return;
-    const headers = ['SI', 'Restaurant Name', 'Owner', 'Phone', 'Radius', 'Cuisine', 'Status'];
+    const headers = ['SI', 'Restaurant Name', 'Owner', 'Phone', 'Address', 'Cuisine', 'Status'];
     const rows = restaurants.map((r, i) => [
-      (page - 1) * PER_PAGE + i + 1, r.name, r.owner, r.phone, r.radius, r.cuisine, statuses[r.id] ? 'Active' : 'Inactive',
+      (page - 1) * PER_PAGE + i + 1,
+      r.name,
+      r.owner,
+      r.phone,
+      r.address,
+      r.cuisine,
+      statuses[r.id] ? 'Open' : 'Close',
     ]);
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -407,6 +544,43 @@ export default function RestaurantListPage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const toggleBlockedStatus = async (restaurant) => {
+    const localId = restaurant?.id;
+    const apiRestaurantId = restaurant?.editId;
+    if (!localId || !apiRestaurantId) return;
+    if (!canManageRestaurantBlockStatus) return;
+    if (blockUpdating[localId]) return;
+
+    const nextBlocked = !Boolean(blockedStatuses[localId]);
+    setStatusError('');
+    setBlockedStatuses((prev) => ({ ...prev, [localId]: nextBlocked }));
+    setBlockUpdating((prev) => ({ ...prev, [localId]: true }));
+
+    try {
+      const token = localStorage.getItem('token') || '';
+      const requestConfig = {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      };
+      const endpoint = nextBlocked
+        ? `/api/restaurants/${apiRestaurantId}/block`
+        : `/api/restaurants/${apiRestaurantId}/unblock`;
+      await axios.patch(endpoint, {}, requestConfig);
+      setBaseBlockedStatuses((prev) => ({ ...prev, [localId]: nextBlocked }));
+      toast.success(`Restaurant ${nextBlocked ? 'blocked' : 'unblocked'} successfully.`);
+    } catch (error) {
+      setBlockedStatuses((prev) => ({ ...prev, [localId]: !nextBlocked }));
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message || error.message || 'Failed to update block status'
+        : error?.message || 'Failed to update block status';
+      setStatusError(message);
+      toast.error(message);
+    } finally {
+      setBlockUpdating((prev) => ({ ...prev, [localId]: false }));
+    }
   };
 
   return (
@@ -517,14 +691,14 @@ export default function RestaurantListPage() {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto overflow-y-auto max-h-[52vh]">
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
                 <th className="text-left px-6 py-3 text-[12px] font-semibold text-black">SI</th>
                 <th className="text-left px-4 py-3 text-[12px] font-semibold text-black">Restaurant Info</th>
                 <th className="text-left px-4 py-3 text-[12px] font-semibold text-black">Owner Information</th>
-                <th className="text-left px-4 py-3 text-[12px] font-semibold text-black">Radius</th>
+                <th className="text-left px-4 py-3 text-[12px] font-semibold text-black">Address</th>
                 <th className="text-left px-4 py-3 text-[12px] font-semibold text-black">Cuisine</th>
                 <th className="text-left px-4 py-3 text-[12px] font-semibold text-balck">Status</th>
                 <th className="text-left px-4 py-3 text-[12px] font-semibold text-black">Actions</th>
@@ -532,11 +706,7 @@ export default function RestaurantListPage() {
             </thead>
             <tbody>
               {loading && (
-                <tr>
-                  <td colSpan={7} className="text-center py-10 text-gray-400 text-sm">
-                    Loading restaurants...
-                  </td>
-                </tr>
+                <TableLoadingSkeleton colSpan={7} rows={8} />
               )}
 
               {!loading && fetchError && (
@@ -575,6 +745,9 @@ export default function RestaurantListPage() {
                       </div>
                       <div>
                         <p className="font-semibold text-[#1E1E24] text-xs">{r.name}</p>
+                        {r.isBranch && (
+                          <p className="text-[10px] text-purple-500">Branch</p>
+                        )}
                         <div className="flex items-center gap-1 mt-0.5">
                           {'★★★★★'.split('').map((s, i) => (
                             <span key={i} className={`text-[10px] ${i < Math.round(r.rating || 0) ? 'text-amber-400' : 'text-gray-300'}`}>★</span>
@@ -591,8 +764,8 @@ export default function RestaurantListPage() {
                     <p className="text-[10px] text-gray-400">{r.phone}</p>
                   </td>
 
-                  {/* Radius */}
-                  <td className="px-4 py-3 text-xs text-gray-600">{r.radius}</td>
+                  {/* Address */}
+                  <td className="px-4 py-3 text-xs text-gray-600">{r.address}</td>
 
                   {/* Cuisine */}
                   <td className="px-4 py-3">
@@ -605,7 +778,7 @@ export default function RestaurantListPage() {
                     </span>
                   </td>
 
-                  {/* Status Toggle (view-only for admin roles) */}
+                  {/* Status Toggle (text-based) */}
                   <td className="px-4 py-3">
                     <button
                       onClick={(e) => {
@@ -613,23 +786,42 @@ export default function RestaurantListPage() {
                         toggle(r);
                       }}
                       type="button"
-                      role="switch"
-                      aria-checked={Boolean(statuses[r.id])}
+                      role="button"
+                      aria-pressed={Boolean(statuses[r.id])}
                       disabled={!canToggleRestaurantOpenStatus || Boolean(statusUpdating[r.id]) || !r.editId}
                       data-state={statuses[r.id] ? 'checked' : 'unchecked'}
-                      className="peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 data-[state=checked]:bg-[#7C3AED] data-[state=unchecked]:bg-gray-200"
+                      className={`inline-flex w-[72px] justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs !font-medium !normal-case !tracking-normal transition-colors outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+                        statuses[r.id]
+                          ? 'bg-green-50 text-green-500'
+                          : 'bg-red-50 text-red-400'
+                      }`}
                       title={canToggleRestaurantOpenStatus ? 'Toggle open/close status' : 'Only restaurant role can change open/close'}
                     >
-                      <span
-                        data-state={statuses[r.id] ? 'checked' : 'unchecked'}
-                        className="pointer-events-none block h-4 w-4 rounded-full bg-white shadow transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
-                      />
+                      {statuses[r.id] ? 'Open' : 'Close'}
                     </button>
                   </td>
 
                   {/* Actions */}
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 whitespace-nowrap">
+                      {canManageRestaurantBlockStatus && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleBlockedStatus(r);
+                          }}
+                          type="button"
+                          disabled={Boolean(blockUpdating[r.id]) || !r.editId}
+                          className={`inline-flex w-[72px] justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs !font-medium !normal-case !tracking-normal transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                            blockedStatuses[r.id]
+                              ? 'bg-green-50 text-green-500 hover:bg-green-100'
+                              : 'bg-red-50 text-red-400 hover:bg-red-100'
+                          }`}
+                          title={blockedStatuses[r.id] ? 'Unblock restaurant' : 'Block restaurant'}
+                        >
+                          {blockedStatuses[r.id] ? 'Unblock' : 'Block'}
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

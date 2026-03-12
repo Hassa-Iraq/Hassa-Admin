@@ -152,8 +152,11 @@ export default function RestaurantDetailsPage() {
 
       <div className="pt-36 px-6 pb-10">
         {loading && (
-          <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
-            Loading restaurant details...
+          <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6">
+            <div className="h-6 w-56 animate-pulse rounded bg-gray-200/80" />
+            <div className="h-4 w-80 animate-pulse rounded bg-gray-200/70" />
+            <div className="h-4 w-72 animate-pulse rounded bg-gray-200/70" />
+            <div className="h-48 w-full animate-pulse rounded bg-gray-100" />
           </div>
         )}
 

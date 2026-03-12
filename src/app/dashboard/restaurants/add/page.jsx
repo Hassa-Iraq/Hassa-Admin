@@ -46,7 +46,10 @@ export default function AddRestaurantPage() {
   const router = useRouter();
   const [restaurantId, setRestaurantId] = useState('');
   const [userRole, setUserRole] = useState('');
+  const [parentRestaurantId, setParentRestaurantId] = useState('');
+  const [branchOwnerContact, setBranchOwnerContact] = useState({ email: '', phone: '' });
   const isEditMode = Boolean(restaurantId);
+  const isRestaurantBranchCreate = !isEditMode && userRole === 'restaurant';
 
   const [form, setForm] = useState(INITIAL_FORM);
   const [activeTab, setActiveTab] = useState('default');
@@ -85,12 +88,69 @@ export default function AddRestaurantPage() {
   const [mapSearch, setMapSearch] = useState('');
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const queryRestaurantId = params.get('restaurant_id') || params.get('id') || '';
-    setRestaurantId(queryRestaurantId);
-    const role = localStorage.getItem('userRole') || '';
-    const normalizedRole = String(role).trim().toLowerCase();
-    setUserRole(normalizedRole);
+    const hydrateAuthContext = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const queryRestaurantId = params.get('restaurant_id') || params.get('id') || '';
+      setRestaurantId(queryRestaurantId);
+      const role = localStorage.getItem('userRole') || '';
+      const normalizedRole = String(role).trim().toLowerCase();
+      setUserRole(normalizedRole);
+
+      let resolvedParentRestaurantId = String(
+        localStorage.getItem('restaurant_id') ||
+        localStorage.getItem('selectedRestaurantId') ||
+        ''
+      ).trim();
+
+      try {
+        const rawAdminUser = localStorage.getItem('adminUser') || '';
+        if (rawAdminUser) {
+          const parsedAdminUser = JSON.parse(rawAdminUser);
+          setBranchOwnerContact({
+            email: String(parsedAdminUser?.email || '').trim(),
+            phone: String(parsedAdminUser?.phone || '').trim(),
+          });
+        }
+      } catch {
+        setBranchOwnerContact({ email: '', phone: '' });
+      }
+
+      if (normalizedRole === 'restaurant') {
+        try {
+          const token = localStorage.getItem('token') || '';
+          if (token) {
+            const meResponse = await fetch('/api/me', {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (meResponse.ok) {
+              const mePayload = await meResponse.json();
+              const restaurantFromMe =
+                mePayload?.restaurant ||
+                mePayload?.data?.restaurant ||
+                mePayload?.user?.restaurant ||
+                mePayload?.data?.user?.restaurant ||
+                (Array.isArray(mePayload?.data?.restaurants) ? mePayload.data.restaurants[0] : null);
+              const meRestaurantId = String(
+                restaurantFromMe?.id ||
+                restaurantFromMe?.restaurant_id ||
+                ''
+              ).trim();
+              if (meRestaurantId) {
+                resolvedParentRestaurantId = meRestaurantId;
+                localStorage.setItem('restaurant_id', meRestaurantId);
+                localStorage.setItem('selectedRestaurantId', meRestaurantId);
+              }
+            }
+          }
+        } catch {
+          // Keep storage-based fallback when /api/me is temporarily unavailable.
+        }
+      }
+
+      setParentRestaurantId(resolvedParentRestaurantId);
+    };
+
+    hydrateAuthContext();
   }, []);
 
   const handleChange = useCallback((e) => {
@@ -104,7 +164,7 @@ export default function AddRestaurantPage() {
   const handleFileSelect = useCallback((file, setter, previewSetter) => {
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      alert('File size must be less than 2MB');
+      toast.error('File size must be less than 2MB');
       return;
     }
     setter(file);
@@ -115,15 +175,20 @@ export default function AddRestaurantPage() {
     const newErrors = {};
     if (!form.restaurantName.trim()) newErrors.restaurantName = 'Required';
     if (!form.restaurantAddress.trim()) newErrors.restaurantAddress = 'Required';
-    if (!form.firstName.trim()) newErrors.firstName = 'Required';
-    if (!form.lastName.trim()) newErrors.lastName = 'Required';
-    if (!form.phone.trim()) newErrors.phone = 'Required';
-    if (!form.email.trim()) newErrors.email = 'Required';
-    if (!isEditMode) {
-      if (!form.password) newErrors.password = 'Required';
-      if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
-    } else if (form.password || form.confirmPassword) {
-      if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    if (isRestaurantBranchCreate && !parentRestaurantId) {
+      newErrors.parentRestaurantId = 'Main restaurant id is missing for branch creation';
+    }
+    if (!isRestaurantBranchCreate) {
+      if (!form.firstName.trim()) newErrors.firstName = 'Required';
+      if (!form.lastName.trim()) newErrors.lastName = 'Required';
+      if (!form.phone.trim()) newErrors.phone = 'Required';
+      if (!form.email.trim()) newErrors.email = 'Required';
+      if (!isEditMode) {
+        if (!form.password) newErrors.password = 'Required';
+        if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+      } else if (form.password || form.confirmPassword) {
+        if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+      }
     }
     if (!form.latitude || !form.longitude) newErrors.location = 'Select location from map search';
     setErrors(newErrors);
@@ -521,6 +586,7 @@ export default function AddRestaurantPage() {
 
   const buildPayload = (uploadedAssetUrls = {}, options = {}) => {
     const { isEdit = false } = options;
+    const effectiveParentRestaurantId = String(parentRestaurantId || '').trim();
     const cleanedTags = form.tags
       .split(',')
       .map((tag) => tag.trim())
@@ -529,12 +595,18 @@ export default function AddRestaurantPage() {
     const latValue = form.latitude ? Number(form.latitude) : null;
     const lngValue = form.longitude ? Number(form.longitude) : null;
     const ownerFullName = `${form.firstName || ''} ${form.lastName || ''}`.trim();
-    const ownerPhone = `${form.phoneCode}${form.phone}`.trim();
+    const ownerPhoneFromForm = `${form.phoneCode}${form.phone}`.trim();
+    const ownerPhone = isRestaurantBranchCreate
+      ? (branchOwnerContact.phone || ownerPhoneFromForm)
+      : ownerPhoneFromForm;
+    const ownerEmail = isRestaurantBranchCreate
+      ? (branchOwnerContact.email || form.email.trim())
+      : form.email.trim();
     const tinExpiryDate = form.tinExpiry ? form.tinExpiry : null;
     const additionalDate = form.additionalDate ? form.additionalDate : null;
 
     const ownerPayload = {
-      email: form.email.trim(),
+      email: ownerEmail,
       phone: ownerPhone,
       full_name: ownerFullName,
     };
@@ -542,36 +614,68 @@ export default function AddRestaurantPage() {
       ownerPayload.password = form.password;
     }
 
+    const restaurantPayload = {
+      name: form.restaurantName.trim(),
+      address: form.restaurantAddress.trim(),
+      zone: form.zone.trim() || mapSearch.trim(),
+      lat: Number.isFinite(latValue) ? latValue : null,
+      lng: Number.isFinite(lngValue) ? lngValue : null,
+      radius_km: Number.isFinite(radiusValue) ? radiusValue : null,
+      cuisine: form.cuisine || '',
+      logo_url: uploadedAssetUrls.logo_url || null,
+      cover_image_url: uploadedAssetUrls.cover_image_url || null,
+      delivery_time_min: form.minDeliveryTime ? Number(form.minDeliveryTime) : null,
+      delivery_time_max: form.maxDeliveryTime ? Number(form.maxDeliveryTime) : null,
+      tags: cleanedTags,
+      tin: form.tinNumber.trim(),
+      tin_expiry_date: tinExpiryDate,
+      certificate_url: uploadedAssetUrls.certificate_url || null,
+      additional_data: {
+        additional_tin: form.additionalTin.trim(),
+        additional_date: additionalDate,
+        additional_certificate: uploadedAssetUrls.additional_certificate || null,
+      },
+      contact_email: ownerEmail,
+      phone: ownerPhone,
+      tax_type: 'exclusive',
+      tax_rate: 5,
+      free_delivery_enabled: false,
+      description: '',
+    };
+
+    // Restaurant role can create branches under their own main restaurant.
+    if (!isEdit && userRole === 'restaurant' && effectiveParentRestaurantId) {
+      restaurantPayload.parent_restaurant_id = effectiveParentRestaurantId;
+      restaurantPayload.parent_id = effectiveParentRestaurantId;
+      restaurantPayload.branch_of_restaurant_id = effectiveParentRestaurantId;
+      restaurantPayload.is_branch = true;
+    }
+
+    if (isRestaurantBranchCreate) {
+      const branchPayload = {
+        parent_id: effectiveParentRestaurantId,
+        name: restaurantPayload.name,
+        address: restaurantPayload.address,
+        zone: restaurantPayload.zone,
+        lat: restaurantPayload.lat,
+        lng: restaurantPayload.lng,
+        radius_km: restaurantPayload.radius_km,
+        cuisine: restaurantPayload.cuisine,
+        delivery_time_min: restaurantPayload.delivery_time_min,
+        delivery_time_max: restaurantPayload.delivery_time_max,
+        tags: restaurantPayload.tags,
+        tin: restaurantPayload.tin,
+        tin_expiry_date: restaurantPayload.tin_expiry_date,
+      };
+
+      return {
+        ...branchPayload,
+      };
+    }
+
     return {
       owner: ownerPayload,
-      restaurant: {
-        name: form.restaurantName.trim(),
-        address: form.restaurantAddress.trim(),
-        zone: form.zone.trim() || mapSearch.trim(),
-        lat: Number.isFinite(latValue) ? latValue : null,
-        lng: Number.isFinite(lngValue) ? lngValue : null,
-        radius_km: Number.isFinite(radiusValue) ? radiusValue : null,
-        cuisine: form.cuisine || '',
-        logo_url: uploadedAssetUrls.logo_url || null,
-        cover_image_url: uploadedAssetUrls.cover_image_url || null,
-        delivery_time_min: form.minDeliveryTime ? Number(form.minDeliveryTime) : null,
-        delivery_time_max: form.maxDeliveryTime ? Number(form.maxDeliveryTime) : null,
-        tags: cleanedTags,
-        tin: form.tinNumber.trim(),
-        tin_expiry_date: tinExpiryDate,
-        certificate_url: uploadedAssetUrls.certificate_url || null,
-        additional_data: {
-          additional_tin: form.additionalTin.trim(),
-          additional_date: additionalDate,
-          additional_certificate: uploadedAssetUrls.additional_certificate || null,
-        },
-        contact_email: form.email.trim(),
-        phone: ownerPhone,
-        tax_type: 'exclusive',
-        tax_rate: 5,
-        free_delivery_enabled: false,
-        description: '',
-      },
+      restaurant: restaurantPayload,
     };
   };
 
@@ -706,6 +810,10 @@ export default function AddRestaurantPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+    if (isRestaurantBranchCreate && !parentRestaurantId) {
+      toast.error('Main restaurant id is missing. Please login again and retry.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -753,7 +861,10 @@ export default function AddRestaurantPage() {
           },
         });
       } else {
-        await axios.post('/backend-api/restaurants/admin/onboard', payload, {
+        const createEndpoint = isRestaurantBranchCreate
+          ? '/api/restaurants/branches'
+          : '/api/restaurants';
+        await axios.post(createEndpoint, payload, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
@@ -988,55 +1099,56 @@ export default function AddRestaurantPage() {
             </div>
           </SubSection>
 
-          {/* --- Owner Information --- */}
-          <SubSection
-            title="Owner Information"
-            subtitle="Setup your personal information from here"
-            hasBorder
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <InputField
-                label="First Name *"
-                name="firstName"
-                value={form.firstName}
-                onChange={handleChange}
-                placeholder="Ex: John"
-                error={errors.firstName}
-              />
-              <InputField
-                label="Last Name *"
-                name="lastName"
-                value={form.lastName}
-                onChange={handleChange}
-                placeholder="Ex: Doe"
-                error={errors.lastName}
-              />
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-2">
-                  Phone *
-                </label>
-                <div className="flex">
-                  <PhoneCodeSelect
-                    name="phoneCode"
-                    value={form.phoneCode}
-                    onChange={handleChange}
-                    options={PHONE_CODE_OPTIONS}
-                    className="w-32"
-                  />
-                  <input
-                    name="phone"
-                    value={form.phone}
-                    onChange={handleChange}
-                    placeholder="123-456-987"
-                    className={`flex-1 min-w-0 border border-gray-200 rounded-r-lg px-4 py-2.5 text-sm focus:border-purple-400 focus:outline-none ${
-                      errors.phone ? 'border-red-400' : ''
-                    }`}
-                  />
+          {!isRestaurantBranchCreate && (
+            <SubSection
+              title="Owner Information"
+              subtitle="Setup your personal information from here"
+              hasBorder
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <InputField
+                  label="First Name *"
+                  name="firstName"
+                  value={form.firstName}
+                  onChange={handleChange}
+                  placeholder="Ex: John"
+                  error={errors.firstName}
+                />
+                <InputField
+                  label="Last Name *"
+                  name="lastName"
+                  value={form.lastName}
+                  onChange={handleChange}
+                  placeholder="Ex: Doe"
+                  error={errors.lastName}
+                />
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-2">
+                    Phone *
+                  </label>
+                  <div className="flex">
+                    <PhoneCodeSelect
+                      name="phoneCode"
+                      value={form.phoneCode}
+                      onChange={handleChange}
+                      options={PHONE_CODE_OPTIONS}
+                      className="w-32"
+                    />
+                    <input
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                      placeholder="123-456-987"
+                      className={`flex-1 min-w-0 border border-gray-200 rounded-r-lg px-4 py-2.5 text-sm focus:border-purple-400 focus:outline-none ${
+                        errors.phone ? 'border-red-400' : ''
+                      }`}
+                    />
+                  </div>
+                  {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
                 </div>
-                {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
               </div>
-            </div>
-          </SubSection>
+            </SubSection>
+          )}
 
           {/* --- Tags --- */}
           <SubSection
@@ -1143,79 +1255,80 @@ export default function AddRestaurantPage() {
           </SubSection>
         </section>
 
-        {/* ===================== ACCOUNT INFORMATION ===================== */}
-        <section className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
-          <h2 className="text-lg font-bold text-[#1E1E24]">
-            Account Information
-          </h2>
-          <p className="text-xs text-gray-400 mt-1 mb-6">
-            Account information
-          </p>
+        {!isRestaurantBranchCreate && (
+          <section className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
+            <h2 className="text-lg font-bold text-[#1E1E24]">
+              Account Information
+            </h2>
+            <p className="text-xs text-gray-400 mt-1 mb-6">
+              Account information
+            </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <InputField
-              label="Email *"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="restaurant@email.com"
-              error={errors.email}
-            />
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-2">
-                Password *
-              </label>
-              <div className="relative">
-                <input
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  className={`w-full border rounded-lg px-4 py-2.5 text-sm pr-10 focus:border-purple-400 focus:outline-none ${
-                    errors.password ? 'border-red-400' : 'border-gray-200'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <InputField
+                label="Email *"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="restaurant@email.com"
+                error={errors.email}
+              />
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-2">
+                  Password *
+                </label>
+                <div className="relative">
+                  <input
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    className={`w-full border rounded-lg px-4 py-2.5 text-sm pr-10 focus:border-purple-400 focus:outline-none ${
+                      errors.password ? 'border-red-400' : 'border-gray-200'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
               </div>
-              {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-2">
-                Confirm Password *
-              </label>
-              <div className="relative">
-                <input
-                  name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  className={`w-full border rounded-lg px-4 py-2.5 text-sm pr-10 focus:border-purple-400 focus:outline-none ${
-                    errors.confirmPassword ? 'border-red-400' : 'border-gray-200'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-2">
+                  Confirm Password *
+                </label>
+                <div className="relative">
+                  <input
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    className={`w-full border rounded-lg px-4 py-2.5 text-sm pr-10 focus:border-purple-400 focus:outline-none ${
+                      errors.confirmPassword ? 'border-red-400' : 'border-gray-200'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>
+                )}
               </div>
-              {errors.confirmPassword && (
-                <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>
-              )}
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* ===================== ACTION BUTTONS ===================== */}
         <div className="flex justify-end">

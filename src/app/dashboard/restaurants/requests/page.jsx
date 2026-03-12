@@ -7,6 +7,7 @@ import {
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
+import { toast } from 'sonner';
 
 const REQUESTS = [
   {
@@ -105,11 +106,11 @@ export default function NewJoiningRequestsPage() {
   };
 
   const handleApprove = (id) => {
-    alert(`Approved request #${id}`);
+    toast.success(`Approved request #${id}`);
   };
 
   const handleReject = (id) => {
-    alert(`Rejected request #${id}`);
+    toast.success(`Rejected request #${id}`);
   };
 
   return (

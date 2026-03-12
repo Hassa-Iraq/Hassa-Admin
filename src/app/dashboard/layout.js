@@ -34,7 +34,9 @@ export default function DashboardLayout({ children }) {
                             </svg>
                         </button>
                     )}
-                    {children}
+                    <div className="dashboard-page-shell">
+                        {children}
+                    </div>
                 </main>
             </div>
         </div>

@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Download, Pencil, Search, SlidersHorizontal,
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const PER_PAGE = 20;
 
@@ -240,11 +241,7 @@ export default function CategoryListPage() {
             </thead>
             <tbody>
               {loading && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">
-                    Loading categories...
-                  </td>
-                </tr>
+                <TableLoadingSkeleton colSpan={5} rows={8} />
               )}
 
               {!loading && fetchError && (

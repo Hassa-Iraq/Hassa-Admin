@@ -5,6 +5,7 @@ import { Download, Pencil, Search } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const DEFAULT_EMPLOYEE_IMAGE = '/default-image.svg';
 
@@ -137,11 +138,7 @@ export default function EmployeeListPage() {
             </thead>
             <tbody>
               {loading && (
-                <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-xs text-gray-500">
-                    Loading employee list...
-                  </td>
-                </tr>
+                <TableLoadingSkeleton colSpan={7} rows={8} />
               )}
               {!loading && apiError && (
                 <tr>

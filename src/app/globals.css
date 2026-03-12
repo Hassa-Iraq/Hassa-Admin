@@ -29,6 +29,18 @@ body {
   line-height: 1.6;
 }
 
+/* Dashboard uses one page scrollbar (avoid nested full-screen wrappers) */
+.dashboard-page-shell .min-h-screen {
+  min-height: 100%;
+}
+
+/* Topbar is now in normal flow, so legacy page top offsets create extra blank space. */
+.dashboard-page-shell .pt-36,
+.dashboard-page-shell .pt-32,
+.dashboard-page-shell .md\:pt-36 {
+  padding-top: 0 !important;
+}
+
 /* ─── H1 / Page Title ───────────────────────────────────────────────────── */
 h1 {
   font-family: var(--font-primary);

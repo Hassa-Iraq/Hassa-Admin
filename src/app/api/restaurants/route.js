@@ -41,7 +41,6 @@ export async function POST(request) {
     const authorization = request.headers.get('authorization');
     const cookieToken = request.cookies.get('token')?.value;
     const authHeader = authorization || (cookieToken ? `Bearer ${cookieToken}` : '');
-
     const backendResponse = await axios.post(`${API_BASE_URL}/api/restaurants/admin/onboard`, payload, {
       headers: {
         ...(authHeader ? { Authorization: authHeader } : {}),

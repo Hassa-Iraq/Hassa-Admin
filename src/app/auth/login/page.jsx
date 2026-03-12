@@ -31,6 +31,55 @@ export default function LoginPage() {
     return roleSource.trim().toLowerCase().replace(/\s+/g, '_');
   };
 
+  const isRestaurantBlocked = (user, payload) => {
+    const normalizeBlocked = (value) => {
+      if (value === true || value === 1 || value === '1') return true;
+      if (value === false || value === 0 || value === '0') return false;
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'blocked') return true;
+        if (normalized === 'unblocked') return false;
+      }
+      return null;
+    };
+
+    const restaurant =
+      payload?.restaurant ||
+      payload?.data?.restaurant ||
+      payload?.data?.restaurants?.[0] ||
+      user?.restaurant ||
+      user?.restaurants?.[0] ||
+      null;
+
+    const direct =
+      normalizeBlocked(restaurant?.is_blocked) ??
+      normalizeBlocked(restaurant?.isBlocked) ??
+      normalizeBlocked(restaurant?.blocked) ??
+      normalizeBlocked(restaurant?.status);
+    if (direct !== null) return direct;
+
+    const activeValue =
+      normalizeBlocked(restaurant?.is_active) ??
+      normalizeBlocked(restaurant?.active);
+    if (activeValue !== null) return !activeValue;
+
+    return false;
+  };
+
+  const clearAuthStorage = () => {
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('adminUser');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('sidebarPermissions');
+      localStorage.removeItem('restaurant_id');
+      localStorage.removeItem('selectedRestaurantId');
+      document.cookie = 'token=; path=/; max-age=0; SameSite=Lax';
+    } catch {
+      // Ignore storage cleanup failures.
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -55,15 +104,7 @@ export default function LoginPage() {
       const normalizedRole = normalizeRole(user, data);
       if (normalizedRole === 'driver') {
         // Block driver role from admin panel access.
-        try {
-          localStorage.removeItem('token');
-          localStorage.removeItem('adminUser');
-          localStorage.removeItem('userRole');
-          localStorage.removeItem('sidebarPermissions');
-          document.cookie = 'token=; path=/; max-age=0; SameSite=Lax';
-        } catch {
-          // Ignore storage cleanup failures.
-        }
+        clearAuthStorage();
         throw new Error('Driver role is not allowed to login in admin panel.');
       }
 
@@ -71,6 +112,28 @@ export default function LoginPage() {
       if (token) {
         document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
         localStorage.setItem('token', token);
+      }
+
+      // Verify latest role/restaurant flags from /api/me before allowing access.
+      if (token) {
+        try {
+          const meResponse = await fetch('/api/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (meResponse.ok) {
+            const mePayload = await meResponse.json();
+            const meUser = mePayload?.user || mePayload?.data?.user || mePayload?.data || mePayload;
+            const meRole = normalizeRole(meUser, mePayload) || normalizedRole;
+            if (meRole === 'restaurant' && isRestaurantBlocked(meUser, mePayload)) {
+              clearAuthStorage();
+              toast.error('Your restaurant is blocked. Please contact Hassa officials.');
+              router.push('/auth/restaurant-blocked');
+              return;
+            }
+          }
+        } catch {
+          // If /api/me check fails, continue with current login flow.
+        }
       }
 
       const permissions =

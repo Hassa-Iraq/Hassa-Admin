@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
@@ -289,52 +289,92 @@ export default function RestaurantListPage() {
         if (modelFilter) params.set('business_model', modelFilter);
         if (cuisineFilter) params.set('cuisine', cuisineFilter);
         if (radiusFilter) params.set('radius', radiusFilter);
+        const effectiveRole =
+          userRole || String(localStorage.getItem('userRole') || '').trim().toLowerCase();
+        let effectiveRestaurantId =
+          currentRestaurantId ||
+          String(
+            localStorage.getItem('restaurant_id') ||
+            localStorage.getItem('selectedRestaurantId') ||
+            ''
+          ).trim();
 
-        const { data } = await axios.get(`/api/restaurants?${params.toString()}`);
-
-        const list =
-          data?.data?.restaurants ||
-          data?.data?.list ||
-          data?.restaurants ||
-          data?.list ||
-          data?.data ||
-          [];
-
-        const toBranchArray = (value) => {
-          if (Array.isArray(value)) return value;
-          if (value && typeof value === 'object') {
-            if (Array.isArray(value?.data)) return value.data;
-            return Object.values(value).filter((item) => item && typeof item === 'object');
+        if (effectiveRole === 'restaurant' && !effectiveRestaurantId) {
+          try {
+            const token = localStorage.getItem('token') || '';
+            if (token) {
+              const meResponse = await axios.get('/api/me', {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              const meData = meResponse?.data || {};
+              const meRestaurant =
+                meData?.restaurant ||
+                meData?.data?.restaurant ||
+                meData?.user?.restaurant ||
+                meData?.data?.user?.restaurant ||
+                (Array.isArray(meData?.data?.restaurants) ? meData.data.restaurants[0] : null);
+              effectiveRestaurantId = String(
+                meRestaurant?.id || meRestaurant?.restaurant_id || ''
+              ).trim();
+              if (effectiveRestaurantId) {
+                localStorage.setItem('restaurant_id', effectiveRestaurantId);
+                localStorage.setItem('selectedRestaurantId', effectiveRestaurantId);
+                setCurrentRestaurantId(effectiveRestaurantId);
+              }
+            }
+          } catch {
+            // Keep graceful fallback to generic listing when id fetch fails.
           }
-          return [];
-        };
+        }
 
-        const flattenedList = (Array.isArray(list) ? list : []).flatMap((item) => {
-          const parentId =
-            item?.id ??
-            item?.restaurant_id ??
-            item?.restaurantId ??
-            item?.restaurant?.id ??
-            item?.restaurant?.restaurant_id ??
-            '';
-          const branches = toBranchArray(
-            item?.branches ??
-            item?.restaurant_branches ??
-            item?.branches_data ??
-            item?.branch_list
-          ).map((branchItem) => ({
-            ...branchItem,
-            parent_restaurant_id:
-              branchItem?.parent_restaurant_id ??
-              branchItem?.parent_id ??
-              branchItem?.branch_of_restaurant_id ??
-              parentId,
-          }));
+        let data;
+        let normalized = [];
 
-          return [item, ...branches];
-        });
+        if (effectiveRole === 'restaurant' && effectiveRestaurantId) {
+          const mainResponse = await axios.get(`/api/restaurants/${effectiveRestaurantId}`);
+          const mainData = mainResponse?.data || {};
+          data = mainData;
 
-        const normalized = flattenedList.map(normalizeRestaurant);
+          const mainRestaurant =
+            mainData?.data?.restaurant ||
+            mainData?.restaurant ||
+            mainData?.data ||
+            null;
+          const branchList =
+            mainData?.data?.branches ||
+            mainData?.branches ||
+            mainData?.data?.list ||
+            mainData?.list ||
+            [];
+
+          const normalizedMain = mainRestaurant ? [normalizeRestaurant(mainRestaurant, 0)] : [];
+          const normalizedBranches = (Array.isArray(branchList) ? branchList : []).map((item, idx) =>
+            normalizeRestaurant(
+              {
+                ...item,
+                parent_restaurant_id:
+                  item?.parent_restaurant_id ??
+                  item?.parent_id ??
+                  item?.branch_of_restaurant_id ??
+                  effectiveRestaurantId,
+              },
+              idx + 1
+            )
+          );
+          normalized = [...normalizedMain, ...normalizedBranches];
+        } else {
+          const restaurantsResponse = await axios.get(`/api/restaurants?${params.toString()}`);
+          data = restaurantsResponse?.data || {};
+          const list =
+            data?.data?.restaurants ||
+            data?.data?.list ||
+            data?.restaurants ||
+            data?.list ||
+            data?.data ||
+            [];
+          normalized = (Array.isArray(list) ? list : []).map(normalizeRestaurant);
+        }
+
         setRestaurants(normalized);
 
         const toNumber = (value, fallback = null) => {
@@ -343,6 +383,12 @@ export default function RestaurantListPage() {
         };
 
         const total =
+          data?.data?.total_branches ??
+          data?.total_branches ??
+          data?.data?.branches_count ??
+          data?.branches_count ??
+          data?.data?.branches?.length ??
+          data?.branches?.length ??
           data?.data?.total ??
           data?.total ??
           data?.data?.total_size ??
@@ -406,7 +452,7 @@ export default function RestaurantListPage() {
     };
 
     fetchRestaurants();
-  }, [page, search, modelFilter, cuisineFilter, radiusFilter]);
+  }, [page, search, modelFilter, cuisineFilter, radiusFilter, userRole, currentRestaurantId]);
 
   useEffect(() => {
     setStatuses((prev) => {
@@ -718,8 +764,15 @@ export default function RestaurantListPage() {
               )}
 
               {!loading && !fetchError && paginated.map((r, idx) => (
+                <Fragment key={`${r.id}-${idx}`}>
+                {userRole === 'restaurant' && idx === 1 && r.isBranch && (
+                  <tr className="border-b border-gray-100 bg-purple-50/60">
+                    <td colSpan={7} className="px-6 py-2 text-[11px] font-semibold text-purple-700">
+                      Branches
+                    </td>
+                  </tr>
+                )}
                 <tr
-                  key={r.id}
                   onClick={() => {
                     if (!r.editId) return;
                     router.push(`/dashboard/restaurants/details/${r.editId}`);
@@ -833,7 +886,7 @@ export default function RestaurantListPage() {
                       >
                         <Eye size={13} />
                       </button>
-                      {canEditRestaurant && (
+                      {canEditRestaurant && !r.isBranch && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -850,6 +903,7 @@ export default function RestaurantListPage() {
                     </div>
                   </td>
                 </tr>
+                </Fragment>
               ))}
 
               {!loading && !fetchError && paginated.length === 0 && (

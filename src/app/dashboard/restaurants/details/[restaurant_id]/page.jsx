@@ -118,6 +118,11 @@ export default function RestaurantDetailsPage() {
     const isOpen = Boolean(
       restaurant?.is_open ?? restaurant?.isOpen ?? restaurant?.open ?? false
     );
+    const parentId = pickText(
+      restaurant?.parent_id,
+      restaurant?.parent_restaurant_id,
+      restaurant?.branch_of_restaurant_id
+    );
     const lat = restaurant?.lat ?? restaurant?.latitude ?? null;
     const lng = restaurant?.lng ?? restaurant?.longitude ?? null;
 
@@ -138,6 +143,7 @@ export default function RestaurantDetailsPage() {
       cover,
       certificate,
       additionalCertificate,
+      isBranch: Boolean(parentId),
       lat,
       lng,
     };
@@ -181,12 +187,14 @@ export default function RestaurantDetailsPage() {
                     {viewModel.status}
                   </div>
                 </div>
-                <button
-                  onClick={() => router.push(`/dashboard/restaurants/add?restaurant_id=${restaurantId}`)}
-                  className="h-fit rounded-lg bg-[#7C3AED] px-4 py-2 text-sm font-medium text-white hover:bg-[#6D28D9]"
-                >
-                  Edit Restaurant
-                </button>
+                {!viewModel.isBranch && (
+                  <button
+                    onClick={() => router.push(`/dashboard/restaurants/add?restaurant_id=${restaurantId}`)}
+                    className="h-fit rounded-lg bg-[#7C3AED] px-4 py-2 text-sm font-medium text-white hover:bg-[#6D28D9]"
+                  >
+                    Edit Restaurant
+                  </button>
+                )}
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4 text-sm">

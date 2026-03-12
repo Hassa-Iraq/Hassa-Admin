@@ -666,6 +666,10 @@ export default function AddRestaurantPage() {
         tags: restaurantPayload.tags,
         tin: restaurantPayload.tin,
         tin_expiry_date: restaurantPayload.tin_expiry_date,
+        logo_url: restaurantPayload.logo_url,
+        cover_image_url: restaurantPayload.cover_image_url,
+        certificate_url: restaurantPayload.certificate_url,
+        additional_data: restaurantPayload.additional_data,
       };
 
       return {

@@ -1,0 +1,15 @@
+services:
+  admin-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hassa-admin-frontend:latest
+    container_name: hassa-admin-frontend
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+      - PORT=3008
+    ports:
+      - "127.0.0.1:3008:3008"

@@ -13,6 +13,15 @@ ADMIN_DOMAIN="${ADMIN_DOMAIN:-}"
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
 HEALTHCHECK_PATH="${HEALTHCHECK_PATH:-/}"
 
+reload_or_restart_nginx() {
+  if sudo systemctl is-active --quiet nginx; then
+    sudo systemctl reload nginx
+  else
+    # Some hosts have nginx installed but inactive after package changes.
+    sudo systemctl restart nginx
+  fi
+}
+
 if [[ -z "${DOMAIN}" ]]; then
   echo "DOMAIN is required."
   exit 1
@@ -125,7 +134,7 @@ if [[ ! -L "/etc/nginx/sites-enabled/${SITE_FILENAME}" ]]; then
 fi
 
 sudo nginx -t
-sudo systemctl reload nginx
+reload_or_restart_nginx
 
 if command -v certbot >/dev/null 2>&1; then
   sudo certbot certonly --webroot -w /var/www/certbot -d "${ADMIN_DOMAIN}" \
@@ -175,7 +184,7 @@ EOF
 fi
 
 sudo nginx -t
-sudo systemctl reload nginx
+reload_or_restart_nginx
 
 for attempt in 1 2 3 4 5; do
   if curl -fsS "https://${ADMIN_DOMAIN}${HEALTHCHECK_PATH}" >/dev/null; then

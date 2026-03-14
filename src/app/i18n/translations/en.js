@@ -26,6 +26,7 @@ const en = {
   customers: 'Customers',
   walletManagement: 'WALLET MANAGEMENT',
   wallet: 'Wallet',
+  addFund: 'Add Fund',
   customerWallet: 'Customer Wallet',
   vendorWallet: 'Vendor Wallet',
   driverWallet: 'Driver Wallet',

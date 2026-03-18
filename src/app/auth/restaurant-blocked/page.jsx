@@ -1,11 +1,8 @@
-'use client';
-
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-
-export default function RestaurantBlockedPage() {
-  const searchParams = useSearchParams();
-  const reason = String(searchParams.get('reason') || '').toLowerCase();
+ 
+export default async function RestaurantBlockedPage({ searchParams }) {
+  const params = await searchParams;
+  const reason = String(params?.reason || '').toLowerCase();
   const isInactive = reason === 'inactive';
 
   return (

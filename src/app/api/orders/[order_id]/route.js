@@ -1,17 +1,21 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import { API_BASE_URL } from '../../config';
+import { API_BASE_URL } from '../../../config';
 
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 12000;
 
-export async function GET(request) {
+export async function GET(request, context) {
   try {
+    const { order_id: orderId } = await context.params;
+    if (!orderId) {
+      return NextResponse.json({ message: 'order_id is required' }, { status: 400 });
+    }
+
     const authorization = request.headers.get('authorization');
     const cookieToken = request.cookies.get('token')?.value;
     const authHeader = authorization || (cookieToken ? `Bearer ${cookieToken}` : '');
-    const search = request.nextUrl.search || '';
 
-    const backendResponse = await axios.get(`${API_BASE_URL}/api/orders/${search}`, {
+    const backendResponse = await axios.get(`${API_BASE_URL}/api/orders/${orderId}`, {
       headers: {
         ...(authHeader ? { Authorization: authHeader } : {}),
       },
@@ -27,7 +31,7 @@ export async function GET(request) {
         String(error.message || '').toLowerCase().includes('timedout');
       if (timeoutLike) {
         return NextResponse.json(
-          { message: 'Backend request timed out. Please try again.' },
+          { message: 'Order details request timed out. Please retry.' },
           { status: 504 }
         );
       }
@@ -37,13 +41,13 @@ export async function GET(request) {
         error.response?.data?.message ||
         error.response?.data ||
         error.message ||
-        'Failed to fetch orders';
+        'Failed to fetch order';
 
       return NextResponse.json({ message }, { status });
     }
 
     return NextResponse.json(
-      { message: error?.message || 'Failed to fetch orders' },
+      { message: error?.message || 'Failed to fetch order' },
       { status: 500 }
     );
   }

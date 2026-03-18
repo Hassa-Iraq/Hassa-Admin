@@ -61,14 +61,14 @@ const extractRoleKey = (payload, user) => {
   return roleSource.trim().toLowerCase().replace(/\s+/g, '_');
 };
 
-const isRestaurantBlocked = (payload, user) => {
-  const normalizeBlocked = (value) => {
+const getRestaurantRestriction = (payload, user) => {
+  const parseBoolean = (value) => {
     if (value === true || value === 1 || value === '1') return true;
     if (value === false || value === 0 || value === '0') return false;
     if (typeof value === 'string') {
       const normalized = value.trim().toLowerCase();
-      if (normalized === 'blocked') return true;
-      if (normalized === 'unblocked') return false;
+      if (normalized === 'true' || normalized === 'active' || normalized === 'enabled') return true;
+      if (normalized === 'false' || normalized === 'inactive' || normalized === 'disabled') return false;
     }
     return null;
   };
@@ -81,19 +81,28 @@ const isRestaurantBlocked = (payload, user) => {
     user?.restaurants?.[0] ||
     null;
 
-  const direct =
-    normalizeBlocked(restaurant?.is_blocked) ??
-    normalizeBlocked(restaurant?.isBlocked) ??
-    normalizeBlocked(restaurant?.blocked) ??
-    normalizeBlocked(restaurant?.status);
-  if (direct !== null) return direct;
+  const blockedFlag =
+    parseBoolean(restaurant?.is_blocked) ??
+    parseBoolean(restaurant?.isBlocked) ??
+    parseBoolean(restaurant?.blocked);
+  if (blockedFlag === true) return 'blocked';
 
-  const activeValue =
-    normalizeBlocked(restaurant?.is_active) ??
-    normalizeBlocked(restaurant?.active);
-  if (activeValue !== null) return !activeValue;
+  const statusText = String(restaurant?.status || user?.status || '').trim().toLowerCase();
+  if (statusText === 'blocked') return 'blocked';
+  if (statusText === 'inactive' || statusText === 'disabled' || statusText === 'deactivated') {
+    return 'inactive';
+  }
 
-  return false;
+  const activeFlag =
+    parseBoolean(restaurant?.is_active) ??
+    parseBoolean(restaurant?.isActive) ??
+    parseBoolean(restaurant?.active) ??
+    parseBoolean(user?.is_active) ??
+    parseBoolean(user?.isActive) ??
+    parseBoolean(user?.active);
+  if (activeFlag === false) return 'inactive';
+
+  return null;
 };
 
 export default function Topbar({ title, subtitle, rightContent }) {
@@ -215,7 +224,8 @@ export default function Topbar({ title, subtitle, rightContent }) {
           setAdmin(normalized);
           localStorage.setItem('adminUser', JSON.stringify(normalized));
           const roleKey = extractRoleKey(data, user);
-          if (roleKey === 'restaurant' && isRestaurantBlocked(data, user)) {
+          const restriction = roleKey === 'restaurant' ? getRestaurantRestriction(data, user) : null;
+          if (restriction) {
             localStorage.removeItem('token');
             localStorage.removeItem('adminUser');
             localStorage.removeItem('userRole');
@@ -224,7 +234,7 @@ export default function Topbar({ title, subtitle, rightContent }) {
             localStorage.removeItem('selectedRestaurantId');
             document.cookie = 'token=; path=/; max-age=0; SameSite=Lax';
             emitSidebarAuthUpdate();
-            router.push('/auth/restaurant-blocked');
+            router.push(`/auth/restaurant-blocked?reason=${restriction}`);
             setProfileReady(true);
             return true;
           }

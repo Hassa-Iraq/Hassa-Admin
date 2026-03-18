@@ -26,6 +26,7 @@ const ku = {
   customers: 'کڕیارەکان',
   walletManagement: 'بەڕێوەبردنی جزدان',
   wallet: 'جزدان',
+  addFund: 'زیادکردنی باڵانس',
   customerWallet: 'جزدانی کڕیار',
   vendorWallet: 'جزدانی فرۆشیار',
   driverWallet: 'جزدانی شۆفێر',

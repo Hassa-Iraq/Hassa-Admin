@@ -31,14 +31,14 @@ export default function LoginPage() {
     return roleSource.trim().toLowerCase().replace(/\s+/g, '_');
   };
 
-  const isRestaurantBlocked = (user, payload) => {
-    const normalizeBlocked = (value) => {
+  const getRestaurantRestriction = (user, payload) => {
+    const parseBoolean = (value) => {
       if (value === true || value === 1 || value === '1') return true;
       if (value === false || value === 0 || value === '0') return false;
       if (typeof value === 'string') {
         const normalized = value.trim().toLowerCase();
-        if (normalized === 'blocked') return true;
-        if (normalized === 'unblocked') return false;
+        if (normalized === 'true' || normalized === 'active' || normalized === 'enabled') return true;
+        if (normalized === 'false' || normalized === 'inactive' || normalized === 'disabled') return false;
       }
       return null;
     };
@@ -51,19 +51,28 @@ export default function LoginPage() {
       user?.restaurants?.[0] ||
       null;
 
-    const direct =
-      normalizeBlocked(restaurant?.is_blocked) ??
-      normalizeBlocked(restaurant?.isBlocked) ??
-      normalizeBlocked(restaurant?.blocked) ??
-      normalizeBlocked(restaurant?.status);
-    if (direct !== null) return direct;
+    const blockedFlag =
+      parseBoolean(restaurant?.is_blocked) ??
+      parseBoolean(restaurant?.isBlocked) ??
+      parseBoolean(restaurant?.blocked);
+    if (blockedFlag === true) return 'blocked';
 
-    const activeValue =
-      normalizeBlocked(restaurant?.is_active) ??
-      normalizeBlocked(restaurant?.active);
-    if (activeValue !== null) return !activeValue;
+    const statusText = String(restaurant?.status || user?.status || '').trim().toLowerCase();
+    if (statusText === 'blocked') return 'blocked';
+    if (statusText === 'inactive' || statusText === 'disabled' || statusText === 'deactivated') {
+      return 'inactive';
+    }
 
-    return false;
+    const activeFlag =
+      parseBoolean(restaurant?.is_active) ??
+      parseBoolean(restaurant?.isActive) ??
+      parseBoolean(restaurant?.active) ??
+      parseBoolean(user?.is_active) ??
+      parseBoolean(user?.isActive) ??
+      parseBoolean(user?.active);
+    if (activeFlag === false) return 'inactive';
+
+    return null;
   };
 
   const clearAuthStorage = () => {
@@ -77,6 +86,18 @@ export default function LoginPage() {
       document.cookie = 'token=; path=/; max-age=0; SameSite=Lax';
     } catch {
       // Ignore storage cleanup failures.
+    }
+  };
+
+  const parseResponseSafely = async (response) => {
+    const raw = await response.text();
+    if (!raw) return {};
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      const shortText = raw.slice(0, 220);
+      return { message: shortText || 'Unexpected server response.' };
     }
   };
 
@@ -94,9 +115,17 @@ export default function LoginPage() {
         }),
       });
 
-      const data = await res.json();
+      const data = await parseResponseSafely(res);
 
       if (!res.ok) {
+        const lowerMsg = String(data?.message || '').toLowerCase();
+        if (
+          lowerMsg.includes('enotfound') ||
+          lowerMsg.includes('getaddrinfo') ||
+          lowerMsg.includes('failed to proxy')
+        ) {
+          throw new Error('Backend server is unreachable. Please check API_BASE_URL/domain or internet connection.');
+        }
         throw new Error(data.message || 'Invalid email or password');
       }
 
@@ -124,10 +153,15 @@ export default function LoginPage() {
             const mePayload = await meResponse.json();
             const meUser = mePayload?.user || mePayload?.data?.user || mePayload?.data || mePayload;
             const meRole = normalizeRole(meUser, mePayload) || normalizedRole;
-            if (meRole === 'restaurant' && isRestaurantBlocked(meUser, mePayload)) {
+            const restriction = meRole === 'restaurant' ? getRestaurantRestriction(meUser, mePayload) : null;
+            if (restriction) {
               clearAuthStorage();
-              toast.error('Your restaurant is blocked. Please contact Hassa officials.');
-              router.push('/auth/restaurant-blocked');
+              toast.error(
+                restriction === 'inactive'
+                  ? 'Your restaurant account is not active. Please contact Hassa officials.'
+                  : 'Your restaurant is blocked. Please contact Hassa officials.'
+              );
+              router.push(`/auth/restaurant-blocked?reason=${restriction}`);
               return;
             }
           }

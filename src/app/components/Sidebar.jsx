@@ -250,6 +250,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Customer Wallet': ['collect_cash', 'restaurant_withdraws', 'disbursement'],
     'Vendor Wallet': ['collect_cash', 'restaurant_withdraws', 'disbursement'],
     'Driver Wallet': ['collect_cash', 'restaurant_withdraws', 'disbursement'],
+    'Add Fund': ['collect_cash', 'restaurant_withdraws', 'disbursement'],
     'Zip/Apartments': ['radius_setup'],
     'All Apartments': ['radius_setup'],
     'Add New': ['radius_setup'],
@@ -277,6 +278,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Restaurant Report': ['report'],
     'Tax Report': ['report'],
     'Customer Report': ['report'],
+    'Customer Wallet': ['report'],
+    'Restaurant VAT Report': ['report'],
     'Restaurant WP Report': ['report'],
     'Daily Report': ['report'],
     'Monthly Report': ['report'],
@@ -321,6 +324,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Customer Wallet': '/dashboard/wallet/customer',
     'Vendor Wallet': '/dashboard/wallet/vendor',
     'Driver Wallet': '/dashboard/wallet/driver',
+    'Add Fund': '/dashboard/wallet/add-fund',
     'All Apartments': '/dashboard/apartments',
     'Add New': '/dashboard/apartments/add',
     'Riders Setup': '/dashboard/riders-setup',
@@ -338,6 +342,10 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Restaurant Report': '/dashboard/reports/restaurant',
     'Tax Report': '/dashboard/reports/tax',
     'Customer Report': '/dashboard/reports/customer',
+    'Customer Wallet': '/dashboard/reports/customer',
+    'Regular Order Report': '/dashboard/reports/order/regular',
+    'Coupon Order Report': '/dashboard/reports/order/coupon',
+    'Restaurant VAT Report': '/dashboard/reports/restaurant-vat',
     'Restaurant WP Report': '/dashboard/reports/restaurant-wp',
     'Push Notification': '/dashboard/marketing/notifications',
     'Add New Item': '/dashboard/foods/add',
@@ -485,6 +493,76 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       return;
     }
 
+    if (pathname === '/dashboard/wallet/add-fund') {
+      setActiveItem('Add Fund');
+      return;
+    }
+
+    if (pathname === '/dashboard/settings/payment-method') {
+      setActiveItem('Payment Method');
+      return;
+    }
+
+    if (pathname === '/dashboard/settings/social-media') {
+      setActiveItem('Social Media');
+      return;
+    }
+
+    if (pathname === '/dashboard/settings/deliveryman') {
+      setActiveItem('Deliveryman Settings');
+      return;
+    }
+
+    if (pathname === '/dashboard/marketing/notifications') {
+      setActiveItem('Push Notification');
+      return;
+    }
+
+    if (pathname === '/dashboard/reports/transaction') {
+      setActiveItem('Transaction Report');
+      return;
+    }
+
+    if (pathname === '/dashboard/reports/food') {
+      setActiveItem('Food Report');
+      return;
+    }
+
+    if (pathname === '/dashboard/reports/order/regular') {
+      setActiveItem('Regular Order Report');
+      return;
+    }
+
+    if (pathname === '/dashboard/reports/order/coupon') {
+      setActiveItem('Coupon Order Report');
+      return;
+    }
+
+    if (pathname === '/dashboard/reports/restaurant') {
+      setActiveItem('Restaurant Report');
+      return;
+    }
+
+    if (pathname === '/dashboard/reports/customer') {
+      setActiveItem('Customer Wallet');
+      return;
+    }
+
+    if (pathname === '/dashboard/reports/tax') {
+      setActiveItem('Tax Report');
+      return;
+    }
+
+    if (pathname === '/dashboard/reports/restaurant-vat') {
+      setActiveItem('Restaurant VAT Report');
+      return;
+    }
+
+    if (pathname === '/dashboard/tax') {
+      setActiveItem('Tax Setup');
+      return;
+    }
+
     const match = pathname.match(/^\/dashboard\/orders\/([^/]+)$/);
     if (match) {
       const slug = match[1];
@@ -511,7 +589,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'New Refund Request': 'newRefundRequest',
     'Refund Cancelled': 'refundCancelled',
     'Refunded Orders': 'refundedOrders',
-    'Customer Wallet': 'customerWallet', 'Vendor Wallet': 'vendorWallet', 'Driver Wallet': 'driverWallet',
+    'Customer Wallet': 'customerWallet', 'Vendor Wallet': 'vendorWallet', 'Driver Wallet': 'driverWallet', 'Add Fund': 'addFund',
     'All Apartments': 'allEmployees', 'Add New': 'addNewRestaurant',
     'Add New Item': 'addNewItem',
     'Category': 'category',
@@ -528,7 +606,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Business Setup': 'businessSetup',
     'All Employees': 'allEmployees', 'Roles': 'roles', 'Permissions': 'permissions',
     'Daily Report': 'dailyReport', 'Monthly Report': 'monthlyReport', 'Yearly Report': 'yearlyReport',
-    'Active Customers': 'activeCustomers', 'Inactive Customers': 'inactiveCustomers',
+    'Regular Order Report': 'regularOrderReport', 'Coupon Order Report': 'couponOrderReport',
+    'Active Customers': 'activeCustomers', 'Inactive Customers': 'inactiveCustomers', 'Customer Wallet': 'customerWalletReport',
   };
 
   const menuItems = [
@@ -574,7 +653,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       label: 'WALLET MANAGEMENT', tKey: 'walletManagement',
       isHeader: true,
       items: [
-        { icon: SIDEBAR_ICONS.wallet, label: 'Wallet', tKey: 'wallet', key: 'walletManagement', submenu: ['Customer Wallet', 'Vendor Wallet', 'Driver Wallet'] }
+        { icon: SIDEBAR_ICONS.wallet, label: 'Wallet', tKey: 'wallet', key: 'walletManagement', submenu: ['Add Fund'] }
       ]
     },
     {
@@ -631,11 +710,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       items: [
         { icon: SIDEBAR_ICONS.transactionReport, label: 'Transaction Report', tKey: 'transactionReport', hasSubmenu: false },
         { icon: SIDEBAR_ICONS.foodReport, label: 'Food Report', tKey: 'foodReport', hasSubmenu: false },
-        { icon: SIDEBAR_ICONS.orderReport, label: 'Order Report', tKey: 'orderReport', key: 'reportLog', submenu: ['Daily Report', 'Monthly Report', 'Yearly Report'] },
+        { icon: SIDEBAR_ICONS.orderReport, label: 'Order Report', tKey: 'orderReport', key: 'reportLog', submenu: ['Regular Order Report', 'Coupon Order Report'] },
         { icon: SIDEBAR_ICONS.restaurantReport, label: 'Restaurant Report', tKey: 'restaurantReport', hasSubmenu: false },
         { icon: SIDEBAR_ICONS.taxReport, label: 'Tax Report', tKey: 'taxReport', hasSubmenu: false },
-        { icon: SIDEBAR_ICONS.customerReport, label: 'Customer Report', tKey: 'customerReport', key: 'customerReport', submenu: ['Active Customers', 'Inactive Customers'] },
-        { icon: SIDEBAR_ICONS.restaurantWpReport, label: 'Restaurant WP Report', tKey: 'restaurantWPReport', hasSubmenu: false }
+        { icon: SIDEBAR_ICONS.customerReport, label: 'Customer Report', tKey: 'customerReport', key: 'customerReport', submenu: ['Customer Wallet'] },
+        { icon: SIDEBAR_ICONS.restaurantWpReport, label: 'Restaurant VAT Report', tKey: 'restaurantVATReport', hasSubmenu: false }
       ]
     },
     {

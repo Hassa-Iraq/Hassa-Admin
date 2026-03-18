@@ -26,6 +26,7 @@ const ar = {
   customers: 'العملاء',
   walletManagement: 'إدارة المحفظة',
   wallet: 'المحفظة',
+  addFund: 'إضافة رصيد',
   customerWallet: 'محفظة العميل',
   vendorWallet: 'محفظة البائع',
   driverWallet: 'محفظة السائق',

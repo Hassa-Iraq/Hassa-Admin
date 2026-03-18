@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import { API_BASE_URL } from '../../config';
+import { API_BASE_URL } from '../../../config';
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -11,7 +11,7 @@ export async function GET(request) {
     const authHeader = authorization || (cookieToken ? `Bearer ${cookieToken}` : '');
     const search = request.nextUrl.search || '';
 
-    const backendResponse = await axios.get(`${API_BASE_URL}/api/orders/${search}`, {
+    const backendResponse = await axios.get(`${API_BASE_URL}/api/orders/customers${search}`, {
       headers: {
         ...(authHeader ? { Authorization: authHeader } : {}),
       },
@@ -25,6 +25,7 @@ export async function GET(request) {
         error.code === 'ECONNABORTED' ||
         error.code === 'ETIMEDOUT' ||
         String(error.message || '').toLowerCase().includes('timedout');
+
       if (timeoutLike) {
         return NextResponse.json(
           { message: 'Backend request timed out. Please try again.' },
@@ -37,13 +38,13 @@ export async function GET(request) {
         error.response?.data?.message ||
         error.response?.data ||
         error.message ||
-        'Failed to fetch orders';
+        'Failed to fetch order customers';
 
       return NextResponse.json({ message }, { status });
     }
 
     return NextResponse.json(
-      { message: error?.message || 'Failed to fetch orders' },
+      { message: error?.message || 'Failed to fetch order customers' },
       { status: 500 }
     );
   }

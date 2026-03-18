@@ -1,17 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Download, Eye, Search } from 'lucide-react';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
-
-const CUSTOMER_ROWS = [
-  { id: 1002, name: 'Hamza Khan', email: 'h********@gmail.com', phone: '+9*************', totalOrders: 22, joiningDate: '12 Jan 2026', totalAmount: '$12,242.45', active: true, avatar: 'https://i.pravatar.cc/40?img=12' },
-  { id: 1002, name: 'Hamza Khan', email: 'h********@gmail.com', phone: '+9*************', totalOrders: 22, joiningDate: '12 Jan 2026', totalAmount: '$12,242.45', active: true, avatar: 'https://i.pravatar.cc/40?img=13' },
-  { id: 1002, name: 'Hamza Khan', email: 'h********@gmail.com', phone: '+9*************', totalOrders: 22, joiningDate: '12 Jan 2026', totalAmount: '$12,242.45', active: true, avatar: 'https://i.pravatar.cc/40?img=14' },
-  { id: 1002, name: 'Hamza Khan', email: 'h********@gmail.com', phone: '+9*************', totalOrders: 22, joiningDate: '12 Jan 2026', totalAmount: '$12,242.45', active: true, avatar: 'https://i.pravatar.cc/40?img=15' },
-  { id: 1002, name: 'Hamza Khan', email: 'h********@gmail.com', phone: '+9*************', totalOrders: 22, joiningDate: '12 Jan 2026', totalAmount: '$12,242.45', active: true, avatar: 'https://i.pravatar.cc/40?img=16' },
-  { id: 1002, name: 'Hamza Khan', email: 'h********@gmail.com', phone: '+9*************', totalOrders: 22, joiningDate: '12 Jan 2026', totalAmount: '$12,242.45', active: true, avatar: 'https://i.pravatar.cc/40?img=17' },
-];
+import { API_BASE_URL } from '@/app/config';
 
 const INITIAL_FILTERS = {
   orderDate: '',
@@ -21,17 +14,162 @@ const INITIAL_FILTERS = {
   search: '',
 };
 
+const toAbsoluteAssetUrl = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  if (trimmed.startsWith('//')) return `https:${trimmed}`;
+  if (trimmed.startsWith('/')) return `${API_BASE_URL}${trimmed}`;
+  return `${API_BASE_URL}/${trimmed}`;
+};
+
+const formatDate = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const formatAmount = (value, currency = 'PKR') => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return `${currency} 0.00`;
+  return `${currency} ${amount.toFixed(2)}`;
+};
+
+const toDisplayName = (entity) => {
+  const fullName = String(entity?.full_name || entity?.name || '').trim();
+  if (fullName) return fullName;
+  const joined = `${entity?.f_name || entity?.first_name || ''} ${entity?.l_name || entity?.last_name || ''}`.trim();
+  if (joined) return joined;
+  const email = String(entity?.email || '').trim();
+  if (!email) return 'N/A';
+  const prefix = email.split('@')[0]?.replace(/[._-]+/g, ' ').trim() || '';
+  return prefix
+    ? prefix
+        .split(' ')
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ')
+    : 'N/A';
+};
+
 export default function CustomersPage() {
+  const router = useRouter();
   const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const [statusMap, setStatusMap] = useState(() =>
-    Object.fromEntries(CUSTOMER_ROWS.map((row, index) => [`${row.id}-${index}`, row.active]))
-  );
+  const [apiRows, setApiRows] = useState([]);
+  const [statusMap, setStatusMap] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState('');
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      setLoading(true);
+      setFetchError('');
+
+      try {
+        const token = localStorage.getItem('token') || '';
+        const response = await fetch(
+          '/api/orders/customers?page=1&limit=20&search=&restaurant_id=&date_from=&date_to=',
+          {
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          }
+        );
+
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload?.message || 'Failed to fetch customers');
+        }
+
+        const list =
+          payload?.data?.customers ||
+          payload?.data?.list ||
+          payload?.customers ||
+          payload?.list ||
+          payload?.data ||
+          [];
+
+        const rows = (Array.isArray(list) ? list : []).map((item, index) => {
+          const customer = item?.customer || item?.user || item || {};
+          const id = String(
+            customer?.id ||
+            item?.id ||
+            item?.user_id ||
+            item?.customer_id ||
+            `customer-${index}`
+          );
+          const totalOrders =
+            item?.total_orders ??
+            item?.orders_count ??
+            item?.orders ??
+            item?.totalOrders ??
+            0;
+
+          const totalAmount =
+            item?.total_spent ??
+            item?.total_order_amount ??
+            item?.total_amount ??
+            item?.order_amount ??
+            item?.amount ??
+            0;
+
+          const activeValue =
+            customer?.is_active ??
+            customer?.active ??
+            item?.is_active ??
+            item?.active ??
+            true;
+
+          return {
+            key: `${id}-${index}`,
+            id,
+            name: toDisplayName(customer),
+            email: customer?.email || item?.email || '-',
+            phone: customer?.phone || item?.phone || '-',
+            totalOrders: Number(totalOrders) || 0,
+            joiningDate: formatDate(
+              item?.first_order_at ||
+              item?.last_order_at ||
+              customer?.created_at ||
+              item?.created_at ||
+              customer?.joining_date ||
+              item?.joining_date
+            ),
+            totalAmount: formatAmount(totalAmount, item?.currency || customer?.currency || 'PKR'),
+            active: Boolean(activeValue),
+            avatar: toAbsoluteAssetUrl(customer?.profile_picture_url || customer?.image_url || customer?.avatar || ''),
+          };
+        });
+
+        setApiRows(rows);
+      } catch (error) {
+        setApiRows([]);
+        setFetchError(error?.message || 'Failed to fetch customers');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
 
   const rows = useMemo(() => {
     const query = filters.search.trim().toLowerCase();
-    if (!query) return CUSTOMER_ROWS;
-    return CUSTOMER_ROWS.filter((row) => row.name.toLowerCase().includes(query));
-  }, [filters.search]);
+    if (!query) return apiRows;
+    return apiRows.filter((row) => row.name.toLowerCase().includes(query));
+  }, [filters.search, apiRows]);
+
+  useEffect(() => {
+    setStatusMap(
+      Object.fromEntries(rows.map((row) => [row.key, row.active]))
+    );
+  }, [rows]);
 
   const updateFilter = (event) => {
     const { name, value } = event.target;
@@ -134,17 +272,40 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, index) => {
-                const key = `${row.id}-${index}`;
+              {loading && (
+                <tr>
+                  <td colSpan={8} className="px-3 py-8 text-center text-sm text-gray-500">
+                    Loading customers...
+                  </td>
+                </tr>
+              )}
+
+              {!loading && fetchError && (
+                <tr>
+                  <td colSpan={8} className="px-3 py-8 text-center text-sm text-rose-500">
+                    {fetchError}
+                  </td>
+                </tr>
+              )}
+
+              {!loading && !fetchError && rows.map((row, index) => {
+                const key = row.key;
                 return (
-                  <tr key={key} className="border-b border-gray-100 last:border-b-0">
+                  <tr
+                    key={key}
+                    onClick={() => router.push(`/dashboard/customers/${row.id}`)}
+                    className="cursor-pointer border-b border-gray-100 hover:bg-gray-50 last:border-b-0"
+                  >
                     <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <img src={row.avatar} alt={row.name} className="h-7 w-7 rounded-full object-cover" />
+                        {row.avatar ? (
+                          <img src={row.avatar} alt={row.name} className="h-7 w-7 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-7 w-7 rounded-full bg-gray-200" />
+                        )}
                         <div>
                           <p className="text-xs font-semibold text-[#1E1E24]">{row.name}</p>
-                          <p className="text-[11px] text-gray-500">ID #{row.id}</p>
                         </div>
                       </div>
                     </td>
@@ -170,13 +331,27 @@ export default function CustomersPage() {
                       </button>
                     </td>
                     <td className="px-3 py-3">
-                      <button className="flex h-6 w-6 items-center justify-center rounded-md border border-[#FDBA74] bg-[#FFF7ED] text-[#F97316]">
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          router.push(`/dashboard/customers/${row.id}`);
+                        }}
+                        className="flex h-6 w-6 items-center justify-center rounded-md border border-[#FDBA74] bg-[#FFF7ED] text-[#F97316]"
+                      >
                         <Eye size={12} />
                       </button>
                     </td>
                   </tr>
                 );
               })}
+
+              {!loading && !fetchError && rows.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-3 py-8 text-center text-sm text-gray-500">
+                    No customers found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -75,25 +75,43 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
     };
 
     const normalizeOrder = (item, index) => {
+      const deliveryAddress = item?.delivery_address || {};
       const customer =
         item?.customer ||
         item?.user ||
+        item?.delivery_contact ||
         item?.delivery_address?.contact_person ||
         {};
       const customerName =
         item?.customer_name ||
         item?.customerName ||
         customer?.name ||
+        customer?.full_name ||
+        deliveryAddress?.contact_name ||
         `${customer?.f_name || customer?.first_name || ''} ${customer?.l_name || customer?.last_name || ''}`.trim() ||
         'N/A';
-      const customerPhone = item?.customer_phone || item?.customerPhone || customer?.phone || '-';
+      const customerPhone =
+        item?.customer_phone ||
+        item?.customerPhone ||
+        customer?.phone ||
+        deliveryAddress?.contact_phone ||
+        '-';
+      const customerEmail =
+        item?.customer_email ||
+        item?.customerEmail ||
+        customer?.email ||
+        deliveryAddress?.contact_email ||
+        '-';
 
       return {
         id: item?.id ?? item?.order_id ?? `${page}-${index}`,
-        orderId: String(item?.order_id || item?.id || '-'),
+        orderId: String(item?.order_number || item?.orderNo || item?.order_id || item?.id || '-'),
         date: formatDate(item?.created_at || item?.date || item?.createdAt),
+        userId: String(item?.user_id || item?.userId || item?.customer_id || ''),
+        restaurantId: String(item?.restaurant_id || item?.restaurantId || ''),
         customerName,
         customerPhone,
+        customerEmail,
         restaurant: item?.restaurant_name || item?.restaurant?.name || item?.store?.name || 'N/A',
         totalAmount: toAmount(item?.total_amount ?? item?.order_amount ?? item?.amount ?? 0),
         status: item?.order_status || item?.status || filterLabel || 'Pending',
@@ -137,7 +155,8 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
           data?.list ||
           data?.data ||
           [];
-        const normalized = (Array.isArray(list) ? list : []).map(normalizeOrder);
+        const rawOrders = Array.isArray(list) ? list : [];
+        const normalized = rawOrders.map(normalizeOrder);
         setOrders(normalized);
 
         const apiTotal =
@@ -158,7 +177,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
     };
 
     fetchOrders();
-  }, [filterLabel, page, search]);
+  }, [filterLabel, filterSlug, page, search]);
 
   const filteredOrders = useMemo(() => {
     let base = orders;
@@ -415,7 +434,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
               return (
                 <tr
                   key={order.id}
-                  onClick={() => router.push(`/dashboard/orders/all/${order.id}`)}
+                  onClick={() => router.push(`/dashboard/orders/${filterSlug}/${order.id}`)}
                   className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
                 >
                   <td className="py-3 px-6 text-gray-500 whitespace-nowrap">{(page - 1) * PER_PAGE + index + 1}</td>
@@ -427,6 +446,9 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                     <div className="flex flex-col">
                       <span className="font-regular text-gray-900">
                         {order.customerName}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {order.customerEmail}
                       </span>
                       <span className="text-xs text-gray-500">
                         {order.customerPhone}
@@ -466,7 +488,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
     <button
       onClick={(e) => {
         e.stopPropagation();
-        router.push(`/dashboard/orders/all/${order.id}`);
+        router.push(`/dashboard/orders/${filterSlug}/${order.id}`);
       }}
       className="w-8 h-8 flex items-center justify-center rounded-md border border-orange-200 bg-orange-50 text-orange-500 hover:bg-orange-100 transition"
     >
@@ -477,7 +499,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
     <button
       onClick={(e) => {
         e.stopPropagation();
-        console.log('Print order', order.id);
+        console.log('Print order', order.orderId);
       }}
       className="w-8 h-8 flex items-center justify-center rounded-md border border-purple-200 bg-purple-50 text-purple-600 hover:bg-purple-100 transition"
     >

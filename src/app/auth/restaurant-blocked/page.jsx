@@ -1,8 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 export default function RestaurantBlockedPage() {
+  const searchParams = useSearchParams();
+  const reason = String(searchParams.get('reason') || '').toLowerCase();
+  const isInactive = reason === 'inactive';
+
   return (
     <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl">
       <div className="bg-gradient-to-r from-[#6001D2] to-[#7C3AED] px-6 py-5 sm:px-8">
@@ -16,15 +21,16 @@ export default function RestaurantBlockedPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-semibold text-white sm:text-3xl">
-            Restaurant Account Blocked
+            {isInactive ? 'Restaurant Account Not Active' : 'Restaurant Account Blocked'}
           </h1>
         </div>
       </div>
 
       <div className="px-6 py-6 sm:px-8 sm:py-8">
         <p className="text-sm leading-6 text-gray-600">
-          Your restaurant access is temporarily disabled. For re-activation, please contact Hassa
-          officials and share your registered restaurant email or phone number.
+          {isInactive
+            ? 'Your restaurant account is currently not active, so login access is disabled. Please contact Hassa officials to activate your account.'
+            : 'Your restaurant access is temporarily disabled. For re-activation, please contact Hassa officials and share your registered restaurant email or phone number.'}
         </p>
 
         <div className="mt-5 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-700">

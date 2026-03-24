@@ -14,10 +14,11 @@ LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
 HEALTHCHECK_PATH="${HEALTHCHECK_PATH:-/}"
 
 reload_or_restart_nginx() {
-  if sudo systemctl is-active --quiet nginx; then
+  if [[ -x "/www/server/nginx/sbin/nginx" ]]; then
+    sudo /www/server/nginx/sbin/nginx -s reload
+  elif sudo systemctl is-active --quiet nginx; then
     sudo systemctl reload nginx
   else
-    # Some hosts have nginx installed but inactive after package changes.
     sudo systemctl restart nginx
   fi
 }
@@ -104,86 +105,7 @@ EOF
   sudo systemctl restart "${SERVICE_NAME}"
 fi
 
-sudo mkdir -p /var/www/certbot
-
-sudo tee "/etc/nginx/sites-available/${SITE_FILENAME}" >/dev/null <<EOF
-server {
-    listen 80;
-    listen [::]:80;
-    server_name ${ADMIN_DOMAIN};
-
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
-
-    location / {
-        proxy_pass http://127.0.0.1:${APP_PORT};
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-EOF
-
-if [[ ! -L "/etc/nginx/sites-enabled/${SITE_FILENAME}" ]]; then
-  sudo ln -s "/etc/nginx/sites-available/${SITE_FILENAME}" "/etc/nginx/sites-enabled/${SITE_FILENAME}"
-fi
-
-sudo nginx -t
-reload_or_restart_nginx
-
-if command -v certbot >/dev/null 2>&1; then
-  sudo certbot certonly --webroot -w /var/www/certbot -d "${ADMIN_DOMAIN}" \
-    --agree-tos --email "${LETSENCRYPT_EMAIL}" --non-interactive --keep-until-expiring
-fi
-
-if [[ -f "/etc/letsencrypt/live/${ADMIN_DOMAIN}/fullchain.pem" && -f "/etc/letsencrypt/live/${ADMIN_DOMAIN}/privkey.pem" ]]; then
-  sudo tee "/etc/nginx/sites-available/${SITE_FILENAME}" >/dev/null <<EOF
-server {
-    listen 80;
-    listen [::]:80;
-    server_name ${ADMIN_DOMAIN};
-
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
-
-    location / {
-        return 301 https://\$host\$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name ${ADMIN_DOMAIN};
-
-    ssl_certificate /etc/letsencrypt/live/${ADMIN_DOMAIN}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${ADMIN_DOMAIN}/privkey.pem;
-    ssl_session_timeout 1d;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_tickets off;
-    ssl_protocols TLSv1.2 TLSv1.3;
-
-    location / {
-        proxy_pass http://127.0.0.1:${APP_PORT};
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-EOF
-fi
-
-sudo nginx -t
+# aaPanel manages nginx config and SSL - just reload its nginx to pick up any changes
 reload_or_restart_nginx
 
 for attempt in 1 2 3 4 5; do

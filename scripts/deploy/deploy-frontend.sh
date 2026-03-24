@@ -13,16 +13,6 @@ ADMIN_DOMAIN="${ADMIN_DOMAIN:-}"
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
 HEALTHCHECK_PATH="${HEALTHCHECK_PATH:-/}"
 
-reload_or_restart_nginx() {
-  if [[ -x "/www/server/nginx/sbin/nginx" ]]; then
-    sudo /www/server/nginx/sbin/nginx -s reload
-  elif sudo systemctl is-active --quiet nginx; then
-    sudo systemctl reload nginx
-  else
-    sudo systemctl restart nginx
-  fi
-}
-
 if [[ -z "${DOMAIN}" ]]; then
   echo "DOMAIN is required."
   exit 1
@@ -104,9 +94,6 @@ EOF
   sudo systemctl enable "${SERVICE_NAME}"
   sudo systemctl restart "${SERVICE_NAME}"
 fi
-
-# aaPanel manages nginx config and SSL - just reload its nginx to pick up any changes
-reload_or_restart_nginx
 
 for attempt in 1 2 3 4 5; do
   if curl -fsS "https://${ADMIN_DOMAIN}${HEALTHCHECK_PATH}" >/dev/null; then

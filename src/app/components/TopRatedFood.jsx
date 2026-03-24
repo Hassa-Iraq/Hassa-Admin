@@ -1,19 +1,70 @@
 'use client'
+import { useEffect, useMemo, useState } from 'react';
 import { Star } from 'lucide-react';
 import { useLanguage } from '@/app/i18n/LanguageContext';
+import { API_BASE_URL } from '@/app/config';
+
+const toAbsoluteAssetUrl = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  if (trimmed.startsWith('//')) return `https:${trimmed}`;
+  if (trimmed.startsWith('/')) return `${API_BASE_URL}${trimmed}`;
+  return `${API_BASE_URL}/${trimmed}`;
+};
 
 export default function TopRatedFood() {
   const { t } = useLanguage();
-  const foods = [
-    { id: 1, name: 'Beef Stroganoff', rating: 4.6, reviews: 161 },
-    { id: 2, name: 'Beef Stroganoff', rating: 4.6, reviews: 161 },
-    { id: 3, name: 'Beef Stroganoff', rating: 4.6, reviews: 161 },
-    { id: 4, name: 'Beef Stroganoff', rating: 4.6, reviews: 161 },
-    { id: 5, name: 'Beef Stroganoff', rating: 4.6, reviews: 161 },
-    { id: 6, name: 'Beef Stroganoff', rating: 4.6, reviews: 161 },
-    { id: 7, name: 'Beef Stroganoff', rating: 4.6, reviews: 161 },
-    { id: 8, name: 'Beef Stroganoff', rating: 4.6, reviews: 161 }
-  ];
+  const [foods, setFoods] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const listToRender = useMemo(() => foods || [], [foods]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchTopRatedFood = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token') || '';
+        const res = await fetch('/api/admin/analytics/top-rated-food?filter=overall', {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload?.message || 'Failed to fetch top rated food');
+
+        const list =
+          payload?.data?.foods ||
+          payload?.data?.top_foods ||
+          payload?.data ||
+          payload?.foods ||
+          payload?.top_foods ||
+          payload ||
+          [];
+
+        const normalized = (Array.isArray(list) ? list : []).slice(0, 8).map((f, idx) => ({
+          id: f?.id ?? f?.food_id ?? f?.menu_item_id ?? `${idx}`,
+          name: String(f?.name || f?.food_name || f?.title || '').trim() || 'N/A',
+          rating: Number(f?.rating ?? f?.avg_rating ?? f?.avgRating ?? 0) || 0,
+          reviews: Number(f?.reviews ?? f?.review_count ?? f?.rating_count ?? 0) || 0,
+          image: toAbsoluteAssetUrl(f?.image_url || f?.image || f?.photo_url || f?.photo || ''),
+        }));
+
+        if (!cancelled) setFoods(normalized);
+      } catch {
+        if (!cancelled) setFoods([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchTopRatedFood();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="bg-white rounded-xl border border-[#8A8A9E80] shadow-sm">
@@ -27,14 +78,17 @@ export default function TopRatedFood() {
 
       <div className="p-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {foods.map((food) => (
+          {loading ? (
+            <div className="col-span-full text-sm text-gray-500">Loading...</div>
+          ) : (
+            listToRender.map((food) => (
             <div
               key={food.id}
               className="bg-white rounded-lg shadow-sm py-3 px-2 border border-gray-200/60 flex flex-col items-center cursor-pointer transition hover:shadow-md"
             >
               <div className="mb-1.5">
                 <img
-                  src="https://images.unsplash.com/photo-1574484284002-952d92456975?w=200&h=200&fit=crop"
+                  src={food.image || '/images/food.webp'}
                   alt={food.name}
                   className="w-14 h-14 rounded-lg object-cover"
                 />
@@ -51,7 +105,8 @@ export default function TopRatedFood() {
                 </span>
               </div>
             </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>

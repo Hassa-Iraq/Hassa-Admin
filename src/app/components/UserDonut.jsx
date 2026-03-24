@@ -1,13 +1,84 @@
 'use client'
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
+import { useEffect, useMemo, useState } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { ChevronDown } from 'lucide-react';
 
 export default function UserStatistics() {
-  const data = [
-    { name: 'Customers', value: 444, color: '#7c3aed' },
-    { name: 'Restaurants', value: 345, color: '#14b8a6' },
-    { name: 'Delivery Man', value: 289, color: '#f87171' }
-  ];
+  const [data, setData] = useState([
+    { name: 'Customers', value: 0, color: '#7c3aed' },
+    { name: 'Restaurants', value: 0, color: '#14b8a6' },
+    { name: 'Delivery Man', value: 0, color: '#f87171' },
+  ]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchStatistics = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token') || '';
+        const res = await fetch(`/api/admin/analytics/statistics?filter=overall`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload?.message || 'Failed to fetch statistics');
+
+        const raw = payload?.data || payload?.result || payload || {};
+
+        const customers =
+          raw?.customers ??
+          raw?.customer ??
+          raw?.customers_count ??
+          raw?.customersCount ??
+          raw?.total_customers ??
+          0;
+
+        const restaurants =
+          raw?.restaurants ??
+          raw?.restaurant ??
+          raw?.restaurants_count ??
+          raw?.restaurantsCount ??
+          raw?.total_restaurants ??
+          0;
+
+        const deliveryMan =
+          raw?.delivery_men ??
+          raw?.deliverymen ??
+          raw?.delivery_man ??
+          raw?.deliveryMan ??
+          raw?.delivery_men_count ??
+          raw?.deliveryMenCount ??
+          raw?.total_delivery_men ??
+          raw?.total_deliverymen ??
+          0;
+
+        if (!cancelled) {
+          setData([
+            { name: 'Customers', value: Number(customers) || 0, color: '#7c3aed' },
+            { name: 'Restaurants', value: Number(restaurants) || 0, color: '#14b8a6' },
+            { name: 'Delivery Man', value: Number(deliveryMan) || 0, color: '#f87171' },
+          ]);
+        }
+      } catch {
+        // Keep zeros on failure.
+        if (!cancelled) setData([
+          { name: 'Customers', value: 0, color: '#7c3aed' },
+          { name: 'Restaurants', value: 0, color: '#14b8a6' },
+          { name: 'Delivery Man', value: 0, color: '#f87171' },
+        ]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchStatistics();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
@@ -70,6 +141,11 @@ export default function UserStatistics() {
       </div>
 
       {/* Donut Chart */}
+      {loading ? (
+        <div className="mt-6 h-[260px] flex items-center justify-center text-sm text-gray-500">
+          Loading...
+        </div>
+      ) : (
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
@@ -89,6 +165,7 @@ export default function UserStatistics() {
           </Pie>
         </PieChart>
       </ResponsiveContainer>
+      )}
 
       {/* Custom Legend */}
       <CustomLegend />

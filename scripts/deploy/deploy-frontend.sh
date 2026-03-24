@@ -2,15 +2,11 @@
 set -euo pipefail
 
 DEPLOY_PATH="${DEPLOY_PATH:-$PWD}"
-DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
-DEPLOY_MODE="${DEPLOY_MODE:-auto}" # auto|docker|systemd
-APP_NAME="${APP_NAME:-hassa-admin-frontend}"
+DEPLOY_MODE="${DEPLOY_MODE:-auto}"
 SERVICE_NAME="${SERVICE_NAME:-hassa-admin-frontend}"
 APP_PORT="${APP_PORT:-3008}"
-SITE_FILENAME="${SITE_FILENAME:-hassa-admin-frontend.conf}"
 DOMAIN="${DOMAIN:-}"
 ADMIN_DOMAIN="${ADMIN_DOMAIN:-}"
-LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
 HEALTHCHECK_PATH="${HEALTHCHECK_PATH:-/}"
 
 if [[ -z "${DOMAIN}" ]]; then
@@ -22,22 +18,7 @@ if [[ -z "${ADMIN_DOMAIN}" ]]; then
   ADMIN_DOMAIN="admin.${DOMAIN}"
 fi
 
-if [[ -z "${LETSENCRYPT_EMAIL}" ]]; then
-  echo "LETSENCRYPT_EMAIL is required."
-  exit 1
-fi
-
-rollback_marker_dir="${DEPLOY_PATH}/.deploy"
-mkdir -p "${rollback_marker_dir}"
-
 cd "${DEPLOY_PATH}"
-
-current_commit="$(git rev-parse --short HEAD)"
-echo "${current_commit}" > "${rollback_marker_dir}/previous_commit"
-
-git fetch origin "${DEPLOY_BRANCH}"
-git checkout "${DEPLOY_BRANCH}"
-git pull --ff-only origin "${DEPLOY_BRANCH}"
 
 run_mode="${DEPLOY_MODE}"
 if [[ "${DEPLOY_MODE}" == "auto" ]]; then
@@ -73,7 +54,7 @@ else
 
   sudo tee "/etc/systemd/system/${SERVICE_NAME}.service" >/dev/null <<EOF
 [Unit]
-Description=${APP_NAME}
+Description=${SERVICE_NAME}
 After=network.target
 
 [Service]

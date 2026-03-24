@@ -45,15 +45,17 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 -p "${VPS_PORT:-22}" "${VPS_USER}@${VPS_HOST}" \
             "cd '${DEPLOY_PATH:-/var/www/hassa-admin}' && \
+             mkdir -p .deploy && \
+             git rev-parse --short HEAD > .deploy/previous_commit && \
+             git fetch origin main && \
+             git checkout main && \
+             git pull --ff-only origin main && \
              chmod +x scripts/deploy/deploy-frontend.sh scripts/deploy/rollback-frontend.sh && \
              DOMAIN='keydevs.pk' \
              ADMIN_DOMAIN='adminhassa.keydevs.pk' \
-             LETSENCRYPT_EMAIL='${{ secrets.LETSENCRYPT_EMAIL }}' \
              DEPLOY_PATH='${DEPLOY_PATH:-/var/www/hassa-admin}' \
-             DEPLOY_BRANCH='main' \
              APP_PORT='3008' \
              SERVICE_NAME='hassa-admin-frontend' \
-             SITE_FILENAME='hassa-admin-frontend.conf' \
              ./scripts/deploy/deploy-frontend.sh"
 
       - name: Health Check

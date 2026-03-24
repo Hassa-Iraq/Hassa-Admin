@@ -1,14 +1,82 @@
 'use client'
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Heart } from 'lucide-react';
+import { API_BASE_URL } from '@/app/config';
+
+const toAbsoluteAssetUrl = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  if (trimmed.startsWith('//')) return `https:${trimmed}`;
+  if (trimmed.startsWith('/')) return `${API_BASE_URL}${trimmed}`;
+  return `${API_BASE_URL}/${trimmed}`;
+};
+
+const normalizeName = (entity) =>
+  String(entity?.name || entity?.restaurant_name || entity?.full_name || '').trim() || 'N/A';
 
 export default function MostPopularRestaurants() {
-  const restaurants = [
-    { id: 1, name: 'Rose Restaurant', image: '/restaurant-logo.png', favorites: 3 },
-    { id: 2, name: 'Rose Restaurant', image: '/restaurant-logo.png', favorites: 3 },
-    { id: 3, name: 'Rose Restaurant', image: '/restaurant-logo.png', favorites: 3 },
-    { id: 4, name: 'Rose Restaurant', image: '/restaurant-logo.png', favorites: 3 },
-    { id: 5, name: 'Rose Restaurant', image: '/restaurant-logo.png', favorites: 3 }
-  ];
+  const [filter, setFilter] = useState('overall');
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const restaurantsToRender = useMemo(() => restaurants || [], [restaurants]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchRestaurants = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token') || '';
+        const res = await fetch(
+          `/api/admin/analytics/popular-restaurants?filter=${encodeURIComponent(filter)}`,
+          {
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          }
+        );
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload?.message || 'Failed to fetch popular restaurants');
+
+        const list =
+          payload?.data?.restaurants ||
+          payload?.data?.data ||
+          payload?.data ||
+          payload?.restaurants ||
+          payload ||
+          [];
+
+        const normalized = (Array.isArray(list) ? list : []).slice(0, 5).map((r, idx) => ({
+          id: r?.id ?? r?.restaurant_id ?? r?.vendor_id ?? `${idx}`,
+          name: normalizeName(r),
+          image: toAbsoluteAssetUrl(r?.logo_url || r?.image_url || r?.image || r?.photo_url || ''),
+          favorites:
+            Number(
+              r?.favorites ??
+                r?.favorite_count ??
+                r?.liked_count ??
+                r?.likes ??
+                r?.order_count ??
+                r?.orders ??
+                0
+            ) || 0,
+        }));
+
+        if (!cancelled) setRestaurants(normalized);
+      } catch {
+        if (!cancelled) setRestaurants([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchRestaurants();
+    return () => {
+      cancelled = true;
+    };
+  }, [filter]);
 
   return (
     <div className="bg-white rounded-lg shadow p-6 border border-[#8A8A9E80]">
@@ -23,11 +91,15 @@ export default function MostPopularRestaurants() {
       {/* Overall Dropdown */}
       <div className="flex justify-end mb-4">
         <div className="relative w-32">
-          <select className="appearance-none w-full bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer">
-            <option>Overall</option>
-            <option>This Month</option>
-            <option>This Week</option>
-            <option>Today</option>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="appearance-none w-full bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+          >
+            <option value="overall">Overall</option>
+            <option value="this_month">This Month</option>
+            <option value="this_week">This Week</option>
+            <option value="today">Today</option>
           </select>
           <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>
@@ -36,14 +108,19 @@ export default function MostPopularRestaurants() {
       {/* Restaurant List (No Scroll) */}
       <div>
         <div className="space-y-3">
-          {restaurants.map((restaurant) => (
+          {loading && (
+            <div className="text-sm text-gray-500">Loading...</div>
+          )}
+
+          {!loading &&
+            restaurantsToRender.map((restaurant) => (
             <div
               key={restaurant.id}
               className="flex items-center justify-between bg-purple-50 border border-[#6001D2] rounded-lg p-3 hover:bg-purple-100 transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 <img
-                  src={`https://tse4.mm.bing.net/th/id/OIP.qOEjssW7vOnbuoTsXFmF5wHaEU?cb=defcache2&defcache=1&rs=1&pid=ImgDetMain&o=7&rm=3`}
+                  src={restaurant.image || '/images/restaurant.webp'}
                   alt={restaurant.name}
                   className="w-10 h-10 rounded-full"
                 />

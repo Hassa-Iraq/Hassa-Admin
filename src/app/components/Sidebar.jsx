@@ -38,6 +38,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     customerReport: '/icons/customers.png',
     restaurantWpReport: '/icons/dispatch.png',
     marketing: '/icons/notification.png',
+    banners: '/icons/notification.png',
   };
   const router = useRouter();
   const { dir, t } = useLanguage();
@@ -60,7 +61,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     reportLog: false,
     marketing: false,
     foodManagement: false,
-    categoriesManagement: false
+    categoriesManagement: false,
+    bannersManagement: false,
   });
     
   const [searchQuery, setSearchQuery] = useState('');
@@ -287,6 +289,12 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Active Customers': ['report'],
     'Inactive Customers': ['report'],
     'Push Notification': ['push_notification'],
+    Banners: ['restaurants'],
+    'Create Banner': ['restaurants'],
+    'List Banners': ['restaurants'],
+    'List Public Banners': ['restaurants'],
+    'Update Banner Status': ['restaurants'],
+    'Admin List Banners': ['restaurants'],
   }), []);
 
   const ordersFilterSlugByLabel = useMemo(() => ({
@@ -363,6 +371,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Add New Deliveryman': '/dashboard/deliveryman/add',
     'Deliveryman List': '/dashboard/deliveryman/list',
     'Deliveryman Reviews': '/dashboard/deliveryman/reviews',
+    'Create Banner': '/dashboard/banners/add',
+    'List Banners': '/dashboard/banners/list',
+    'List Public Banners': '/dashboard/banners/public',
+    'Update Banner Status': '/dashboard/banners/status',
+    'Admin List Banners': '/dashboard/banners/admin-list',
   }), []);
 
   useEffect(() => {
@@ -488,6 +501,31 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       return;
     }
 
+    if (pathname === '/dashboard/banners/add') {
+      setActiveItem('Create Banner');
+      return;
+    }
+
+    if (pathname === '/dashboard/banners/list') {
+      setActiveItem('List Banners');
+      return;
+    }
+
+    if (pathname === '/dashboard/banners/public') {
+      setActiveItem('List Public Banners');
+      return;
+    }
+
+    if (pathname === '/dashboard/banners/status') {
+      setActiveItem('Update Banner Status');
+      return;
+    }
+
+    if (pathname === '/dashboard/banners/admin-list') {
+      setActiveItem('Admin List Banners');
+      return;
+    }
+
     if (pathname === '/dashboard/settings/business-setup') {
       setActiveItem('Business Setup');
       return;
@@ -608,6 +646,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Daily Report': 'dailyReport', 'Monthly Report': 'monthlyReport', 'Yearly Report': 'yearlyReport',
     'Regular Order Report': 'regularOrderReport', 'Coupon Order Report': 'couponOrderReport',
     'Active Customers': 'activeCustomers', 'Inactive Customers': 'inactiveCustomers', 'Customer Wallet': 'customerWalletReport',
+    'Create Banner': 'createBanner',
+    'List Banners': 'listBanners',
+    'List Public Banners': 'listPublicBanners',
+    'Update Banner Status': 'updateBannerStatus',
+    'Admin List Banners': 'adminListBanners',
   };
 
   const menuItems = [
@@ -630,6 +673,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       isHeader: true,
       items: [
         { icon: SIDEBAR_ICONS.restaurants, label: 'Restaurants', tKey: 'restaurants', key: 'vendorManagement', submenu: ['Add Restaurants', 'Restaurant List', 'New Joining Request'] },
+        { icon: SIDEBAR_ICONS.banners, label: 'Banners', tKey: 'banners', key: 'bannersManagement', submenu: ['Create Banner', 'List Banners', 'List Public Banners'] },
       ]
     },
     {
@@ -763,6 +807,16 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       .map((section) => {
         if (section.isHeader && section.label === 'FOOD MANAGEMENT') {
           return null;
+        }
+        if (section.isHeader && section.label === 'VENDOR MANAGEMENT') {
+          const filteredItems = (section.items || [])
+            .map((item) => {
+              if (item.label === 'Banners') {
+                return { ...item, submenu: ['Admin List Banners'] };
+              }
+              return item;
+            });
+          return { ...section, items: filteredItems };
         }
         return section;
       })

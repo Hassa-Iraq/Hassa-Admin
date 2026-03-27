@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 
 const INITIAL_FORM = {
   restaurantName: '',
-  restaurantAddress: '',
   zone: '',
   cuisine: '',
   radius: '',
@@ -174,7 +173,6 @@ export default function AddRestaurantPage() {
   const validate = () => {
     const newErrors = {};
     if (!form.restaurantName.trim()) newErrors.restaurantName = 'Required';
-    if (!form.restaurantAddress.trim()) newErrors.restaurantAddress = 'Required';
     if (isRestaurantBranchCreate && !parentRestaurantId) {
       newErrors.parentRestaurantId = 'Main restaurant id is missing for branch creation';
     }
@@ -190,7 +188,9 @@ export default function AddRestaurantPage() {
         if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
       }
     }
-    if (!form.latitude || !form.longitude) newErrors.location = 'Select location from map search';
+    if (!form.latitude || !form.longitude || !mapSearch.trim()) {
+      newErrors.location = 'Select location from map so address is picked';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -233,6 +233,7 @@ export default function AddRestaurantPage() {
     const lat = Number(item?.lat);
     const lng = Number(item?.lon);
     const zone = getZoneFromAddress(item?.address || {});
+    const displayName = typeof item?.display_name === 'string' ? item.display_name : '';
 
     setForm((prev) => ({
       ...prev,
@@ -241,7 +242,7 @@ export default function AddRestaurantPage() {
       zone,
     }));
 
-    setMapSearch(item?.display_name || '');
+    setMapSearch(displayName);
     setMapResults([]);
     setErrors((prev) => ({ ...prev, location: '' }));
 
@@ -616,7 +617,7 @@ export default function AddRestaurantPage() {
 
     const restaurantPayload = {
       name: form.restaurantName.trim(),
-      address: form.restaurantAddress.trim(),
+      address: mapSearch.trim(),
       zone: form.zone.trim() || mapSearch.trim(),
       lat: Number.isFinite(latValue) ? latValue : null,
       lng: Number.isFinite(lngValue) ? lngValue : null,
@@ -761,7 +762,6 @@ export default function AddRestaurantPage() {
         setForm((prev) => ({
           ...prev,
           restaurantName: restaurant?.name || '',
-          restaurantAddress: restaurant?.address || '',
           zone: restaurant?.zone || '',
           cuisine: restaurant?.cuisine || '',
           radius:
@@ -956,15 +956,6 @@ export default function AddRestaurantPage() {
                 error={errors.restaurantName}
               />
 
-              <InputField
-                label="Restaurant Address (Default)"
-                name="restaurantAddress"
-                value={form.restaurantAddress}
-                onChange={handleChange}
-                placeholder="Ex: House #4, Road #4, ABC City"
-                error={errors.restaurantAddress}
-              />
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SelectField
                   label="Cuisine"
@@ -1015,7 +1006,7 @@ export default function AddRestaurantPage() {
                       key={`${item.place_id}-${item.lat}-${item.lon}`}
                       type="button"
                       onClick={() => selectMapLocation(item)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                      className="w-full text-left px-3 py-2 text-xs font-normal text-gray-700 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                     >
                       {item.display_name}
                     </button>

@@ -219,7 +219,7 @@ export default function AddBannerPage() {
             <div className="rounded-lg border border-gray-200 p-3">
               <h4 className="text-xs font-semibold text-[#1E1E24]">Banner Image</h4>
               <p className="mt-1 text-[11px] text-gray-400">
-                Choose an image, then crop with a banner aspect ratio (zoom &amp; frame), then save.
+                Upload a wide banner for correct display on every device. Recommended: 2400 × 1000 or 1920 × 800 px.
               </p>
 
               <div

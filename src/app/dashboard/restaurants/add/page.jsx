@@ -6,7 +6,15 @@ import { Upload, MapPin, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
 import PhoneCodeSelect from '@/app/components/PhoneCodeSelect';
+import ImageCropModal from '@/app/components/ImageCropModal';
 import { toast } from 'sonner';
+
+/** Logo crop: square (1:1). Change here if the app-wide logo ratio changes. */
+const RESTAURANT_LOGO_CROP_ASPECT = 1;
+/** Cover crop: same wide ratio as banners (2.4:1). Change here if hero/cover ratio changes. */
+const RESTAURANT_COVER_CROP_ASPECT = 2.4;
+const RESTAURANT_IMAGE_CROP_INPUT_MAX_BYTES = 15 * 1024 * 1024;
+const RESTAURANT_IMAGE_CROP_OUTPUT_MAX_BYTES = 2 * 1024 * 1024;
 
 const INITIAL_FORM = {
   restaurantName: '',
@@ -77,6 +85,9 @@ export default function AddRestaurantPage() {
 
   const logoRef = useRef(null);
   const coverRef = useRef(null);
+
+  const [cropModal, setCropModal] = useState({ open: false, src: null, kind: null });
+  const restaurantCropTargetRef = useRef(null);
   const tinCertRef = useRef(null);
   const licenseRef = useRef(null);
   const mapSearchDebounceRef = useRef(null);
@@ -169,6 +180,72 @@ export default function AddRestaurantPage() {
     setter(file);
     previewSetter(URL.createObjectURL(file));
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (cropModal.src) URL.revokeObjectURL(cropModal.src);
+    };
+  }, [cropModal.src]);
+
+  const closeCropModal = useCallback(() => {
+    restaurantCropTargetRef.current = null;
+    setCropModal((prev) => {
+      if (prev.src) URL.revokeObjectURL(prev.src);
+      return { open: false, src: null, kind: null };
+    });
+  }, []);
+
+  const openRestaurantImageCrop = useCallback((file, kind) => {
+    if (!file || !file.type.startsWith('image/')) {
+      toast.error('Please choose an image file (JPEG, PNG, or WebP).');
+      return;
+    }
+    if (file.size > RESTAURANT_IMAGE_CROP_INPUT_MAX_BYTES) {
+      toast.error('Image must be under 15 MB before cropping. Choose a smaller file.');
+      return;
+    }
+    restaurantCropTargetRef.current = kind;
+    setCropModal((prev) => {
+      if (prev.src) URL.revokeObjectURL(prev.src);
+      return { open: true, src: URL.createObjectURL(file), kind };
+    });
+  }, []);
+
+  const handleRestaurantCropComplete = useCallback(
+    (file) => {
+      const kind = restaurantCropTargetRef.current;
+      if (kind === 'logo') {
+        setLogoFile(file);
+        setLogoPreview((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return URL.createObjectURL(file);
+        });
+      } else if (kind === 'cover') {
+        setCoverFile(file);
+        setCoverPreview((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return URL.createObjectURL(file);
+        });
+      }
+      closeCropModal();
+    },
+    [closeCropModal]
+  );
+
+  const restaurantCropAspect =
+    cropModal.kind === 'logo'
+      ? RESTAURANT_LOGO_CROP_ASPECT
+      : cropModal.kind === 'cover'
+        ? RESTAURANT_COVER_CROP_ASPECT
+        : 1;
+  const restaurantCropTitle =
+    cropModal.kind === 'logo'
+      ? 'Crop restaurant logo'
+      : cropModal.kind === 'cover'
+        ? 'Crop restaurant cover'
+        : 'Crop image';
+  const restaurantCropBasename =
+    cropModal.kind === 'logo' ? 'restaurant-logo' : cropModal.kind === 'cover' ? 'restaurant-cover' : 'image';
 
   const validate = () => {
     const newErrors = {};
@@ -1030,18 +1107,18 @@ export default function AddRestaurantPage() {
                 subtitle="Upload your restaurant logo image"
                 inputRef={logoRef}
                 preview={logoPreview}
-                accept="image/*"
-                hint="Jpeg, Jpg, Png, Webp Image : Max 2 MB (1:1)"
-                onFileSelect={(file) => handleFileSelect(file, setLogoFile, setLogoPreview)}
+                accept="image/jpeg,image/png,image/webp,image/jpg"
+                hint="JPEG, PNG, WebP — up to 15 MB to crop; output 1:1 square, max 2 MB."
+                onFileSelect={(file) => openRestaurantImageCrop(file, 'logo')}
               />
               <UploadCard
                 title="Restaurant Cover"
                 subtitle="Upload your restaurant cover photo. Each restaurant must have a unique cover."
                 inputRef={coverRef}
                 preview={coverPreview}
-                accept="image/*"
-                hint="Jpeg, Jpg, Png, Webp Image : Max 2 MB (3:1)"
-                onFileSelect={(file) => handleFileSelect(file, setCoverFile, setCoverPreview)}
+                accept="image/jpeg,image/png,image/webp,image/jpg"
+                hint="JPEG, PNG, WebP — up to 15 MB to crop; output 2.4:1 wide, max 2 MB."
+                onFileSelect={(file) => openRestaurantImageCrop(file, 'cover')}
               />
             </div>
           </div>
@@ -1336,6 +1413,18 @@ export default function AddRestaurantPage() {
           </button>
         </div>
       </form>
+
+      <ImageCropModal
+        open={cropModal.open}
+        imageSrc={cropModal.src || ''}
+        aspect={restaurantCropAspect}
+        title={restaurantCropTitle}
+        outputBasename={restaurantCropBasename}
+        titleId="restaurant-image-crop-title"
+        onClose={closeCropModal}
+        onComplete={handleRestaurantCropComplete}
+        maxSizeBytes={RESTAURANT_IMAGE_CROP_OUTPUT_MAX_BYTES}
+      />
     </div>
   );
 }

@@ -673,7 +673,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       isHeader: true,
       items: [
         { icon: SIDEBAR_ICONS.restaurants, label: 'Restaurants', tKey: 'restaurants', key: 'vendorManagement', submenu: ['Add Restaurants', 'Restaurant List', 'New Joining Request'] },
-        { icon: SIDEBAR_ICONS.banners, label: 'Banners', tKey: 'banners', key: 'bannersManagement', submenu: ['Create Banner', 'List Banners', 'List Public Banners'] },
+        { icon: SIDEBAR_ICONS.banners, label: 'Banners', tKey: 'banners', key: 'bannersManagement', submenu: ['Create Banner', 'List Banners'] },
       ]
     },
     {
@@ -812,7 +812,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           const filteredItems = (section.items || [])
             .map((item) => {
               if (item.label === 'Banners') {
-                return { ...item, submenu: ['Admin List Banners'] };
+                return { ...item, submenu: ['Admin List Banners', 'List Public Banners'] };
               }
               return item;
             });

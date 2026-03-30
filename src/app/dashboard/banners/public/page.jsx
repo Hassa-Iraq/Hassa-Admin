@@ -25,11 +25,13 @@ export default function PublicBannersPage() {
 
   useEffect(() => {
     const role = String(localStorage.getItem('userRole') || '').trim().toLowerCase();
-    const isRestaurantRole = ['restaurant', 'resturant', 'restaurant_admin', 'vendor'].includes(role);
-    setIsAllowed(isRestaurantRole);
-    if (!isRestaurantRole) {
-      toast.error('Only restaurant role can access public banner list.');
-      router.push('/dashboard/banners/status');
+    const isAdminRole =
+      role === 'admin' || role === 'super_admin' || role === 'superadmin';
+    setIsAllowed(isAdminRole);
+    if (!isAdminRole) {
+      toast.error('Only administrators can access the public banners list.');
+      const isRestaurantRole = ['restaurant', 'resturant', 'restaurant_admin', 'vendor'].includes(role);
+      router.push(isRestaurantRole ? '/dashboard/banners/list' : '/dashboard');
     }
   }, [router]);
 

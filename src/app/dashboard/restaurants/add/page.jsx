@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, MapPin, Eye, EyeOff } from 'lucide-react';
+import { Upload, MapPin, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
 import PhoneCodeSelect from '@/app/components/PhoneCodeSelect';
@@ -59,6 +59,8 @@ export default function AddRestaurantPage() {
   const isRestaurantBranchCreate = !isEditMode && userRole === 'restaurant';
 
   const [form, setForm] = useState(INITIAL_FORM);
+  const [cuisineOptions, setCuisineOptions] = useState([]);
+  const [cuisineLoading, setCuisineLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('default');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -96,6 +98,83 @@ export default function AddRestaurantPage() {
   const leafletMarkerRef = useRef(null);
 
   const [mapSearch, setMapSearch] = useState('');
+
+  useEffect(() => {
+    const toAbsoluteAssetUrl = (value) => {
+      if (!value || typeof value !== 'string') return '';
+      const trimmed = value.trim();
+      if (!trimmed) return '';
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+      if (trimmed.startsWith('//')) return `https:${trimmed}`;
+      if (trimmed.startsWith('/')) return `${API_BASE_URL}${trimmed}`;
+      return `${API_BASE_URL}/${trimmed}`;
+    };
+
+    const pickFirstUrl = (...values) =>
+      values.find((value) => typeof value === 'string' && value.trim().length > 0) || '';
+
+    const normalizeImage = (value) => {
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const candidate = normalizeImage(item);
+          if (candidate) return candidate;
+        }
+        return '';
+      }
+      if (typeof value === 'string' && value.trim()) return toAbsoluteAssetUrl(value);
+      if (value && typeof value === 'object') {
+        const pathWithKey =
+          value.path && value.key
+            ? `${String(value.path).replace(/\/$/, '')}/${String(value.key).replace(/^\//, '')}`
+            : '';
+        return (
+          normalizeImage(value.full_url) ||
+          normalizeImage(value.url) ||
+          normalizeImage(pathWithKey) ||
+          normalizeImage(value.path) ||
+          normalizeImage(value.key) ||
+          normalizeImage(value.image) ||
+          ''
+        );
+      }
+      return '';
+    };
+
+    const fetchCuisineCategories = async () => {
+      setCuisineLoading(true);
+      try {
+        const { data } = await axios.get('/api/restaurants/public/cuisine-categories');
+        const payload = data?.data && typeof data.data === 'object' ? data.data : data;
+        const list =
+          payload?.cuisine_categories ||
+          payload?.categories ||
+          payload?.list ||
+          data?.cuisine_categories ||
+          data?.list ||
+          payload ||
+          [];
+        const normalized = (Array.isArray(list) ? list : [])
+          .map((item, index) => {
+            const id = item?.id ?? item?.cuisine_category_id ?? item?.cuisineCategoryId ?? `${index}`;
+            const name = item?.name || item?.title || '';
+            const image = normalizeImage(item?.image_url) || normalizeImage(item?.image) || normalizeImage(item?.icon) || '';
+            return {
+              id: String(id),
+              name: String(name || '').trim(),
+              image,
+            };
+          })
+          .filter((item) => item.name);
+        setCuisineOptions(normalized);
+      } catch (e) {
+        setCuisineOptions([]);
+      } finally {
+        setCuisineLoading(false);
+      }
+    };
+
+    fetchCuisineCategories();
+  }, []);
 
   useEffect(() => {
     const hydrateAuthContext = async () => {
@@ -170,6 +249,11 @@ export default function AddRestaurantPage() {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   }, [errors]);
+
+  const handleCuisinePick = useCallback((nextCuisine) => {
+    setForm((prev) => ({ ...prev, cuisine: nextCuisine }));
+    if (errors.cuisine) setErrors((prev) => ({ ...prev, cuisine: '' }));
+  }, [errors.cuisine]);
 
   const handleFileSelect = useCallback((file, setter, previewSetter) => {
     if (!file) return;
@@ -1034,20 +1118,18 @@ export default function AddRestaurantPage() {
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <SelectField
+                <CuisineSelect
                   label="Cuisine"
-                  name="cuisine"
                   value={form.cuisine}
-                  onChange={handleChange}
-                  options={['Italian', 'Chinese', 'Indian', 'Mexican', 'Thai']}
-                  placeholder="Select Cuisine"
+                  options={cuisineOptions}
+                  onChange={handleCuisinePick}
+                  placeholder={cuisineLoading ? 'Loading cuisines...' : 'Select Cuisine'}
                 />
-                <SelectField
+                <SimpleSelect
                   label="Radius"
-                  name="radius"
                   value={form.radius}
-                  onChange={handleChange}
                   options={['1 km', '3 km', '5 km', '10 km', '15 km']}
+                  onChange={(nextValue) => handleChange({ target: { name: 'radius', value: nextValue } })}
                   placeholder="Select Radius"
                 />
               </div>
@@ -1477,6 +1559,121 @@ function SelectField({ label, name, value, onChange, options, placeholder }) {
           <option key={opt} value={opt}>{opt}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function CuisineSelect({ label, value, options, onChange, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const selected = useMemo(() => options.find((o) => o.name === value) || null, [options, value]);
+
+  useEffect(() => {
+    const onDoc = (event) => {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  return (
+    <div ref={rootRef}>
+      <label className="text-sm font-medium text-gray-700 block mb-2">{label}</label>
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-purple-400 focus:outline-none bg-white flex items-center justify-between gap-2 text-left"
+      >
+        <span className="min-w-0 truncate text-gray-900">
+          {selected ? selected.name : placeholder}
+        </span>
+        <ChevronDown size={16} className="shrink-0 text-gray-900" strokeWidth={2.5} />
+      </button>
+
+      {open && (
+        <div className="relative">
+          <div className="absolute left-0 right-0 z-40 mt-1 max-h-60 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+            {options.length === 0 ? (
+              <p className="px-3 py-3 text-xs text-gray-500">No cuisines found.</p>
+            ) : (
+              options.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    onChange?.(opt.name);
+                    setOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-purple-50 ${
+                    opt.name === value ? 'bg-purple-100 text-purple-700' : 'text-gray-700'
+                  }`}
+                >
+                  {opt.image ? (
+                    <img src={opt.image} alt={opt.name} className="h-6 w-6 rounded-full object-cover bg-gray-100" />
+                  ) : (
+                    <span className="h-6 w-6 rounded-full bg-gray-100" />
+                  )}
+                  <span className="truncate">{opt.name}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SimpleSelect({ label, value, options, onChange, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const selected = useMemo(() => options.find((o) => o === value) || '', [options, value]);
+
+  useEffect(() => {
+    const onDoc = (event) => {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  return (
+    <div ref={rootRef}>
+      <label className="text-sm font-medium text-gray-700 block mb-2">{label}</label>
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-purple-400 focus:outline-none bg-white flex items-center justify-between gap-2 text-left"
+      >
+        <span className="min-w-0 truncate text-gray-900">
+          {selected || placeholder}
+        </span>
+        <ChevronDown size={16} className="shrink-0 text-gray-900" strokeWidth={2.5} />
+      </button>
+
+      {open && (
+        <div className="relative">
+          <div className="absolute left-0 right-0 z-40 mt-1 max-h-60 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+            {options.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => {
+                  onChange?.(opt);
+                  setOpen(false);
+                }}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-purple-50 ${
+                  opt === value ? 'bg-purple-100 text-purple-700' : 'text-gray-700'
+                }`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

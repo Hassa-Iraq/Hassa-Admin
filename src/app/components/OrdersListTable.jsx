@@ -54,6 +54,40 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
   }, [filterLabel]);
 
   useEffect(() => {
+    const normalizeOrderStatus = (value, fallbackLabel) => {
+      const raw = String(value ?? '').trim();
+      const lower = raw.toLowerCase();
+
+      const map = {
+        pending: 'Pending',
+        accepted: 'Accepted',
+        processing: 'Processing',
+        scheduled: 'Scheduled',
+        delivered: 'Delivered',
+        cancelled: 'Cancelled',
+        canceled: 'Cancelled',
+        refunded: 'Refunded',
+        'food on the way': 'Food On The Way',
+        food_on_the_way: 'Food On The Way',
+        'food-on-the-way': 'Food On The Way',
+        offline: 'Offline Payments',
+        'offline payment': 'Offline Payments',
+        'offline payments': 'Offline Payments',
+        'payments failed': 'Payments Failed',
+        payments_failed: 'Payments Failed',
+        'payments-failed': 'Payments Failed',
+      };
+
+      const label =
+        map[lower] ||
+        // If API already returns the exact UI labels, keep them
+        (statusStyles[raw] ? raw : '') ||
+        (typeof fallbackLabel === 'string' && fallbackLabel.trim() && fallbackLabel !== 'All' ? fallbackLabel : '') ||
+        'Pending';
+
+      return { statusLabel: label, statusKey: label };
+    };
+
     const formatDate = (value) => {
       if (!value) return '-';
       const date = new Date(value);
@@ -103,6 +137,11 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
         deliveryAddress?.contact_email ||
         '-';
 
+      const { statusLabel, statusKey } = normalizeOrderStatus(
+        item?.order_status || item?.status || '',
+        filterLabel
+      );
+
       return {
         id: item?.id ?? item?.order_id ?? `${page}-${index}`,
         orderId: String(item?.order_number || item?.orderNo || item?.order_id || item?.id || '-'),
@@ -114,7 +153,8 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
         customerEmail,
         restaurant: item?.restaurant_name || item?.restaurant?.name || item?.store?.name || 'N/A',
         totalAmount: toAmount(item?.total_amount ?? item?.order_amount ?? item?.amount ?? 0),
-        status: item?.order_status || item?.status || filterLabel || 'Pending',
+        status: statusLabel,
+        statusKey,
         orderType: toOrderType(item?.order_type || item?.delivery_type || item?.type),
         paymentMethod: item?.payment_method || 'Online',
         paymentStatus: item?.payment_status || 'Unpaid',
@@ -428,6 +468,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
             )}
             {!loading && !fetchError && paginatedOrders.map((order, index) => {
               const chipClass =
+                statusStyles[order.statusKey] ??
                 statusStyles[order.status] ??
                 'bg-gray-50 text-[#1E1E24] border-gray-200';
 

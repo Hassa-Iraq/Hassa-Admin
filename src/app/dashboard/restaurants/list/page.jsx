@@ -204,6 +204,15 @@ export default function RestaurantListPage() {
       return false;
     };
 
+    const toShortAddress = (value, maxLen = 34) => {
+      const raw = typeof value === 'string' ? value.trim() : '';
+      if (!raw || raw === '-') return '-';
+      const firstSegment = raw.split(',')[0]?.trim() || raw;
+      const candidate = firstSegment.length >= 6 ? firstSegment : raw;
+      if (candidate.length <= maxLen) return candidate;
+      return `${candidate.slice(0, Math.max(0, maxLen - 1)).trimEnd()}…`;
+    };
+
     const normalizeRestaurant = (item, index) => {
       const editId =
         item?.id ??
@@ -236,6 +245,15 @@ export default function RestaurantListPage() {
         '';
       const parentRestaurantId = parentRestaurantIdRaw ? String(parentRestaurantIdRaw).trim() : '';
 
+      const fullAddress =
+        item?.address ||
+        item?.location ||
+        item?.street ||
+        item?.vendor?.address ||
+        item?.zone?.name ||
+        item?.zone ||
+        '-';
+
       return {
         id: editId || `${page}-${index}`,
         editId: editId || '',
@@ -257,15 +275,10 @@ export default function RestaurantListPage() {
         reviews: Number(item?.rating_count || item?.reviews_count || item?.total_reviews || 0),
         owner: ownerName || item?.owner_name || 'N/A',
         ownerEmail: item?.vendor?.email || item?.owner_email || item?.email || '-',
-        phone: formatPhoneWithFlag(formatPhone(rawPhone, countryCode), countryCode),
-        address:
-          item?.address ||
-          item?.location ||
-          item?.street ||
-          item?.vendor?.address ||
-          item?.zone?.name ||
-          item?.zone ||
-          '-',
+        // List UI should show phone only (no country label like "PK").
+        phone: formatPhone(rawPhone, countryCode),
+        address: fullAddress,
+        addressShort: toShortAddress(fullAddress),
         cuisine:
           (typeof item?.cuisine === 'string' && item.cuisine.trim()) ||
           item?.cuisine?.name ||
@@ -818,7 +831,11 @@ export default function RestaurantListPage() {
                   </td>
 
                   {/* Address */}
-                  <td className="px-4 py-3 text-xs text-gray-600">{r.address}</td>
+                  <td className="px-4 py-3 text-xs text-gray-600">
+                    <span title={r.address} className="block max-w-[260px] truncate">
+                      {r.addressShort || r.address}
+                    </span>
+                  </td>
 
                   {/* Cuisine */}
                   <td className="px-4 py-3">

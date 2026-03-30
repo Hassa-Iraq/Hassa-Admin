@@ -66,6 +66,8 @@ const ku = {
   restaurantWPReport: 'ڕاپۆرتی WP چێشتخانە',
   marketing: 'مارکێتینگ',
   pushNotification: 'ئاگاداری',
+  cuisineCategories: 'پۆلەکانی خواردنەوە',
+  addCuisine: 'زیادکردنی خواردنەوە',
 
   // Orders filters
   all: 'هەموو',

@@ -66,6 +66,8 @@ const ar = {
   restaurantWPReport: 'تقرير WP المطعم',
   marketing: 'التسويق',
   pushNotification: 'الإشعارات',
+  cuisineCategories: 'فئات المطبخ',
+  addCuisine: 'إضافة مطبخ',
 
   // Orders filters
   all: 'الكل',

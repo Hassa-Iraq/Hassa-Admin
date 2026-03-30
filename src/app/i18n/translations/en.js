@@ -66,6 +66,8 @@ const en = {
   restaurantWPReport: 'Restaurant WP Report',
   marketing: 'MARKETING',
   pushNotification: 'Push Notification',
+  cuisineCategories: 'Cuisine Categories',
+  addCuisine: 'Add Cuisine',
 
   // Orders filters
   all: 'All',

@@ -62,6 +62,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     marketing: false,
     foodManagement: false,
     categoriesManagement: false,
+    cuisineCategories: false,
     bannersManagement: false,
   });
     
@@ -243,6 +244,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     Categories: ['restaurants'],
     Category: ['restaurants'],
     'Sub category': ['restaurants'],
+    'Cuisine Categories': ['restaurants'],
+    'Add Cuisine': ['restaurants'],
     'Add Category': ['restaurants'],
     'Add Subcategory': ['restaurants'],
     Addons: ['restaurants'],
@@ -360,6 +363,9 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'List': '/dashboard/foods/list',
     'Category': '/dashboard/foods/categories',
     'Sub category': '/dashboard/foods/sub-categories',
+    'Cuisine Categories': '/dashboard/foods/cuisine-categories',
+    'Add Cuisine': '/dashboard/foods/cuisine-categories/add',
+    'Cuisine List': '/dashboard/foods/cuisine-categories',
     'Add Category': '/dashboard/foods/categories/add',
     'Add Subcategory': '/dashboard/foods/sub-categories/add',
     'Addons': '/dashboard/foods/addons',
@@ -453,6 +459,16 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
 
     if (pathname === '/dashboard/foods/sub-categories/add') {
       setActiveItem('Add Subcategory');
+      return;
+    }
+
+    if (pathname === '/dashboard/foods/cuisine-categories') {
+      setActiveItem('Cuisine List');
+      return;
+    }
+
+    if (pathname === '/dashboard/foods/cuisine-categories/add') {
+      setActiveItem('Add Cuisine');
       return;
     }
 
@@ -632,6 +648,9 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Add New Item': 'addNewItem',
     'Category': 'category',
     'Sub category': 'subCategory',
+    'Cuisine Categories': 'cuisineCategories',
+    'Add Cuisine': 'addCuisine',
+    'Cuisine List': 'cuisineCategories',
     'Add Category': 'addCategory',
     'Add Subcategory': 'addSubcategory',
     'Employee Role': 'employeeRole',
@@ -682,6 +701,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       items: [
         { icon: SIDEBAR_ICONS.foods, label: 'Foods', tKey: 'foods', key: 'foodManagement', submenu: ['Add New Item', 'List'] },
         { icon: SIDEBAR_ICONS.categories, label: 'Categories', tKey: 'categories', key: 'categoriesManagement', submenu: ['Add Category', 'Category', 'Add Subcategory', 'Sub category'] },
+        { icon: SIDEBAR_ICONS.categories, label: 'Cuisine Categories', tKey: 'cuisineCategories', key: 'cuisineCategories', submenu: ['Add Cuisine', 'Cuisine List'] },
         { icon: SIDEBAR_ICONS.addons, label: 'Addons', tKey: 'addons', hasSubmenu: false },
         { icon: SIDEBAR_ICONS.reviews, label: 'Reviews', tKey: 'reviews', hasSubmenu: false },
       ]
@@ -789,7 +809,16 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         'DELIVERY MANAGEMENT',
       ]);
 
-      return menuItems.filter((section) => {
+      return menuItems
+        .map((section) => {
+          // Restaurant role should not see admin-only menus.
+          if (section?.isHeader && section.label === 'FOOD MANAGEMENT') {
+            const filteredItems = (section.items || []).filter((item) => item?.label !== 'Cuisine Categories');
+            return { ...section, items: filteredItems };
+          }
+          return section;
+        })
+        .filter((section) => {
         if (!section?.isHeader) {
           return section?.label === 'Dashboard';
         }
@@ -809,13 +838,24 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           return null;
         }
         if (section.isHeader && section.label === 'VENDOR MANAGEMENT') {
-          const filteredItems = (section.items || [])
-            .map((item) => {
-              if (item.label === 'Banners') {
-                return { ...item, submenu: ['Admin List Banners', 'List Public Banners'] };
-              }
-              return item;
+          const filteredItems = (section.items || []).map((item) => {
+            if (item.label === 'Banners') {
+              return { ...item, submenu: ['Admin List Banners', 'List Public Banners'] };
+            }
+            return item;
+          });
+
+          const hasCuisine = filteredItems.some((item) => item?.label === 'Cuisine Categories');
+          if (!hasCuisine) {
+            filteredItems.push({
+              icon: SIDEBAR_ICONS.categories,
+              label: 'Cuisine Categories',
+              tKey: 'cuisineCategories',
+              key: 'cuisineCategories',
+              submenu: ['Add Cuisine', 'Cuisine List'],
             });
+          }
+
           return { ...section, items: filteredItems };
         }
         return section;

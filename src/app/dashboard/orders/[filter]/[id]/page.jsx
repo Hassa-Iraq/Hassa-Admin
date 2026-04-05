@@ -13,6 +13,7 @@ import {
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { API_BASE_URL } from '@/app/config';
 import { APP_CURRENCY } from '@/app/lib/currency';
+import { mapApiOrderStatusToUiLabel } from '@/app/lib/orderStatus';
 
 const toAbsoluteAssetUrl = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -23,6 +24,119 @@ const toAbsoluteAssetUrl = (value) => {
   if (trimmed.startsWith('/')) return `${API_BASE_URL}${trimmed}`;
   return `${API_BASE_URL}/${trimmed}`;
 };
+
+/** Preferred order for known delivery_address keys; any extra keys from API are appended after. */
+const DELIVERY_KEY_ORDER = [
+  'complete_address',
+  'line1',
+  'line2',
+  'house',
+  'road',
+  'floor',
+  'area',
+  'city',
+  'state',
+  'province',
+  'postal_code',
+  'zip',
+  'country',
+  'category',
+  'landmark',
+  'location_details',
+  'contact_name',
+  'contact_phone',
+  'contact_email',
+  'latitude',
+  'longitude',
+];
+
+/** Internal IDs — not shown in Delivery Info */
+const DELIVERY_KEYS_HIDDEN_FROM_UI = new Set(['address_id', 'delivery_address_id']);
+
+const DELIVERY_FIELD_LABELS = {
+  complete_address: 'Complete address',
+  category: 'Address type',
+  landmark: 'Landmark',
+  location_details: 'Location details',
+  latitude: 'Latitude',
+  longitude: 'Longitude',
+  lat: 'Latitude',
+  lng: 'Longitude',
+  line1: 'Address line 1',
+  line2: 'Address line 2',
+  house: 'House / building',
+  road: 'Road',
+  floor: 'Floor',
+  area: 'Area',
+  city: 'City',
+  state: 'State / province',
+  province: 'Province',
+  postal_code: 'Postal code',
+  zip: 'ZIP code',
+  country: 'Country',
+  contact_name: 'Contact name',
+  contact_phone: 'Contact phone',
+  contact_email: 'Contact email',
+};
+
+function titleCaseDeliveryKey(key) {
+  return String(key || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatDeliveryFieldValue(value) {
+  if (value === null || value === undefined) return '—';
+  if (value === '') return '—';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : '—';
+  if (Array.isArray(value)) return value.length ? value.map((v) => formatDeliveryFieldValue(v)).join(', ') : '—';
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '—';
+    }
+  }
+  return String(value);
+}
+
+function buildDeliveryDisplayRows(delivery) {
+  const d = delivery && typeof delivery === 'object' ? delivery : {};
+  const keys = Object.keys(d);
+  if (keys.length === 0) return [];
+
+  const skip = new Set();
+  if (
+    d.latitude != null &&
+    d.lat != null &&
+    Number(d.latitude) === Number(d.lat)
+  ) {
+    skip.add('lat');
+  }
+  if (
+    d.longitude != null &&
+    d.lng != null &&
+    Number(d.longitude) === Number(d.lng)
+  ) {
+    skip.add('lng');
+  }
+
+  const ordered = [
+    ...DELIVERY_KEY_ORDER.filter((k) => keys.includes(k)),
+    ...keys
+      .filter((k) => !DELIVERY_KEY_ORDER.includes(k))
+      .sort((a, b) => a.localeCompare(b)),
+  ].filter(
+    (k) => keys.includes(k) && !skip.has(k) && !DELIVERY_KEYS_HIDDEN_FROM_UI.has(k)
+  );
+
+  return ordered.map((key) => ({
+    key,
+    label: DELIVERY_FIELD_LABELS[key] || titleCaseDeliveryKey(key),
+    value: formatDeliveryFieldValue(d[key]),
+  }));
+}
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -83,7 +197,27 @@ export default function OrderDetailPage() {
     const direct = order?.restaurant;
     return direct && typeof direct === 'object' ? direct : {};
   }, [order]);
-  const delivery = order?.delivery_address || {};
+
+  const delivery = useMemo(() => {
+    const addr =
+      order?.delivery_address && typeof order.delivery_address === 'object'
+        ? { ...order.delivery_address }
+        : {};
+    return addr;
+  }, [order?.delivery_address]);
+
+  const deliveryDisplayRows = useMemo(() => buildDeliveryDisplayRows(delivery), [delivery]);
+
+  const deliveryMapsUrl = useMemo(() => {
+    const lat = delivery?.latitude ?? delivery?.lat;
+    const lng = delivery?.longitude ?? delivery?.lng;
+    if (lat == null || lng == null) return '';
+    const la = Number(lat);
+    const ln = Number(lng);
+    if (!Number.isFinite(la) || !Number.isFinite(ln)) return '';
+    return `https://www.google.com/maps?q=${la},${ln}`;
+  }, [delivery]);
+
   const items = useMemo(
     () => (Array.isArray(order?.items) ? order.items : []),
     [order?.items]
@@ -140,7 +274,9 @@ export default function OrderDetailPage() {
     : '-';
 
   const paymentStatus = order?.payment_status || 'Unpaid';
-  const orderStatus = order?.status || '-';
+  const orderStatus = order?.status
+    ? mapApiOrderStatusToUiLabel(order.status)
+    : '-';
   const paymentMethod = order?.payment_method || 'N/A';
   const referenceCode = order?.reference_code || order?.reference || '-';
   const orderType = order?.order_type || order?.delivery_type || 'Home Delivery';
@@ -166,6 +302,20 @@ export default function OrderDetailPage() {
       ? 'bg-rose-50 text-rose-700'
       : statusKey === 'pending'
       ? 'bg-amber-50 text-amber-700'
+      : statusKey === 'accepted'
+      ? 'bg-blue-50 text-blue-700'
+      : statusKey === 'processing'
+      ? 'bg-indigo-50 text-indigo-700'
+      : statusKey === 'food on the way'
+      ? 'bg-purple-50 text-purple-700'
+      : statusKey === 'scheduled'
+      ? 'bg-yellow-50 text-yellow-700'
+      : statusKey === 'refunded'
+      ? 'bg-orange-50 text-orange-700'
+      : statusKey === 'offline payments'
+      ? 'bg-slate-50 text-slate-700'
+      : statusKey === 'payments failed'
+      ? 'bg-pink-50 text-pink-700'
       : 'bg-slate-50 text-slate-700';
   const paymentStatusClass =
     paymentKey === 'paid'
@@ -182,9 +332,10 @@ export default function OrderDetailPage() {
     ''
   );
   const deliveryAddressText =
+    delivery?.complete_address ||
     delivery?.line1 ||
     [delivery?.house, delivery?.road, delivery?.floor, delivery?.area, delivery?.city].filter(Boolean).join(', ') ||
-    '-';
+    '—';
 
   return (
     <>
@@ -221,9 +372,18 @@ export default function OrderDetailPage() {
                       <span className="font-medium">Restaurant :</span>
                       <span className="text-purple-600">{restaurantName}</span>
                     </p>
-                    <button type="button" className="mt-2 rounded-md bg-purple-100 px-2.5 py-1 text-xs font-semibold text-purple-700">
-                      Show Location On Map
-                    </button>
+                    {deliveryMapsUrl ? (
+                      <a
+                        href={deliveryMapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block rounded-md bg-purple-100 px-2.5 py-1 text-xs font-semibold text-purple-700 hover:bg-purple-200"
+                      >
+                        Show Location On Map
+                      </a>
+                    ) : (
+                      <p className="mt-2 text-xs text-gray-400">No map coordinates for this order.</p>
+                    )}
                   </div>
 
                   <div className="space-y-3 text-sm">
@@ -354,16 +514,42 @@ export default function OrderDetailPage() {
 
               <div className="rounded-xl bg-[#F5F5FA] p-4">
                 <h3 className="text-sm font-semibold text-[#1E1E24]">Delivery Info</h3>
-                <div className="mt-3 space-y-1 text-sm">
-                  <InfoLine label="Name" value={customerName} />
-                  <InfoLine label="Contact" value={formatPhoneWithFlag(customerPhone)} />
-                  <InfoLine label="Area" value={delivery?.area || '-'} />
-                  <InfoLine label="City" value={delivery?.city || '-'} />
+                <div className="mt-3 space-y-2 text-sm">
+                  <InfoLine label="Customer name" value={customerName} />
+                  <InfoLine label="Phone" value={formatPhoneWithFlag(customerPhone)} />
+                  <InfoLine label="Email" value={customerEmail} />
+                  {order?.notes ? (
+                    <InfoLine label="Order notes" value={String(order.notes)} />
+                  ) : null}
                 </div>
-                <p className="mt-3 flex items-center gap-2 text-sm text-[#1E1E24]">
-                  <MapPin size={14} />
-                  {deliveryAddressText}
+                <div className="mt-4 border-t border-gray-200 pt-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Delivery address
+                  </p>
+                  {deliveryDisplayRows.length === 0 ? (
+                    <p className="mt-2 text-sm text-gray-500">No delivery address on this order.</p>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      {deliveryDisplayRows.map((row) => (
+                        <InfoLine key={row.key} label={row.label} value={row.value} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="mt-3 flex items-start gap-2 text-sm text-[#1E1E24]">
+                  <MapPin size={14} className="mt-0.5 shrink-0" />
+                  <span className="min-w-0 break-words">{deliveryAddressText}</span>
                 </p>
+                {deliveryMapsUrl ? (
+                  <a
+                    href={deliveryMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex text-xs font-semibold text-purple-700 hover:underline"
+                  >
+                    Open in Google Maps
+                  </a>
+                ) : null}
               </div>
 
               <div className="rounded-xl bg-[#F5F5FA] p-4">
@@ -441,11 +627,10 @@ function MetaLine({ label, value, valueClass = 'text-[#1E1E24]', valueAsPill = f
 
 function InfoLine({ label, value }) {
   return (
-    <p className="text-[#1E1E24]">
-      <span className="inline-block w-16 text-gray-500">{label}</span>
-      <span className="mx-1 text-gray-400">:</span>
-      <span>{value || '-'}</span>
-    </p>
+    <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-[minmax(8rem,38%)_1fr] sm:gap-x-3 sm:gap-y-0">
+      <span className="text-gray-500">{label}</span>
+      <span className="break-words font-medium text-[#1E1E24]">{value ?? '—'}</span>
+    </div>
   );
 }
 

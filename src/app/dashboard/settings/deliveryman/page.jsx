@@ -108,10 +108,10 @@ export default function DeliverymanSettingsPage() {
             </div>
             <p className="mt-2 text-[11px] text-gray-400">Status</p>
           </div>
-          <Field label="Max Amount to Hold Cash ($)">
+          <Field label="Max Amount to Hold Cash (IQD)">
             <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs" defaultValue="100000" />
           </Field>
-          <Field label="Minimum Amount To Pay ($)">
+          <Field label="Minimum Amount To Pay (IQD)">
             <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs" defaultValue="1000" />
           </Field>
         </div>

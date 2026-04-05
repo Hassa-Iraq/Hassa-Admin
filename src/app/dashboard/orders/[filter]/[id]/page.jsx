@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { API_BASE_URL } from '@/app/config';
+import { APP_CURRENCY } from '@/app/lib/currency';
 
 const toAbsoluteAssetUrl = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -154,7 +155,8 @@ export default function OrderDetailPage() {
   const deliveryFee = Number(order?.delivery_fee || 0);
   const serviceCharges = Number(order?.service_charges || 0);
   const totalAmount = Number(order?.total_amount || 0);
-  const toCurrency = (value) => `${order?.currency || 'PKR'} ${Number(value || 0).toFixed(2)}`;
+  const toCurrency = (value) =>
+    `${order?.currency || APP_CURRENCY} ${Number(value || 0).toFixed(2)}`;
   const statusKey = String(orderStatus || '').toLowerCase();
   const paymentKey = String(paymentStatus || '').toLowerCase();
   const orderStatusClass =

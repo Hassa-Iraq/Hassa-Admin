@@ -65,6 +65,12 @@ const en = {
   inactiveCustomers: 'Inactive Customers',
   restaurantWPReport: 'Restaurant WP Report',
   marketing: 'MARKETING',
+  advertisements: 'Advertisements',
+  createAdvertisement: 'Create Advertisement',
+  listAdvertisements: 'List Advertisements',
+  listPublicAdvertisements: 'List Public Advertisements',
+  updateAdvertisementStatus: 'Update Advertisement Status',
+  adminListAdvertisements: 'Admin List Advertisements',
   pushNotification: 'Push Notification',
   cuisineCategories: 'Cuisine Categories',
   addCuisine: 'Add Cuisine',
@@ -81,6 +87,7 @@ const en = {
   refunded: 'Refunded',
   offlinePayments: 'Offline Payments',
   paymentsFailed: 'Payments Failed',
+  itemsOptionsAndAddons: 'Items options & add-ons',
 
   // Orders table
   orderId: 'Order ID',

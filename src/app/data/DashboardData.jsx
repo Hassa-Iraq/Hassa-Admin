@@ -69,7 +69,7 @@ export const users = [
 ];
 
 export const orders = [
-  { id: "#10421", name: "Ali", status: "Delivered", amount: "$24" },
-  { id: "#10422", name: "Ahmed", status: "Cancelled", amount: "$18" },
-  { id: "#10423", name: "Sara", status: "Pending", amount: "$32" },
+  { id: "#10421", name: "Ali", status: "Delivered", amount: "IQD 24" },
+  { id: "#10422", name: "Ahmed", status: "Cancelled", amount: "IQD 18" },
+  { id: "#10423", name: "Sara", status: "Pending", amount: "IQD 32" },
 ];

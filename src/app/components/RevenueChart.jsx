@@ -29,15 +29,15 @@ export default function RevenueChart() {
           <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-purple-600"></div>
-              <span className="text-gray-700">Admission commission: $ 0.00</span>
+              <span className="text-gray-700">Admission commission: IQD 0.00</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-teal-500"></div>
-              <span className="text-gray-700">Total sells: $ 0.00</span>
+              <span className="text-gray-700">Total sells: IQD 0.00</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-              <span className="text-gray-700">Subscriptions: $ 0.00</span>
+              <span className="text-gray-700">Subscriptions: IQD 0.00</span>
             </div>
           </div>
         </div>
@@ -56,7 +56,7 @@ export default function RevenueChart() {
             tick={{ fill: '#6B7280', fontSize: 12 }}
           />
           <YAxis 
-            label={{ value: '$ (USD)', angle: -90, position: 'insideLeft', style: { fill: '#6B7280', fontSize: 12 } }}
+            label={{ value: 'IQD', angle: -90, position: 'insideLeft', style: { fill: '#6B7280', fontSize: 12 } }}
             axisLine={false}
             tickLine={false}
             tick={{ fill: '#6B7280', fontSize: 12 }}

@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { formatCurrencyFixed2 } from '@/app/lib/currency';
 
 const statusStyles = {
   Scheduled: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -95,11 +96,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
       return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
-    const toAmount = (value) => {
-      const n = Number(value);
-      if (!Number.isFinite(n)) return '$ 0.00';
-      return `$ ${n.toFixed(2)}`;
-    };
+    const toAmount = (value) => formatCurrencyFixed2(value);
 
     const toOrderType = (orderTypeValue) => {
       const raw = String(orderTypeValue || '').toLowerCase();

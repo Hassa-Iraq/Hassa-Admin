@@ -28,9 +28,9 @@ export default function CustomerWalletReportPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <AmountCard title="Debit" value="$ 14556.46" color="text-emerald-500" />
-        <AmountCard title="Credit" value="$ 14556.46" color="text-rose-500" />
-        <AmountCard title="Balance" value="$ 14556.46" color="text-[#7C3AED]" />
+        <AmountCard title="Debit" value="IQD 14556.46" color="text-emerald-500" />
+        <AmountCard title="Credit" value="IQD 14556.46" color="text-rose-500" />
+        <AmountCard title="Balance" value="IQD 14556.46" color="text-[#7C3AED]" />
       </section>
 
       <section className="rounded-xl border border-gray-200 bg-white">

@@ -187,14 +187,14 @@ export default function BusinessSetupPage() {
             <h4 className="text-sm font-semibold text-[#1E1E24]">Currency Setup</h4>
             <p className="mb-3 text-xs text-gray-500">Setup your business time zone and format from here</p>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <Field label="Currency ($) *">
+              <Field label="Currency *">
                 <Select>
-                  <option>USD ($)</option>
+                  <option>IQD (د.ع — Iraqi Dinar)</option>
                 </Select>
               </Field>
               <Field label="Currency Symbol Position *">
                 <Select>
-                  <option>Left ($123)</option>
+                  <option>Left (IQD 123)</option>
                 </Select>
               </Field>
               <Field label="Digit after decimal point *">
@@ -260,7 +260,7 @@ export default function BusinessSetupPage() {
               <Field label="Additional Charge Name *">
                 <Input placeholder="Service Charge" />
               </Field>
-              <Field label="Charge Amount ($) *">
+              <Field label="Charge Amount (IQD) *">
                 <Input placeholder="25" />
               </Field>
             </div>

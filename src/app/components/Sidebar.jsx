@@ -8,8 +8,6 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const SIDEBAR_ICONS = {
     dashboard: '/icons/Vector.png',
     orders: '/icons/orders.png',
-    dispatch: '/icons/dispatch.png',
-    refund: '/icons/orderRefund.png',
     restaurants: '/icons/restaurant.png',
     foods: '/icons/food.png',
     categories: '/icons/orders.png',
@@ -37,7 +35,6 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     taxReport: '/icons/taxReport.png',
     customerReport: '/icons/customers.png',
     restaurantWpReport: '/icons/dispatch.png',
-    marketing: '/icons/notification.png',
     banners: '/icons/notification.png',
   };
   const router = useRouter();
@@ -49,8 +46,6 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const [activeItem, setActiveItem] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
     orderManagement: false,
-    dispatchManagement: false,
-    orderRefunds: false,
     vendorManagement: false,
     walletManagement: false,
     apartmentManagement: false,
@@ -59,7 +54,6 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     taxManagement: false,
     businessSettings: false,
     reportLog: false,
-    marketing: false,
     foodManagement: false,
     categoriesManagement: false,
     cuisineCategories: false,
@@ -241,6 +235,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     Foods: ['restaurants'],
     'Add New Item': ['restaurants'],
     List: ['restaurants'],
+    'Items options & add-ons': ['restaurants'],
     Categories: ['restaurants'],
     Category: ['restaurants'],
     'Sub category': ['restaurants'],
@@ -248,7 +243,6 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Add Cuisine': ['restaurants'],
     'Add Category': ['restaurants'],
     'Add Subcategory': ['restaurants'],
-    Addons: ['restaurants'],
     Reviews: ['restaurants'],
     Customers: ['customers'],
     Wallet: ['collect_cash', 'restaurant_withdraws', 'disbursement'],
@@ -291,13 +285,12 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Yearly Report': ['report'],
     'Active Customers': ['report'],
     'Inactive Customers': ['report'],
-    'Push Notification': ['push_notification'],
-    Banners: ['restaurants'],
-    'Create Banner': ['restaurants'],
-    'List Banners': ['restaurants'],
-    'List Public Banners': ['restaurants'],
-    'Update Banner Status': ['restaurants'],
-    'Admin List Banners': ['restaurants'],
+    Advertisements: ['restaurants'],
+    'Create Advertisement': ['restaurants'],
+    'List Advertisements': ['restaurants'],
+    'List Public Advertisements': ['restaurants'],
+    'Update Advertisement Status': ['restaurants'],
+    'Admin List Advertisements': ['restaurants'],
   }), []);
 
   const ordersFilterSlugByLabel = useMemo(() => ({
@@ -358,9 +351,9 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Coupon Order Report': '/dashboard/reports/order/coupon',
     'Restaurant VAT Report': '/dashboard/reports/restaurant-vat',
     'Restaurant WP Report': '/dashboard/reports/restaurant-wp',
-    'Push Notification': '/dashboard/marketing/notifications',
     'Add New Item': '/dashboard/foods/add',
     'List': '/dashboard/foods/list',
+    'Items options & add-ons': '/dashboard/foods/menu-item-options',
     'Category': '/dashboard/foods/categories',
     'Sub category': '/dashboard/foods/sub-categories',
     'Cuisine Categories': '/dashboard/foods/cuisine-categories',
@@ -368,7 +361,6 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Cuisine List': '/dashboard/foods/cuisine-categories',
     'Add Category': '/dashboard/foods/categories/add',
     'Add Subcategory': '/dashboard/foods/sub-categories/add',
-    'Addons': '/dashboard/foods/addons',
     'Reviews': '/dashboard/foods/reviews',
     'Employee Role': '/dashboard/employees/role',
     'Add New Employee': '/dashboard/employees/add',
@@ -377,11 +369,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Add New Deliveryman': '/dashboard/deliveryman/add',
     'Deliveryman List': '/dashboard/deliveryman/list',
     'Deliveryman Reviews': '/dashboard/deliveryman/reviews',
-    'Create Banner': '/dashboard/banners/add',
-    'List Banners': '/dashboard/banners/list',
-    'List Public Banners': '/dashboard/banners/public',
-    'Update Banner Status': '/dashboard/banners/status',
-    'Admin List Banners': '/dashboard/banners/admin-list',
+    'Create Advertisement': '/dashboard/banners/add',
+    'List Advertisements': '/dashboard/banners/list',
+    'List Public Advertisements': '/dashboard/banners/public',
+    'Update Advertisement Status': '/dashboard/banners/status',
+    'Admin List Advertisements': '/dashboard/banners/admin-list',
   }), []);
 
   useEffect(() => {
@@ -442,6 +434,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       return;
     }
 
+    if (pathname === '/dashboard/foods/menu-item-options') {
+      setActiveItem('Items options & add-ons');
+      return;
+    }
+
     if (pathname === '/dashboard/foods/categories') {
       setActiveItem('Category');
       return;
@@ -469,11 +466,6 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
 
     if (pathname === '/dashboard/foods/cuisine-categories/add') {
       setActiveItem('Add Cuisine');
-      return;
-    }
-
-    if (pathname === '/dashboard/foods/addons') {
-      setActiveItem('Addons');
       return;
     }
 
@@ -518,27 +510,27 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     }
 
     if (pathname === '/dashboard/banners/add') {
-      setActiveItem('Create Banner');
+      setActiveItem('Create Advertisement');
       return;
     }
 
     if (pathname === '/dashboard/banners/list') {
-      setActiveItem('List Banners');
+      setActiveItem('List Advertisements');
       return;
     }
 
     if (pathname === '/dashboard/banners/public') {
-      setActiveItem('List Public Banners');
+      setActiveItem('List Public Advertisements');
       return;
     }
 
     if (pathname === '/dashboard/banners/status') {
-      setActiveItem('Update Banner Status');
+      setActiveItem('Update Advertisement Status');
       return;
     }
 
     if (pathname === '/dashboard/banners/admin-list') {
-      setActiveItem('Admin List Banners');
+      setActiveItem('Admin List Advertisements');
       return;
     }
 
@@ -564,11 +556,6 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
 
     if (pathname === '/dashboard/settings/deliveryman') {
       setActiveItem('Deliveryman Settings');
-      return;
-    }
-
-    if (pathname === '/dashboard/marketing/notifications') {
-      setActiveItem('Push Notification');
       return;
     }
 
@@ -646,6 +633,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Customer Wallet': 'customerWallet', 'Vendor Wallet': 'vendorWallet', 'Driver Wallet': 'driverWallet', 'Add Fund': 'addFund',
     'All Apartments': 'allEmployees', 'Add New': 'addNewRestaurant',
     'Add New Item': 'addNewItem',
+    'Items options & add-ons': 'itemsOptionsAndAddons',
     'Category': 'category',
     'Sub category': 'subCategory',
     'Cuisine Categories': 'cuisineCategories',
@@ -665,11 +653,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Daily Report': 'dailyReport', 'Monthly Report': 'monthlyReport', 'Yearly Report': 'yearlyReport',
     'Regular Order Report': 'regularOrderReport', 'Coupon Order Report': 'couponOrderReport',
     'Active Customers': 'activeCustomers', 'Inactive Customers': 'inactiveCustomers', 'Customer Wallet': 'customerWalletReport',
-    'Create Banner': 'createBanner',
-    'List Banners': 'listBanners',
-    'List Public Banners': 'listPublicBanners',
-    'Update Banner Status': 'updateBannerStatus',
-    'Admin List Banners': 'adminListBanners',
+    'Create Advertisement': 'createAdvertisement',
+    'List Advertisements': 'listAdvertisements',
+    'List Public Advertisements': 'listPublicAdvertisements',
+    'Update Advertisement Status': 'updateAdvertisementStatus',
+    'Admin List Advertisements': 'adminListAdvertisements',
   };
 
   const menuItems = [
@@ -683,8 +671,6 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       isHeader: true,
       items: [
         { icon: SIDEBAR_ICONS.orders, label: 'Orders', tKey: 'orders', key: 'orderManagement', submenu: ['All', 'Pending', 'Accepted', 'Processing', 'Scheduled', 'Food On The Way', 'Delivered', 'Cancelled', 'Refunded', 'Offline Payments', 'Payments Failed'] },
-        { icon: SIDEBAR_ICONS.dispatch, label: 'Dispatch Management', tKey: 'dispatchManagement', key: 'dispatchManagement', submenu: ['Searching Deliverymen', 'Ongoing Orders'] },
-        { icon: SIDEBAR_ICONS.refund, label: 'Order Refund', tKey: 'orderRefund', key: 'orderRefunds', submenu: ['New Refund Request', 'Refund Cancelled', 'Refunded Orders'] }
       ]
     },
     {
@@ -692,17 +678,21 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       isHeader: true,
       items: [
         { icon: SIDEBAR_ICONS.restaurants, label: 'Restaurants', tKey: 'restaurants', key: 'vendorManagement', submenu: ['Add Restaurants', 'Restaurant List', 'New Joining Request'] },
-        { icon: SIDEBAR_ICONS.banners, label: 'Banners', tKey: 'banners', key: 'bannersManagement', submenu: ['Create Banner', 'List Banners'] },
       ]
     },
     {
       label: 'FOOD MANAGEMENT', tKey: 'foodManagement',
       isHeader: true,
       items: [
-        { icon: SIDEBAR_ICONS.foods, label: 'Foods', tKey: 'foods', key: 'foodManagement', submenu: ['Add New Item', 'List'] },
+        {
+          icon: SIDEBAR_ICONS.foods,
+          label: 'Foods',
+          tKey: 'foods',
+          key: 'foodManagement',
+          submenu: ['Add New Item', 'List', 'Items options & add-ons'],
+        },
         { icon: SIDEBAR_ICONS.categories, label: 'Categories', tKey: 'categories', key: 'categoriesManagement', submenu: ['Add Category', 'Category', 'Add Subcategory', 'Sub category'] },
         { icon: SIDEBAR_ICONS.categories, label: 'Cuisine Categories', tKey: 'cuisineCategories', key: 'cuisineCategories', submenu: ['Add Cuisine', 'Cuisine List'] },
-        { icon: SIDEBAR_ICONS.addons, label: 'Addons', tKey: 'addons', hasSubmenu: false },
         { icon: SIDEBAR_ICONS.reviews, label: 'Reviews', tKey: 'reviews', hasSubmenu: false },
       ]
     },
@@ -785,9 +775,15 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       label: 'MARKETING', tKey: 'marketing',
       isHeader: true,
       items: [
-        { icon: SIDEBAR_ICONS.marketing, label: 'Push Notification', tKey: 'pushNotification', hasSubmenu: false }
-      ]
-    }
+        {
+          icon: SIDEBAR_ICONS.banners,
+          label: 'Advertisements',
+          tKey: 'advertisements',
+          key: 'bannersManagement',
+          submenu: ['Create Advertisement', 'List Advertisements'],
+        },
+      ],
+    },
   ];
 
   const roleFilteredMenuItems = useMemo(() => {
@@ -807,6 +803,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         'VENDOR MANAGEMENT',
         'FOOD MANAGEMENT',
         'DELIVERY MANAGEMENT',
+        'MARKETING',
       ]);
 
       return menuItems
@@ -838,12 +835,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           return null;
         }
         if (section.isHeader && section.label === 'VENDOR MANAGEMENT') {
-          const filteredItems = (section.items || []).map((item) => {
-            if (item.label === 'Banners') {
-              return { ...item, submenu: ['Admin List Banners', 'List Public Banners'] };
-            }
-            return item;
-          });
+          const filteredItems = [...(section.items || [])];
 
           const hasCuisine = filteredItems.some((item) => item?.label === 'Cuisine Categories');
           if (!hasCuisine) {
@@ -856,6 +848,15 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
             });
           }
 
+          return { ...section, items: filteredItems };
+        }
+        if (section.isHeader && section.label === 'MARKETING') {
+          const filteredItems = (section.items || []).map((item) => {
+            if (item.label === 'Advertisements') {
+              return { ...item, submenu: ['Admin List Advertisements', 'List Public Advertisements'] };
+            }
+            return item;
+          });
           return { ...section, items: filteredItems };
         }
         return section;

@@ -9,7 +9,7 @@ const ORDERS = Array.from({ length: 6 }, (_, index) => ({
   customerName: 'Hamza Khan',
   customerPhone: '+92**********',
   restaurant: 'Cafenia Restaurant',
-  amount: '$ 2548.3',
+  amount: 'IQD 2548.3',
   paymentStatus: 'Unpaid',
   orderStatus: 'Pending',
   orderType: 'Home Delivery',

@@ -30,7 +30,7 @@ export default function BannerStatusUpdatePage() {
     const isRestaurantRole = ['restaurant', 'resturant', 'restaurant_admin', 'vendor'].includes(role);
     if (isRestaurantRole) {
       setIsAllowed(false);
-      toast.error('Restaurant role cannot update banner status.');
+      toast.error('Restaurant role cannot update advertisement status.');
       router.push('/dashboard/banners/list');
       return;
     }
@@ -111,7 +111,7 @@ export default function BannerStatusUpdatePage() {
     event.preventDefault();
     const bannerId = form.bannerId.trim();
     if (!bannerId) {
-      toast.error('Open this page from Admin List Banners (Moderate) so a banner is selected.');
+      toast.error('Open this page from Admin list — advertisements (Moderate) so an advertisement is selected.');
       return;
     }
     try {
@@ -143,12 +143,12 @@ export default function BannerStatusUpdatePage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
-      toast.success(response?.data?.message || 'Banner status updated successfully.');
+      toast.success(response?.data?.message || 'Advertisement status updated successfully.');
       router.push('/dashboard/banners/admin-list');
     } catch (error) {
       const message = axios.isAxiosError(error)
-        ? error.response?.data?.message || error.message || 'Failed to update banner status.'
-        : error?.message || 'Failed to update banner status.';
+        ? error.response?.data?.message || error.message || 'Failed to update advertisement status.'
+        : error?.message || 'Failed to update advertisement status.';
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -161,8 +161,8 @@ export default function BannerStatusUpdatePage() {
       <form onSubmit={handleSubmit} className="rounded-xl border border-gray-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-3">
           <div>
-            <h2 className="text-xl font-semibold text-[#1E1E24]">Admin Banner Status Update</h2>
-            <p className="mt-1 text-xs text-gray-500">Review the banner and update status or visibility.</p>
+            <h2 className="text-xl font-semibold text-[#1E1E24]">Advertisement status (admin)</h2>
+            <p className="mt-1 text-xs text-gray-500">Review the advertisement and update status or visibility.</p>
           </div>
           <button
             type="button"
@@ -178,20 +178,20 @@ export default function BannerStatusUpdatePage() {
 
         {!form.bannerId.trim() && (
           <p className="text-sm text-gray-500">
-            No banner selected. Go to{' '}
+            No advertisement selected. Go to{' '}
             <button
               type="button"
               className="font-semibold text-[#7C3AED] underline"
               onClick={() => router.push('/dashboard/banners/admin-list')}
             >
-              Admin List Banners
+              Admin list — advertisements
             </button>
-            {' '}and click Moderate on a banner.
+            {' '}and click Moderate on a row.
           </p>
         )}
 
         {loadingDetail && form.bannerId.trim() && (
-          <p className="text-xs text-gray-500">Loading banner details...</p>
+          <p className="text-xs text-gray-500">Loading advertisement details...</p>
         )}
 
         {selectedBanner && (
@@ -201,7 +201,7 @@ export default function BannerStatusUpdatePage() {
                 <div className="h-12 w-16 overflow-hidden rounded-md bg-purple-100">
                   <img
                     src={selectedBanner?.banner_image_url || selectedBanner?.bannerImageUrl || selectedBanner?.image_url}
-                    alt={selectedBanner?.banner_name || selectedBanner?.name || 'banner'}
+                    alt={selectedBanner?.banner_name || selectedBanner?.name || 'advertisement'}
                     className="h-full w-full object-cover"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
@@ -209,7 +209,7 @@ export default function BannerStatusUpdatePage() {
               ) : null}
               <div className="min-w-0">
                 <p className="truncate text-xs font-semibold text-[#1E1E24]">
-                  {selectedBanner?.banner_name || selectedBanner?.name || 'Banner'}
+                  {selectedBanner?.banner_name || selectedBanner?.name || 'Advertisement'}
                 </p>
                 <p className="mt-0.5 truncate text-[11px] text-gray-500">
                   Restaurant: {selectedBanner?.restaurant_name || selectedBanner?.restaurant?.name || '-'}
@@ -240,7 +240,7 @@ export default function BannerStatusUpdatePage() {
                 checked={form.isPublic}
                 onChange={handleChange}
               />
-              Public Banner
+              Public advertisement
             </label>
           </div>
         </div>

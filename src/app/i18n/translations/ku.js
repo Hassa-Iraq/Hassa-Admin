@@ -65,6 +65,12 @@ const ku = {
   inactiveCustomers: 'کڕیارە ناچالاکەکان',
   restaurantWPReport: 'ڕاپۆرتی WP چێشتخانە',
   marketing: 'مارکێتینگ',
+  advertisements: 'ڕێکلامەکان',
+  createAdvertisement: 'ڕێکلام دروست بکە',
+  listAdvertisements: 'لیستی ڕێکلامەکان',
+  listPublicAdvertisements: 'ڕێکلامە گشتییەکان',
+  updateAdvertisementStatus: 'نوێکردنەوەی دۆخی ڕێکلام',
+  adminListAdvertisements: 'لیستی ڕێکلامەکان (بەڕێوەبەر)',
   pushNotification: 'ئاگاداری',
   cuisineCategories: 'پۆلەکانی خواردنەوە',
   addCuisine: 'زیادکردنی خواردنەوە',
@@ -81,6 +87,7 @@ const ku = {
   refunded: 'گەڕێندراوە',
   offlinePayments: 'پارەدانی ئۆفلاین',
   paymentsFailed: 'پارەدان سەرنەکەوت',
+  itemsOptionsAndAddons: 'هەڵبژاردن و زیادکراوەکانی بەرهەم',
 
   // Orders table
   orderId: 'ژمارەی داواکاری',

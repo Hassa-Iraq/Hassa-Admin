@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Download, Pencil, Search, SlidersHorizontal, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
+import { formatCurrencyFixed2 } from '@/app/lib/currency';
 import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const PER_PAGE = 20;
@@ -100,7 +102,7 @@ export default function FoodListPage() {
         )
       );
       const priceValue = Number(item?.price ?? item?.unit_price ?? 0);
-      const price = Number.isFinite(priceValue) ? `$ ${priceValue.toFixed(2)}` : '$ 0.00';
+      const price = formatCurrencyFixed2(priceValue);
       const rating = Number(item?.avg_rating ?? item?.rating ?? 0);
       const reviews = Number(item?.rating_count ?? item?.reviews_count ?? item?.total_reviews ?? 0);
       const image = toAbsoluteAssetUrl(
@@ -385,17 +387,27 @@ export default function FoodListPage() {
                     {food.rating}({food.reviews})
                   </td>
                   <td className="px-3 py-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <button
+                        type="button"
                         onClick={() => router.push(`/dashboard/foods/add?menu_item_id=${food.id}`)}
                         className="flex h-6 w-6 items-center justify-center rounded-md border border-[#7C3AED] bg-[#F8F4FF] text-[#7C3AED]"
+                        aria-label="Edit menu item"
                       >
                         <Pencil size={12} />
                       </button>
+                      <Link
+                        href={`/dashboard/foods/menu-item-options?menu_item_id=${encodeURIComponent(food.id)}`}
+                        className="text-[10px] font-semibold text-[#7C3AED] hover:underline"
+                      >
+                        Options &amp; add-ons
+                      </Link>
                       <button
+                        type="button"
                         onClick={() => handleDeleteItem(food.id)}
                         disabled={deletingId === String(food.id)}
                         className="flex h-6 w-6 items-center justify-center rounded-md border border-[#FECACA] bg-[#FEF2F2] text-[#EF4444] disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-label="Delete menu item"
                       >
                         <Trash2 size={12} />
                       </button>

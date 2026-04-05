@@ -41,7 +41,7 @@ const BASE_ROWS = Array.from({ length: 8 }, (_, index) => ({
   customerName: 'Hamza Khan',
   customerPhone: '+92**********',
   restaurant: 'Cafenio Restaurant',
-  amount: '$ 2548.3',
+  amount: 'IQD 2548.3',
   orderType: 'Home Delivery',
 }));
 

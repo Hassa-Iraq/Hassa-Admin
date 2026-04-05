@@ -6,17 +6,17 @@ import { toast } from 'sonner';
 
 const INITIAL_FORM = {
   name: 'Cheese',
-  price: '$ 45.00',
+  price: 'IQD 45.00',
   stockType: 'Unlimited',
   category: 'Sauces',
 };
 
 const MOCK_ADDONS = [
-  { id: 1, name: 'Cheese', category: 'Sauce', price: '$ 95.00', stock: 'Unlimited', stockType: 'Unlimited', status: true },
-  { id: 2, name: 'Cheese', category: 'Sauce', price: '$ 95.00', stock: 'Unlimited', stockType: 'Unlimited', status: true },
-  { id: 3, name: 'Cheese', category: 'Sauce', price: '$ 95.00', stock: 'Unlimited', stockType: 'Unlimited', status: true },
-  { id: 4, name: 'Cheese', category: 'Sauce', price: '$ 95.00', stock: 'Unlimited', stockType: 'Unlimited', status: true },
-  { id: 5, name: 'Cheese', category: 'Sauce', price: '$ 95.00', stock: 'Unlimited', stockType: 'Unlimited', status: true },
+  { id: 1, name: 'Cheese', category: 'Sauce', price: 'IQD 95.00', stock: 'Unlimited', stockType: 'Unlimited', status: true },
+  { id: 2, name: 'Cheese', category: 'Sauce', price: 'IQD 95.00', stock: 'Unlimited', stockType: 'Unlimited', status: true },
+  { id: 3, name: 'Cheese', category: 'Sauce', price: 'IQD 95.00', stock: 'Unlimited', stockType: 'Unlimited', status: true },
+  { id: 4, name: 'Cheese', category: 'Sauce', price: 'IQD 95.00', stock: 'Unlimited', stockType: 'Unlimited', status: true },
+  { id: 5, name: 'Cheese', category: 'Sauce', price: 'IQD 95.00', stock: 'Unlimited', stockType: 'Unlimited', status: true },
 ];
 
 export default function AddonsPage() {
@@ -76,7 +76,7 @@ export default function AddonsPage() {
                   name="price"
                   value={form.price}
                   onChange={handleChange}
-                  placeholder="$ 45.00"
+                  placeholder="IQD 45.00"
                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#7C3AED] focus:outline-none"
                 />
               </Field>

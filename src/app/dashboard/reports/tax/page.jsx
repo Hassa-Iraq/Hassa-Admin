@@ -34,8 +34,8 @@ export default function TaxReportPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <SummaryCard label="Total Income" value="$ 14556.46" color="bg-emerald-500" />
-        <SummaryCard label="Total Tax" value="$ 14556.46" color="bg-rose-500" />
+        <SummaryCard label="Total Income" value="IQD 14556.46" color="bg-emerald-500" />
+        <SummaryCard label="Total Tax" value="IQD 14556.46" color="bg-rose-500" />
       </section>
 
       <section className="rounded-xl border border-gray-200 bg-white">

@@ -65,10 +65,10 @@ export default function FoodReportPage() {
                   <td className="px-3 py-3 text-xs">Beef Stroganoff</td>
                   <td className="px-3 py-3 text-xs">Rose Restaurant</td>
                   <td className="px-3 py-3 text-xs">10</td>
-                  <td className="px-3 py-3 text-xs">$ 95.00</td>
-                  <td className="px-3 py-3 text-xs">$ 1,175.00</td>
-                  <td className="px-3 py-3 text-xs">$ 147.75</td>
-                  <td className="px-3 py-3 text-xs">$ 93.39</td>
+                  <td className="px-3 py-3 text-xs">IQD 95.00</td>
+                  <td className="px-3 py-3 text-xs">IQD 1,175.00</td>
+                  <td className="px-3 py-3 text-xs">IQD 147.75</td>
+                  <td className="px-3 py-3 text-xs">IQD 93.39</td>
                   <td className="px-3 py-3 text-xs text-amber-500">4.5 (120)</td>
                 </tr>
               ))}

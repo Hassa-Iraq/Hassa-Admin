@@ -11,7 +11,35 @@ import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const PER_PAGE = 20;
 
-export default function BannerListPage() {
+function formatDisplayDate(isoOrDate) {
+  if (!isoOrDate) return '—';
+  const d = new Date(isoOrDate);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString();
+}
+
+function AdvertisementStatusBadge({ status }) {
+  const raw = String(status || '').trim();
+  const s = raw.toLowerCase();
+  const label = raw || '—';
+  const className =
+    s === 'approved'
+      ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80'
+      : s === 'rejected'
+        ? 'bg-red-50 text-red-600 ring-1 ring-red-200/80'
+        : s === 'pending' || s === 'requested'
+          ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/80'
+          : 'bg-slate-100 text-slate-600 ring-1 ring-slate-200/80';
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+export default function AdvertisementListPage() {
   const router = useRouter();
   const [isAllowed, setIsAllowed] = useState(false);
   const [banners, setBanners] = useState([]);
@@ -27,7 +55,7 @@ export default function BannerListPage() {
     const isRestaurantRole = ['restaurant', 'resturant', 'restaurant_admin', 'vendor'].includes(role);
     setIsAllowed(isRestaurantRole);
     if (!isRestaurantRole) {
-      toast.error('Only restaurant role can access banner list.');
+      toast.error('Only restaurant role can access advertisement list.');
       router.push('/dashboard/banners/status');
     }
   }, [router]);
@@ -108,8 +136,8 @@ export default function BannerListPage() {
         setTotalCount(0);
         setFetchError(
           axios.isAxiosError(error)
-            ? error.response?.data?.message || error.message || 'Failed to load banners'
-            : error?.message || 'Failed to load banners'
+            ? error.response?.data?.message || error.message || 'Failed to load advertisements'
+            : error?.message || 'Failed to load advertisements'
         );
       } finally {
         setLoading(false);
@@ -141,12 +169,12 @@ export default function BannerListPage() {
       });
       setBanners((prev) => prev.filter((item) => String(item.id) !== String(bannerId)));
       setTotalCount((prev) => Math.max(0, prev - 1));
-      toast.success('Banner deleted successfully.');
+      toast.success('Advertisement deleted successfully.');
     } catch (error) {
       toast.error(
         axios.isAxiosError(error)
-          ? error.response?.data?.message || error.message || 'Failed to delete banner.'
-          : error?.message || 'Failed to delete banner.'
+          ? error.response?.data?.message || error.message || 'Failed to delete advertisement.'
+          : error?.message || 'Failed to delete advertisement.'
       );
     } finally {
       setDeletingId('');
@@ -163,35 +191,37 @@ export default function BannerListPage() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search banner..."
+              placeholder="Search advertisements..."
               className="w-full rounded-lg border border-gray-200 py-2 pl-3 pr-8 text-xs text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
             />
           </div>
 
           <Link href="/dashboard/banners/add">
             <button className="rounded-lg bg-[#7C3AED] px-4 py-2 text-xs font-semibold text-white hover:bg-[#6D28D9]">
-              Create Banner
+              Create advertisement
             </button>
           </Link>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[920px] text-sm">
+          <table className="w-full min-w-[1040px] text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/70">
                 <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">SI</th>
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Image</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Banner Name</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Name</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Valid from</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Valid to</th>
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Status</th>
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Public</th>
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Action</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <TableLoadingSkeleton colSpan={6} rows={8} />}
+              {loading && <TableLoadingSkeleton colSpan={8} rows={8} />}
               {!loading && fetchError && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-red-500">{fetchError}</td>
+                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-red-500">{fetchError}</td>
                 </tr>
               )}
               {!loading && !fetchError && filteredBanners.map((item, index) => (
@@ -205,7 +235,11 @@ export default function BannerListPage() {
                     </div>
                   </td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">{item.name}</td>
-                  <td className="px-3 py-3 text-xs text-[#1E1E24]">{item.status}</td>
+                  <td className="px-3 py-3 text-xs text-gray-600">{formatDisplayDate(item.validFrom)}</td>
+                  <td className="px-3 py-3 text-xs text-gray-600">{formatDisplayDate(item.validTo)}</td>
+                  <td className="px-3 py-3 text-xs">
+                    <AdvertisementStatusBadge status={item.status} />
+                  </td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">{item.isPublic ? 'Yes' : 'No'}</td>
                   <td className="px-3 py-3">
                     <button
@@ -213,7 +247,7 @@ export default function BannerListPage() {
                       onClick={() => handleDelete(item.id)}
                       disabled={deletingId === String(item.id)}
                       className="flex h-6 w-6 items-center justify-center rounded-md border border-[#FECACA] bg-[#FEF2F2] text-[#EF4444] disabled:cursor-not-allowed disabled:opacity-60"
-                      aria-label="Delete banner"
+                      aria-label="Delete advertisement"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -222,8 +256,8 @@ export default function BannerListPage() {
               ))}
               {!loading && !fetchError && filteredBanners.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">
-                    No banners found.
+                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-400">
+                    No advertisements found.
                   </td>
                 </tr>
               )}

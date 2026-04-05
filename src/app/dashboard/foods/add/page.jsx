@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ChevronLeft, Upload } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
 import { toast } from 'sonner';
+import { apiErrorMessage } from '@/app/lib/apiErrorMessage';
+import MenuItemOptionGroupsPanel from '@/app/components/MenuItemOptionGroupsPanel';
 
 const INITIAL_FORM = {
   itemName: '',
@@ -20,17 +23,31 @@ const INITIAL_FORM = {
   displayOrder: '1',
 };
 
-const LANGUAGE_TABS = [
-  { key: 'default', label: 'Default' },
-  { key: 'en', label: 'English (EN)' },
-  { key: 'ar', label: 'Arabic (AR)' },
-];
+function extractCreatedMenuItemId(responseData) {
+  if (!responseData || typeof responseData !== 'object') return '';
+  const tryId = (v) => (v != null && String(v).trim() ? String(v).trim() : '');
+  const root =
+    responseData?.data && typeof responseData.data === 'object' ? responseData.data : responseData;
+  const item = root?.menu_item ?? root?.menuItem ?? root?.item ?? root;
+  const chain = [
+    tryId(responseData.menu_item_id),
+    tryId(responseData.id),
+    tryId(root?.menu_item_id),
+    tryId(root?.id),
+    tryId(item?.id),
+    tryId(item?.menu_item_id),
+    tryId(responseData.data?.menu_item_id),
+    tryId(responseData.data?.id),
+  ];
+  const found = chain.find(Boolean);
+  return found || '';
+}
 
 export default function AddFoodPage() {
   const router = useRouter();
-  const [menuItemId, setMenuItemId] = useState('');
+  const searchParams = useSearchParams();
+  const menuItemId = String(searchParams.get('menu_item_id') || '').trim();
   const isEditMode = Boolean(menuItemId);
-  const [activeTab, setActiveTab] = useState('default');
   const [form, setForm] = useState(INITIAL_FORM);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
@@ -40,11 +57,6 @@ export default function AddFoodPage() {
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState([]);
   const imageRef = useRef(null);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setMenuItemId(params.get('menu_item_id') || '');
-  }, []);
 
   const selectedCategoryId = String(form.categoryId || '');
   const categoryOptions = useMemo(
@@ -70,7 +82,10 @@ export default function AddFoodPage() {
   const handleImageSelect = (file) => {
     if (!file) return;
     setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    setImagePreview((prev) => {
+      if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
   };
 
   const handleDrop = (event) => {
@@ -230,7 +245,7 @@ export default function AddFoodPage() {
       } catch (error) {
         setCategories([]);
         const message = axios.isAxiosError(error)
-          ? error.response?.data?.message || error.message || 'Failed to load categories'
+          ? apiErrorMessage(error, 'Failed to load categories')
           : error?.message || 'Failed to load categories';
         toast.error(message);
       } finally {
@@ -300,7 +315,7 @@ export default function AddFoodPage() {
         });
       } catch (error) {
         const message = axios.isAxiosError(error)
-          ? error.response?.data?.message || error.message || 'Failed to load menu item'
+          ? apiErrorMessage(error, 'Failed to load menu item')
           : error?.message || 'Failed to load menu item';
         toast.error(message);
       } finally {
@@ -372,11 +387,24 @@ export default function AddFoodPage() {
         response?.data?.message ||
         (isEditMode ? 'Food item updated successfully.' : 'Food item created successfully.')
       );
-      router.push('/dashboard/foods/list');
+      if (!isEditMode) {
+        const newId = extractCreatedMenuItemId(response?.data);
+        if (newId) {
+          toast.info('Next: add option groups & add-ons for this item.');
+          router.push(`/dashboard/foods/add?menu_item_id=${encodeURIComponent(newId)}`);
+          return;
+        }
+        toast.warning(
+          'Item was created. Open it from the food list to add options & add-ons if the ID was not returned.'
+        );
+        router.push('/dashboard/foods/list');
+        return;
+      }
+      return;
     } catch (error) {
       const cleanedMessage = axios.isAxiosError(error)
-        ? (error.response?.data?.message || error.message || 'Failed to save menu item')
-        : (error?.message || 'Failed to save menu item');
+        ? apiErrorMessage(error, 'Failed to save menu item')
+        : error?.message || 'Failed to save menu item';
       toast.error(cleanedMessage);
     } finally {
       setSubmitting(false);
@@ -384,13 +412,29 @@ export default function AddFoodPage() {
   };
 
   const handleReset = () => {
+    if (isEditMode) return;
     setForm(INITIAL_FORM);
     setImageFile(null);
-    setImagePreview('');
+    setImagePreview((prev) => {
+      if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+      return '';
+    });
   };
 
   return (
     <div className="pt-36 pb-8">
+      {isEditMode ? (
+        <div className="mb-4">
+          <Link
+            href="/dashboard/foods/list"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#7C3AED] hover:text-[#6D28D9]"
+          >
+            <ChevronLeft size={16} />
+            Back to list
+          </Link>
+        </div>
+      ) : null}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {loadingItem && (
           <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
@@ -400,28 +444,11 @@ export default function AddFoodPage() {
         <section className="rounded-xl border border-gray-200 bg-white p-4">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="space-y-4 lg:col-span-2">
-              <div className="flex items-center gap-5 border-b border-gray-200">
-                {LANGUAGE_TABS.map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`pb-2 text-xs font-medium ${
-                      activeTab === tab.key
-                        ? 'border-b-2 border-[#7C3AED] text-[#7C3AED]'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              <FormField label="Name (Default)">
+              <FormField label="Name">
                 <Input name="itemName" value={form.itemName} onChange={handleChange} placeholder="Ex: Zinger Burger" />
               </FormField>
 
-              <FormField label="Short description (Default)">
+              <FormField label="Short description">
                 <textarea
                   name="shortDescription"
                   value={form.shortDescription}
@@ -558,20 +585,33 @@ export default function AddFoodPage() {
           </div>
         </Card>
 
+        {isEditMode && menuItemId ? (
+          <MenuItemOptionGroupsPanel menuItemId={menuItemId} />
+        ) : (
+          <section className="rounded-xl border border-dashed border-gray-300 bg-white p-4">
+            <h3 className="text-xs font-semibold text-[#1E1E24]">Options &amp; Add-ons</h3>
+            <p className="mt-1 text-[11px] text-gray-500">
+              Configure these after you save — you’ll be taken to the editor for this item.
+            </p>
+          </section>
+        )}
+
         <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={handleReset}
-            className="rounded-lg border border-[#D8B4FE] bg-white px-5 py-2 text-xs font-semibold text-[#7C3AED] hover:bg-[#F8F4FF]"
-          >
-            Reset
-          </button>
+          {!isEditMode ? (
+            <button
+              type="button"
+              onClick={handleReset}
+              className="rounded-lg border border-[#D8B4FE] bg-white px-5 py-2 text-xs font-semibold text-[#7C3AED] hover:bg-[#F8F4FF]"
+            >
+              Reset
+            </button>
+          ) : null}
           <button
             type="submit"
             disabled={submitting || loadingItem}
             className="rounded-lg bg-[#7C3AED] px-5 py-2 text-xs font-semibold text-white hover:bg-[#6D28D9] disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {submitting ? 'Submitting...' : (isEditMode ? 'Update' : 'Submit')}
+            {submitting ? 'Submitting...' : (isEditMode ? 'Save changes' : 'Create menu item')}
           </button>
         </div>
       </form>
@@ -609,3 +649,4 @@ function Input({ name, value, onChange, placeholder, type = 'text' }) {
     />
   );
 }
+

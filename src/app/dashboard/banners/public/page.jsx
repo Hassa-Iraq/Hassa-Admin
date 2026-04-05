@@ -29,7 +29,7 @@ export default function PublicBannersPage() {
       role === 'admin' || role === 'super_admin' || role === 'superadmin';
     setIsAllowed(isAdminRole);
     if (!isAdminRole) {
-      toast.error('Only administrators can access the public banners list.');
+      toast.error('Only administrators can access the public advertisements list.');
       const isRestaurantRole = ['restaurant', 'resturant', 'restaurant_admin', 'vendor'].includes(role);
       router.push(isRestaurantRole ? '/dashboard/banners/list' : '/dashboard');
     }
@@ -80,8 +80,8 @@ export default function PublicBannersPage() {
         });
         setError(
           axios.isAxiosError(err)
-            ? err.response?.data?.message || err.message || 'Failed to load public banners.'
-            : err?.message || 'Failed to load public banners.'
+            ? err.response?.data?.message || err.message || 'Failed to load public advertisements.'
+            : err?.message || 'Failed to load public advertisements.'
         );
       } finally {
         setLoading(false);
@@ -113,19 +113,19 @@ export default function PublicBannersPage() {
       {!isAllowed ? null : (
       <div className="rounded-xl border border-gray-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-3">
-          <h2 className="text-base font-semibold text-[#1E1E24]">Public Banners</h2>
+          <h2 className="text-base font-semibold text-[#1E1E24]">Public advertisements</h2>
           <div className="relative w-full max-w-[320px]">
             <Search size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7C3AED]" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search banners..."
+              placeholder="Search advertisements..."
               className="w-full rounded-lg border border-gray-200 py-2 pl-3 pr-8 text-xs text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
             />
           </div>
         </div>
 
-        {loading && <p className="p-4 text-xs text-gray-500">Loading banners...</p>}
+        {loading && <p className="p-4 text-xs text-gray-500">Loading advertisements...</p>}
         {!loading && error && <p className="p-4 text-xs text-red-500">{error}</p>}
 
         {!loading && !error && (
@@ -135,7 +135,7 @@ export default function PublicBannersPage() {
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50/70">
                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">SI</th>
-                    <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Banner</th>
+                    <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Advertisement</th>
                     <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Restaurant</th>
                     <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Description</th>
                     <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Status</th>
@@ -184,7 +184,7 @@ export default function PublicBannersPage() {
                   {filteredBanners.length === 0 && (
                     <tr>
                       <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-400">
-                        No public banners found.
+                        No public advertisements found.
                       </td>
                     </tr>
                   )}

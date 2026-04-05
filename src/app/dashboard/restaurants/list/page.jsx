@@ -24,9 +24,9 @@ const STATS = [
 ];
 
 const TRANSACTIONS = [
-  { label: 'Total Transactions',           value: '$5',         icon: CreditCard,    color: 'text-[#6001D2]', dot: 'bg-[#6001D2]' },
-  { label: 'Commission Earned',            value: '$ 12,546',   icon: TrendingUp,    color: 'text-[#00C49A]', dot: 'bg-[#00C49A]' },
-  { label: 'Total Restaurant Withdraws',   value: '$ 12546.34', icon: ArrowDownLeft, color: 'text-[#FF6B6B]', dot: 'bg-[#FF6B6B]' },
+  { label: 'Total Transactions',           value: 'IQD 5',         icon: CreditCard,    color: 'text-[#6001D2]', dot: 'bg-[#6001D2]' },
+  { label: 'Commission Earned',            value: 'IQD 12,546',   icon: TrendingUp,    color: 'text-[#00C49A]', dot: 'bg-[#00C49A]' },
+  { label: 'Total Restaurant Withdraws',   value: 'IQD 12546.34', icon: ArrowDownLeft, color: 'text-[#FF6B6B]', dot: 'bg-[#FF6B6B]' },
 ];
 
 // ─── component ────────────────────────────────────────────────────────────────

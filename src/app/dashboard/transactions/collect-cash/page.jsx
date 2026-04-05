@@ -29,7 +29,7 @@ export default function CollectCashPage() {
             <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs" placeholder="Ex: Urgent" />
           </Field>
           <Field label="Amount *">
-            <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs" placeholder="Ex: $100" />
+            <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs" placeholder="Ex: IQD 100" />
           </Field>
         </div>
         <div className="flex justify-end gap-2 px-4 pb-4">
@@ -68,7 +68,7 @@ export default function CollectCashPage() {
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">Deliveryman</td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">09 Jan 2026 08:25 am</td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">Bank Account</td>
-                  <td className="px-3 py-3 text-xs text-[#1E1E24]">$ 1500.00</td>
+                  <td className="px-3 py-3 text-xs text-[#1E1E24]">IQD 1500.00</td>
                   <td className="px-3 py-3 text-xs text-[#1E1E24]">N/A</td>
                   <td className="px-3 py-3">
                     <button className="flex h-6 w-6 items-center justify-center rounded-md border border-[#FDBA74] bg-[#FFFBEB] text-[#F59E0B]">

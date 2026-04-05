@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, Mail, Phone, ShoppingBag, Wallet, CalendarDays } from 'lucide-react';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { API_BASE_URL } from '@/app/config';
+import { APP_CURRENCY, formatCurrencyFixed2 } from '@/app/lib/currency';
 
 const toAbsoluteAssetUrl = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -45,12 +46,6 @@ const formatDateTime = (value) => {
     hour: '2-digit',
     minute: '2-digit',
   });
-};
-
-const formatAmount = (value, currency = 'PKR') => {
-  const amount = Number(value);
-  if (!Number.isFinite(amount)) return `${currency} 0.00`;
-  return `${currency} ${amount.toFixed(2)}`;
 };
 
 export default function CustomerDetailPage() {
@@ -122,7 +117,10 @@ export default function CustomerDetailPage() {
       phone: entity?.phone || '-',
       avatar: toAbsoluteAssetUrl(entity?.profile_picture_url || entity?.image_url || entity?.avatar || ''),
       totalOrders: Number(entity?.total_orders || entity?.orders_count || 0) || 0,
-      totalSpent: formatAmount(entity?.total_spent || entity?.total_amount || 0, entity?.currency || 'PKR'),
+      totalSpent: formatCurrencyFixed2(
+        entity?.total_spent || entity?.total_amount || 0,
+        entity?.currency || APP_CURRENCY
+      ),
       firstOrderAt: formatDateTime(entity?.first_order_at),
       lastOrderAt: formatDateTime(entity?.last_order_at),
     };

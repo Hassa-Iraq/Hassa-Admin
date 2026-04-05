@@ -1,13 +1,41 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/app/config';
 
 const PER_PAGE = 20;
+
+function formatDisplayDate(isoOrDate) {
+  if (!isoOrDate) return '—';
+  const d = new Date(isoOrDate);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString();
+}
+
+function AdvertisementStatusBadge({ status }) {
+  const raw = String(status || '').trim();
+  const s = raw.toLowerCase();
+  const label = raw || '—';
+  const className =
+    s === 'approved'
+      ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80'
+      : s === 'rejected'
+        ? 'bg-red-50 text-red-600 ring-1 ring-red-200/80'
+        : s === 'pending' || s === 'requested'
+          ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/80'
+          : 'bg-slate-100 text-slate-600 ring-1 ring-slate-200/80';
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
 
 const toAbsoluteAssetUrl = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -41,7 +69,7 @@ export default function AdminBannerListPage() {
     const isRestaurantRole = ['restaurant', 'resturant', 'restaurant_admin', 'vendor'].includes(role);
     if (isRestaurantRole) {
       setIsAllowed(false);
-      toast.error('Restaurant role cannot access admin banner list.');
+      toast.error('Restaurant role cannot access admin advertisement list.');
       router.push('/dashboard/banners/list');
       return;
     }
@@ -132,6 +160,8 @@ export default function AdminBannerListPage() {
           description: item?.description || '',
           status: item?.status || 'pending',
           isPublic: Boolean(item?.is_public),
+          validFrom: item?.valid_from || '',
+          validTo: item?.valid_to || '',
         }));
         setBanners(normalized);
 
@@ -146,8 +176,8 @@ export default function AdminBannerListPage() {
         setTotalPages(1);
         setError(
           axios.isAxiosError(err)
-            ? err.response?.data?.message || err.message || 'Failed to load admin banners.'
-            : err?.message || 'Failed to load admin banners.'
+            ? err.response?.data?.message || err.message || 'Failed to load admin advertisements.'
+            : err?.message || 'Failed to load admin advertisements.'
         );
       } finally {
         setLoading(false);
@@ -173,7 +203,7 @@ export default function AdminBannerListPage() {
       {!isAllowed ? null : (
         <div className="rounded-xl border border-gray-200 bg-white">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-3">
-            <h2 className="text-base font-semibold text-[#1E1E24]">Admin List Banners</h2>
+            <h2 className="text-base font-semibold text-[#1E1E24]">Admin list — advertisements</h2>
             <div className="flex flex-wrap items-center gap-2">
               <select
                 value={statusFilter}
@@ -244,26 +274,30 @@ export default function AdminBannerListPage() {
             </div>
           </div>
 
-          {loading && <p className="p-4 text-xs text-gray-500">Loading banners...</p>}
+          {loading && <p className="p-4 text-xs text-gray-500">Loading advertisements...</p>}
           {!loading && error && <p className="p-4 text-xs text-red-500">{error}</p>}
 
           {!loading && !error && (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[960px] table-fixed text-sm">
+                <table className="w-full min-w-[1080px] table-fixed text-sm">
                   <colgroup>
                     <col className="w-14" />
                     <col />
-                    <col className="w-[22%]" />
-                    <col className="w-[11%]" />
+                    <col className="w-[18%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[10%]" />
                     <col className="w-[9%]" />
-                    <col className="w-[132px]" />
+                    <col className="w-[9%]" />
+                    <col className="w-[72px]" />
                   </colgroup>
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50/70">
                       <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">SI</th>
-                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Banner</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Advertisement</th>
                       <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Restaurant</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Valid from</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Valid to</th>
                       <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Status</th>
                       <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Public</th>
                       <th className="px-4 py-3 text-center text-[11px] font-semibold text-[#1E1E24]">Action</th>
@@ -286,15 +320,25 @@ export default function AdminBannerListPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-xs text-[#1E1E24]">{item.restaurantName}</td>
-                        <td className="px-4 py-3 text-xs text-[#1E1E24]">{item.status}</td>
+                        <td className="px-4 py-3 text-xs text-gray-600">{formatDisplayDate(item.validFrom)}</td>
+                        <td className="px-4 py-3 text-xs text-gray-600">{formatDisplayDate(item.validTo)}</td>
+                        <td className="px-4 py-3 text-xs">
+                          <AdvertisementStatusBadge status={item.status} />
+                        </td>
                         <td className="px-4 py-3 text-xs text-[#1E1E24]">{item.isPublic ? 'Yes' : 'No'}</td>
                         <td className="px-4 py-3 text-center align-middle">
                           <button
                             type="button"
-                            onClick={() => router.push(`/dashboard/banners/status?banner_id=${encodeURIComponent(item.id)}`)}
-                            className="inline-flex rounded-md border border-[#E9D5FF] bg-[#FAF5FF] px-3 py-1.5 text-[11px] font-semibold text-[#7C3AED]"
+                            onClick={() =>
+                              router.push(
+                                `/dashboard/banners/status?banner_id=${encodeURIComponent(item.id)}`
+                              )
+                            }
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-[#7C3AED] bg-[#F8F4FF] text-[#7C3AED]"
+                            aria-label="Update advertisement"
+                            title="Update"
                           >
-                            Moderate
+                            <Pencil size={12} />
                           </button>
                         </td>
                       </tr>
@@ -302,8 +346,8 @@ export default function AdminBannerListPage() {
 
                     {banners.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">
-                          No banners found.
+                        <td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-400">
+                          No advertisements found.
                         </td>
                       </tr>
                     )}

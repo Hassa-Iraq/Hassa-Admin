@@ -65,6 +65,12 @@ const ar = {
   inactiveCustomers: 'العملاء غير النشطين',
   restaurantWPReport: 'تقرير WP المطعم',
   marketing: 'التسويق',
+  advertisements: 'الإعلانات',
+  createAdvertisement: 'إنشاء إعلان',
+  listAdvertisements: 'قائمة الإعلانات',
+  listPublicAdvertisements: 'الإعلانات العامة',
+  updateAdvertisementStatus: 'تحديث حالة الإعلان',
+  adminListAdvertisements: 'قائمة الإعلانات (المسؤول)',
   pushNotification: 'الإشعارات',
   cuisineCategories: 'فئات المطبخ',
   addCuisine: 'إضافة مطبخ',
@@ -81,6 +87,7 @@ const ar = {
   refunded: 'مسترد',
   offlinePayments: 'مدفوعات غير متصلة',
   paymentsFailed: 'مدفوعات فاشلة',
+  itemsOptionsAndAddons: 'خيارات وإضافات الأصناف',
 
   // Orders table
   orderId: 'رقم الطلب',

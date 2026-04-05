@@ -63,10 +63,10 @@ export default function RestaurantReportPage() {
                   <td className="px-3 py-3 text-xs">Rose Restaurant</td>
                   <td className="px-3 py-3 text-xs">8</td>
                   <td className="px-3 py-3 text-xs">8</td>
-                  <td className="px-3 py-3 text-xs">$ 19720.98</td>
-                  <td className="px-3 py-3 text-xs">$ 147.25</td>
-                  <td className="px-3 py-3 text-xs">$ 275.18</td>
-                  <td className="px-3 py-3 text-xs">$ 334.98</td>
+                  <td className="px-3 py-3 text-xs">IQD 19720.98</td>
+                  <td className="px-3 py-3 text-xs">IQD 147.25</td>
+                  <td className="px-3 py-3 text-xs">IQD 275.18</td>
+                  <td className="px-3 py-3 text-xs">IQD 334.98</td>
                   <td className="px-3 py-3 text-xs text-amber-500">4.5 (120)</td>
                 </tr>
               ))}

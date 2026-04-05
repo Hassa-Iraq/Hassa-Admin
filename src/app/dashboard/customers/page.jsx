@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Download, Eye, Search } from 'lucide-react';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { API_BASE_URL } from '@/app/config';
+import { APP_CURRENCY, formatCurrencyFixed2 } from '@/app/lib/currency';
 
 const INITIAL_FILTERS = {
   orderDate: '',
@@ -35,11 +36,7 @@ const formatDate = (value) => {
   });
 };
 
-const formatAmount = (value, currency = 'PKR') => {
-  const amount = Number(value);
-  if (!Number.isFinite(amount)) return `${currency} 0.00`;
-  return `${currency} ${amount.toFixed(2)}`;
-};
+const formatAmount = (value, currency = APP_CURRENCY) => formatCurrencyFixed2(value, currency);
 
 const toDisplayName = (entity) => {
   const fullName = String(entity?.full_name || entity?.name || '').trim();
@@ -141,7 +138,7 @@ export default function CustomersPage() {
               customer?.joining_date ||
               item?.joining_date
             ),
-            totalAmount: formatAmount(totalAmount, item?.currency || customer?.currency || 'PKR'),
+            totalAmount: formatAmount(totalAmount, item?.currency || customer?.currency || APP_CURRENCY),
             active: Boolean(activeValue),
             avatar: toAbsoluteAssetUrl(customer?.profile_picture_url || customer?.image_url || customer?.avatar || ''),
           };

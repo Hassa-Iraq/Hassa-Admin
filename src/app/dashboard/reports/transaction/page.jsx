@@ -37,10 +37,10 @@ export default function TransactionReportPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
-        <Card title="Completed Transaction" value="$ 14556.46" tone="green" />
-        <Card title="Refunded Transaction" value="$ 14556.46" tone="red" />
-        <Card title="Admin Earning" value="$ 12.45k" tone="violet" />
-        <Card title="Restaurant Earning" value="$ 12.45k" tone="violet" />
+        <Card title="Completed Transaction" value="IQD 14556.46" tone="green" />
+        <Card title="Refunded Transaction" value="IQD 14556.46" tone="red" />
+        <Card title="Admin Earning" value="IQD 12.45k" tone="violet" />
+        <Card title="Restaurant Earning" value="IQD 12.45k" tone="violet" />
       </section>
 
       <section className="rounded-xl border border-gray-200 bg-white">
@@ -72,18 +72,18 @@ export default function TransactionReportPage() {
                   <td className="px-2 py-2 text-[11px]">{row.id}</td>
                   <td className="px-2 py-2 text-[11px]">{row.restaurant}</td>
                   <td className="px-2 py-2 text-[11px]">{row.customer}</td>
-                  <td className="px-2 py-2 text-[11px]">$ 3,728.00</td>
-                  <td className="px-2 py-2 text-[11px]">$ 8.50</td>
-                  <td className="px-2 py-2 text-[11px]">$ 0.00</td>
-                  <td className="px-2 py-2 text-[11px]">$ 0.00</td>
-                  <td className="px-2 py-2 text-[11px]">$ 18.50</td>
-                  <td className="px-2 py-2 text-[11px]">$ 35.15</td>
-                  <td className="px-2 py-2 text-[11px]">$ 2.19K</td>
-                  <td className="px-2 py-2 text-[11px]">$ 10.00</td>
-                  <td className="px-2 py-2 text-[11px]">$ 2.58K</td>
+                  <td className="px-2 py-2 text-[11px]">IQD 3,728.00</td>
+                  <td className="px-2 py-2 text-[11px]">IQD 8.50</td>
+                  <td className="px-2 py-2 text-[11px]">IQD 0.00</td>
+                  <td className="px-2 py-2 text-[11px]">IQD 0.00</td>
+                  <td className="px-2 py-2 text-[11px]">IQD 18.50</td>
+                  <td className="px-2 py-2 text-[11px]">IQD 35.15</td>
+                  <td className="px-2 py-2 text-[11px]">IQD 2.19K</td>
+                  <td className="px-2 py-2 text-[11px]">IQD 10.00</td>
+                  <td className="px-2 py-2 text-[11px]">IQD 2.58K</td>
                   <td className="px-2 py-2 text-[11px]">Admin</td>
-                  <td className="px-2 py-2 text-[11px]">$ 373.80</td>
-                  <td className="px-2 py-2 text-[11px]">$ 10.00</td>
+                  <td className="px-2 py-2 text-[11px]">IQD 373.80</td>
+                  <td className="px-2 py-2 text-[11px]">IQD 10.00</td>
                   <td className="px-2 py-2 text-[11px]">-</td>
                 </tr>
               ))}

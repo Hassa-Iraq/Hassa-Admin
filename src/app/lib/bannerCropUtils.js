@@ -1,5 +1,5 @@
 /**
- * Canvas helpers for image cropping (react-easy-crop pixel crop). Shared by banners, restaurants, etc.
+ * Canvas helpers for image cropping (react-easy-crop pixel crop). Shared by advertisements, restaurant covers, etc.
  */
 
 export function createImage(url) {

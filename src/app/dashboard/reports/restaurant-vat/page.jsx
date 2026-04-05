@@ -35,8 +35,8 @@ export default function RestaurantVatReportPage() {
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <SummaryCard label="Total Orders" value="235" />
-        <SummaryCard label="Total Order Amount" value="$ 12.45k" />
-        <SummaryCard label="Total Tax Amount" value="$ 12.45k" />
+        <SummaryCard label="Total Order Amount" value="IQD 12.45k" />
+        <SummaryCard label="Total Tax Amount" value="IQD 12.45k" />
       </section>
 
       <section className="rounded-xl border border-gray-200 bg-white">

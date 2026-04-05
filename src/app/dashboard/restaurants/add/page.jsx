@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 
 /** Logo crop: square (1:1). Change here if the app-wide logo ratio changes. */
 const RESTAURANT_LOGO_CROP_ASPECT = 1;
-/** Cover crop: same wide ratio as banners (2.4:1). Change here if hero/cover ratio changes. */
+/** Cover crop: same wide ratio as marketing advertisements (2.4:1). Change here if hero/cover ratio changes. */
 const RESTAURANT_COVER_CROP_ASPECT = 2.4;
 const RESTAURANT_IMAGE_CROP_INPUT_MAX_BYTES = 15 * 1024 * 1024;
 const RESTAURANT_IMAGE_CROP_OUTPUT_MAX_BYTES = 2 * 1024 * 1024;

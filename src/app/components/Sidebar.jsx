@@ -800,6 +800,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
 
     if (isRestaurantRole) {
       const restaurantVisibleSections = new Set([
+        'ORDER MANAGEMENT',
         'VENDOR MANAGEMENT',
         'FOOD MANAGEMENT',
         'DELIVERY MANAGEMENT',

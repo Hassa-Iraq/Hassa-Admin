@@ -12,6 +12,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { formatCurrencyFixed2 } from '@/app/lib/currency';
+import { mapApiOrderStatusToUiLabel } from '@/app/lib/orderStatus';
 
 const statusStyles = {
   Scheduled: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -55,40 +56,6 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
   }, [filterLabel]);
 
   useEffect(() => {
-    const normalizeOrderStatus = (value, fallbackLabel) => {
-      const raw = String(value ?? '').trim();
-      const lower = raw.toLowerCase();
-
-      const map = {
-        pending: 'Pending',
-        accepted: 'Accepted',
-        processing: 'Processing',
-        scheduled: 'Scheduled',
-        delivered: 'Delivered',
-        cancelled: 'Cancelled',
-        canceled: 'Cancelled',
-        refunded: 'Refunded',
-        'food on the way': 'Food On The Way',
-        food_on_the_way: 'Food On The Way',
-        'food-on-the-way': 'Food On The Way',
-        offline: 'Offline Payments',
-        'offline payment': 'Offline Payments',
-        'offline payments': 'Offline Payments',
-        'payments failed': 'Payments Failed',
-        payments_failed: 'Payments Failed',
-        'payments-failed': 'Payments Failed',
-      };
-
-      const label =
-        map[lower] ||
-        // If API already returns the exact UI labels, keep them
-        (statusStyles[raw] ? raw : '') ||
-        (typeof fallbackLabel === 'string' && fallbackLabel.trim() && fallbackLabel !== 'All' ? fallbackLabel : '') ||
-        'Pending';
-
-      return { statusLabel: label, statusKey: label };
-    };
-
     const formatDate = (value) => {
       if (!value) return '-';
       const date = new Date(value);
@@ -134,10 +101,10 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
         deliveryAddress?.contact_email ||
         '-';
 
-      const { statusLabel, statusKey } = normalizeOrderStatus(
-        item?.order_status || item?.status || '',
-        filterLabel
+      const statusLabel = mapApiOrderStatusToUiLabel(
+        item?.order_status || item?.status || ''
       );
+      const statusKey = statusLabel;
 
       return {
         id: item?.id ?? item?.order_id ?? `${page}-${index}`,

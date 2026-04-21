@@ -8,10 +8,6 @@ import { API_BASE_URL } from '@/app/config';
 import { APP_CURRENCY, formatCurrencyFixed2 } from '@/app/lib/currency';
 
 const INITIAL_FILTERS = {
-  orderDate: '',
-  joiningDate: '',
-  customerStatus: '',
-  chooseFirst: '',
   search: '',
 };
 
@@ -162,6 +158,54 @@ export default function CustomersPage() {
     return apiRows.filter((row) => row.name.toLowerCase().includes(query));
   }, [filters.search, apiRows]);
 
+  const handleExport = () => {
+    if (!rows.length) return;
+
+    const headers = [
+      'Sl',
+      'Name',
+      'Email',
+      'Phone',
+      'Total Orders',
+      'Joining Date',
+      `Total Order Amount (${APP_CURRENCY})`,
+      'Active',
+    ];
+
+    const csvRows = rows.map((row, index) => [
+      index + 1,
+      row.name,
+      row.email,
+      row.phone,
+      row.totalOrders,
+      row.joiningDate,
+      row.totalAmount,
+      row.active ? 'Yes' : 'No',
+    ]);
+
+    const escapeCsv = (value) => {
+      const raw = value === null || value === undefined ? '' : String(value);
+      const needsQuotes = /[",\n]/.test(raw);
+      const escaped = raw.replace(/"/g, '""');
+      return needsQuotes ? `"${escaped}"` : escaped;
+    };
+
+    const csvContent = [
+      headers.map(escapeCsv).join(','),
+      ...csvRows.map((r) => r.map(escapeCsv).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'customers-export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
     setStatusMap(
       Object.fromEntries(rows.map((row) => [row.key, row.active]))
@@ -179,59 +223,6 @@ export default function CustomersPage() {
 
   return (
     <div className="pt-36 pb-8 space-y-4">
-      <section className="rounded-xl border border-gray-200 bg-white p-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <Field label="Order Date">
-            <input
-              name="orderDate"
-              value={filters.orderDate}
-              onChange={updateFilter}
-              placeholder="Select date"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
-            />
-          </Field>
-
-          <Field label="Customer Joining Date">
-            <input
-              name="joiningDate"
-              value={filters.joiningDate}
-              onChange={updateFilter}
-              placeholder="Select date"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
-            />
-          </Field>
-
-          <Field label="Customer Status">
-            <select
-              name="customerStatus"
-              value={filters.customerStatus}
-              onChange={updateFilter}
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#7C3AED] focus:outline-none"
-            >
-              <option value="">All</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </Field>
-
-          <Field label="Choose First">
-            <input
-              name="chooseFirst"
-              value={filters.chooseFirst}
-              onChange={updateFilter}
-              placeholder="Ex: 30"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
-            />
-          </Field>
-        </div>
-
-        <div className="mt-3 flex justify-end">
-          <button className="rounded-md bg-[#6D28D9] px-7 py-2 text-xs font-semibold text-white hover:bg-[#5B21B6]">
-            Filter
-          </button>
-        </div>
-      </section>
-
       <section className="rounded-xl border border-gray-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-3">
           <h3 className="text-base font-semibold text-[#1E1E24]">Customers List</h3>
@@ -247,7 +238,11 @@ export default function CustomersPage() {
                 className="w-full rounded-lg border border-gray-200 py-2 pl-3 pr-8 text-xs text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
               />
             </div>
-            <button className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50">
+            <button
+              type="button"
+              onClick={handleExport}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+            >
               <Download size={12} />
               <span>Export</span>
             </button>
@@ -296,11 +291,15 @@ export default function CustomersPage() {
                     <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        {row.avatar ? (
-                          <img src={row.avatar} alt={row.name} className="h-7 w-7 rounded-full object-cover" />
-                        ) : (
-                          <div className="h-7 w-7 rounded-full bg-gray-200" />
-                        )}
+                        <img
+                          src={row.avatar || '/default-image.svg'}
+                          alt={row.name}
+                          className="h-7 w-7 rounded-full object-cover"
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = '/default-image.svg';
+                          }}
+                        />
                         <div>
                           <p className="text-xs font-semibold text-[#1E1E24]">{row.name}</p>
                         </div>

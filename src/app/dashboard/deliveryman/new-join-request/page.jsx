@@ -72,7 +72,15 @@ export default function NewJoinRequestPage() {
                   <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
-                      <img src={row.avatar} alt={row.name} className="h-7 w-7 rounded-full object-cover" />
+                      <img
+                        src={row.avatar || '/default-image.svg'}
+                        alt={row.name}
+                        className="h-7 w-7 rounded-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = '/default-image.svg';
+                        }}
+                      />
                       <p className="text-xs font-semibold text-[#1E1E24]">{row.name}</p>
                     </div>
                   </td>

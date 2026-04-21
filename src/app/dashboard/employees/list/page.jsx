@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Download, Pencil, Search } from 'lucide-react';
+import { Download, Eye, Pencil, Search } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
@@ -100,6 +100,48 @@ export default function EmployeeListPage() {
     );
   }, [rows, search]);
 
+  const handleExport = () => {
+    if (!filteredRows.length) return;
+
+    const headers = ['Sl', 'Employee Name', 'Phone', 'Email', 'Role', 'Created At'];
+    const csvRows = filteredRows.map((row, index) => [
+      index + 1,
+      row.name,
+      row.phone,
+      row.email,
+      row.employeeRole,
+      row.createdAt,
+    ]);
+
+    const escapeCsv = (value) => {
+      const raw = value === null || value === undefined ? '' : String(value);
+      const needsQuotes = /[",\n]/.test(raw);
+      const escaped = raw.replace(/"/g, '""');
+      return needsQuotes ? `"${escaped}"` : escaped;
+    };
+
+    const csvContent = [
+      headers.map(escapeCsv).join(','),
+      ...csvRows.map((r) => r.map(escapeCsv).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'employees-export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const goToEmployeeDetail = (row) => {
+    const id = String(row?.employeeUserId || '').trim();
+    if (!id) return;
+    router.push(`/dashboard/employees/${encodeURIComponent(id)}`);
+  };
+
   return (
     <div className="pt-36 pb-8">
       <section className="rounded-xl border border-gray-200 bg-white">
@@ -116,7 +158,11 @@ export default function EmployeeListPage() {
                 className="w-full rounded-lg border border-gray-200 py-2 pl-3 pr-8 text-xs text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
               />
             </div>
-            <button className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50">
+            <button
+              type="button"
+              onClick={handleExport}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+            >
               <Download size={12} />
               <span>Export</span>
             </button>
@@ -155,7 +201,11 @@ export default function EmployeeListPage() {
                 </tr>
               )}
               {!loading && !apiError && filteredRows.map((row, index) => (
-                <tr key={row.id} className="border-b border-gray-100 last:border-b-0">
+                <tr
+                  key={row.id}
+                  onClick={() => goToEmployeeDetail(row)}
+                  className="cursor-pointer border-b border-gray-100 hover:bg-gray-50 last:border-b-0"
+                >
                   <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
@@ -178,11 +228,25 @@ export default function EmployeeListPage() {
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => {
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          goToEmployeeDetail(row);
+                        }}
+                        className="flex h-6 w-6 items-center justify-center rounded-md border border-[#FDBA74] bg-[#FFF7ED] text-[#F97316]"
+                        title="View"
+                      >
+                        <Eye size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
                           if (!row.employeeUserId) return;
                           router.push(`/dashboard/employees/add?employee_user_id=${row.employeeUserId}`);
                         }}
                         className="flex h-6 w-6 items-center justify-center rounded-md border border-[#C4B5FD] bg-[#F5F3FF] text-[#7C3AED]"
+                        title="Edit"
                       >
                         <Pencil size={12} />
                       </button>

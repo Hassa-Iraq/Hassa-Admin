@@ -1,20 +1,25 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Download, Eye, Pencil, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Search } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
+import { useLanguage } from '@/app/i18n/LanguageContext';
 
 const DEFAULT_EMPLOYEE_IMAGE = '/default-image.svg';
+const PER_PAGE = 20;
 
 export default function EmployeeListPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [rows, setRows] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const normalizeDate = (value) => {
@@ -49,9 +54,9 @@ export default function EmployeeListPage() {
       try {
         const token = localStorage.getItem('token') || '';
         const params = new URLSearchParams({
-          page: '1',
-          limit: '20',
-          search: '',
+          page: String(page),
+          limit: String(PER_PAGE),
+          search: search.trim(),
           employee_role_id: '',
           is_active: 'true',
         });
@@ -76,8 +81,20 @@ export default function EmployeeListPage() {
 
         const normalized = (Array.isArray(list) ? list : []).map(normalizeRow);
         setRows(normalized);
+
+        const total =
+          payload?.pagination?.total ??
+          payload?.total ??
+          payload?.total_size ??
+          data?.pagination?.total ??
+          data?.total ??
+          data?.total_size ??
+          normalized.length;
+        const parsedTotal = Number(total);
+        setTotalCount(Number.isFinite(parsedTotal) ? parsedTotal : normalized.length);
       } catch (error) {
         setRows([]);
+        setTotalCount(0);
         const message = axios.isAxiosError(error)
           ? error.response?.data?.message || error.message || 'Failed to load employee list'
           : error?.message || 'Failed to load employee list';
@@ -88,17 +105,10 @@ export default function EmployeeListPage() {
     };
 
     loadRows();
-  }, []);
+  }, [page, search]);
 
-  const filteredRows = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return rows;
-    return rows.filter((row) =>
-      [row.name, row.email, row.phone].some((value) =>
-        String(value || '').toLowerCase().includes(query)
-      )
-    );
-  }, [rows, search]);
+  const filteredRows = rows;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
 
   const handleExport = () => {
     if (!filteredRows.length) return;
@@ -146,15 +156,18 @@ export default function EmployeeListPage() {
     <div className="pt-36 pb-8">
       <section className="rounded-xl border border-gray-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-3">
-          <h3 className="text-2xl font-semibold text-[#1E1E24]">Employee List</h3>
+          <h3 className="text-2xl font-semibold text-[#1E1E24]">{t.employeeList}</h3>
 
           <div className="flex items-center gap-2">
             <div className="relative w-[220px]">
               <Search size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7C3AED]" />
               <input
-                placeholder="Search by name..."
+                placeholder={t.searchByName}
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
                 className="w-full rounded-lg border border-gray-200 py-2 pl-3 pr-8 text-xs text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
               />
             </div>
@@ -164,7 +177,7 @@ export default function EmployeeListPage() {
               className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
             >
               <Download size={12} />
-              <span>Export</span>
+              <span>{t.export}</span>
             </button>
           </div>
         </div>
@@ -173,13 +186,13 @@ export default function EmployeeListPage() {
           <table className="w-full min-w-[980px] text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/70">
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">SI</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Employee Name</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Contact</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Email</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Role</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Created At</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Actions</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.sl}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.employeeName}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.contact}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.email}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.role}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.createdAt}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.actions}</th>
               </tr>
             </thead>
             <tbody>
@@ -196,7 +209,7 @@ export default function EmployeeListPage() {
               {!loading && !apiError && filteredRows.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-3 py-8 text-center text-xs text-gray-500">
-                    No records found.
+                    {t.noRecordsFound}
                   </td>
                 </tr>
               )}
@@ -256,6 +269,34 @@ export default function EmployeeListPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-4 py-3">
+          <p className="text-xs text-gray-500">
+            {t.page}{' '}
+            <span className="font-semibold text-gray-700">{page}</span> {t.of}{' '}
+            <span className="font-semibold text-gray-700">{totalPages}</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft size={14} />
+              {t.prev}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t.next}
+              <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
       </section>
     </div>

@@ -156,7 +156,7 @@ export default function RestaurantDetailsPage() {
         subtitle="View selected restaurant information"
       />
 
-      <div className="pt-36 px-6 pb-10">
+      <div className="pt-36 px-4 sm:px-6 pb-10">
         {loading && (
           <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6">
             <div className="h-6 w-56 animate-pulse rounded bg-gray-200/80" />
@@ -173,9 +173,9 @@ export default function RestaurantDetailsPage() {
         )}
 
         {!loading && !error && (
-          <div className="grid grid-cols-12 gap-6">
-            <div className="col-span-8 bg-white rounded-xl border border-gray-100 p-6">
-              <div className="flex items-start justify-between gap-4">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <div className="col-span-12 rounded-xl border border-gray-100 bg-white p-4 sm:p-6 lg:col-span-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold text-[#1E1E24]">{viewModel.name}</h2>
                   <p className="mt-1 text-sm text-gray-500">{viewModel.address}</p>
@@ -190,14 +190,14 @@ export default function RestaurantDetailsPage() {
                 {!viewModel.isBranch && (
                   <button
                     onClick={() => router.push(`/dashboard/restaurants/add?restaurant_id=${restaurantId}`)}
-                    className="h-fit rounded-lg bg-[#7C3AED] px-4 py-2 text-sm font-medium text-white hover:bg-[#6D28D9]"
+                    className="h-fit w-full rounded-lg bg-[#7C3AED] px-4 py-2 text-sm font-medium text-white hover:bg-[#6D28D9] sm:w-auto"
                   >
                     Edit Restaurant
                   </button>
                 )}
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
+              <div className="mt-6 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                 <DetailRow icon={Store} iconClass="text-violet-600 bg-violet-50" label="Cuisine" value={viewModel.cuisine} />
                 <DetailRow icon={Tag} iconClass="text-sky-600 bg-sky-50" label="Zone" value={viewModel.zone} />
                 <DetailRow icon={Clock} iconClass="text-emerald-600 bg-emerald-50" label="Radius" value={viewModel.radius} />
@@ -221,7 +221,7 @@ export default function RestaurantDetailsPage() {
                 </div>
               )}
 
-              <div className="mt-6 grid grid-cols-2 gap-4">
+              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <AssetPreview title="Logo" src={viewModel.logo} />
                 <AssetPreview title="Cover Image" src={viewModel.cover} />
                 <AssetPreview title="Certificate" src={viewModel.certificate} />
@@ -229,8 +229,8 @@ export default function RestaurantDetailsPage() {
               </div>
             </div>
 
-            <div className="col-span-4 space-y-4">
-              <div className="rounded-xl border border-gray-100 bg-white p-5">
+            <div className="col-span-12 space-y-4 lg:col-span-4">
+              <div className="rounded-xl border border-gray-100 bg-white p-4 sm:p-5">
                 <h3 className="mb-4 text-sm font-semibold text-[#1E1E24]">Owner Information</h3>
                 <p className="text-base font-semibold text-[#1E1E24]">{viewModel.ownerName}</p>
                 <div className="mt-4 space-y-2">
@@ -239,7 +239,7 @@ export default function RestaurantDetailsPage() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-gray-100 bg-white p-5">
+              <div className="rounded-xl border border-gray-100 bg-white p-4 sm:p-5">
                 <h3 className="mb-4 text-sm font-semibold text-[#1E1E24]">Legal Information</h3>
                 <div className="space-y-2">
                   <OwnerContact

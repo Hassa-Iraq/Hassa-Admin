@@ -74,6 +74,34 @@ const ku = {
   pushNotification: 'ئاگاداری',
   cuisineCategories: 'پۆلەکانی خواردنەوە',
   addCuisine: 'زیادکردنی خواردنەوە',
+  marketingPromosSubtitle: 'مارکێتینگ — پڕۆمۆکان لە ئەپی کڕیار پیشان دەدرێن',
+  manageEmployeesHere: 'بەڕێوەبردنی هەموو کارمەندەکان لێرە',
+  manageOrdersSubtitle: 'بەڕێوەبردنی هەموو داواکاریە چالاکەکان و خشتەبەندکراوەکان',
+  searchingDeliverymenOrders: 'گەڕان بۆ داواکاریەکانی گەیەنەرەکان',
+  foodList: 'لیستی خواردنەکان',
+  categoryList: 'لیستی پۆلەکان',
+  subCategoryList: 'لیستی پۆلی لاوەکی',
+  newFood: '+ خواردنی نوێ',
+  addCategoryCta: '+ پۆل زیاد بکە',
+  addCuisineCta: '+ خواردنەوە زیاد بکە',
+  foodManagement: 'بەڕێوەبردنی خواردن',
+  foods: 'خواردن',
+  categories: 'پۆلەکان',
+  reviews: 'پێداچوونەوەکان',
+  reportManagement: 'بەڕێوەبردنی ڕاپۆرت',
+  restaurantVATReport: 'ڕاپۆرتی باجی چێشتخانە',
+  businessSetup: 'ڕێکخستنی کار',
+  addCategory: 'زیادکردنی پۆل',
+  addSubcategory: 'زیادکردنی پۆلی لاوەکی',
+  employeeRole: 'ڕۆڵی کارمەند',
+  addNewEmployee: 'زیادکردنی کارمەندی نوێ',
+  newJoinRequest: 'داواکاری تازەی پەیوەستبوون',
+  addNewDeliveryman: 'زیادکردنی گەیەنەری نوێ',
+  deliverymanList: 'لیستی گەیەنەرەکان',
+  deliverymanReviews: 'پێداچوونەوەی گەیەنەر',
+  regularOrderReport: 'ڕاپۆرتی داواکاری ئاسایی',
+  couponOrderReport: 'ڕاپۆرتی داواکاری کۆپن',
+  customerWalletReport: 'جزدانی کڕیار',
 
   // Orders filters
   all: 'هەموو',
@@ -104,6 +132,31 @@ const ku = {
   showing: 'پیشاندان',
   of: 'لە',
   results: 'ئەنجام',
+  loadingOrders: 'داواکاریەکان بار دەبن...',
+  orderType: 'جۆری داواکاری',
+  allOrders: 'هەموو داواکاریەکان',
+  homeDelivery: 'گەیاندن بۆ ماڵ',
+  dineIn: 'خواردن لە شوێن',
+  paymentStatus: 'دۆخی پارەدان',
+  paid: 'پارەدراو',
+  failed: 'سەرنەکەوت',
+  clearFilters: 'پاککردنەوەی فلتەرەکان',
+
+  // Common table/pagination
+  sl: 'ژ',
+  page: 'لاپەڕە',
+  prev: 'پێشوو',
+  next: 'دواتر',
+  name: 'ناو',
+  contact: 'پەیوەندی',
+  createdAt: 'دروستکراو لە',
+  role: 'ڕۆڵ',
+  image: 'وێنە',
+  active: 'چالاک',
+  inactive: 'ناچالاک',
+  clear: 'پاککردنەوە',
+  apply: 'جێبەجێکردن',
+  noRecordsFound: 'هیچ تۆمارێک نەدۆزرایەوە.',
 
   // Restaurant List
   totalRestaurants: 'کۆی چێشتخانەکان',
@@ -178,6 +231,28 @@ const ku = {
   // Common
   addNewRestaurant: 'زیادکردنی چێشتخانەی نوێ',
   newRestaurant: '+ چێشتخانەی نوێ',
+  addBranch: '+ لق زیاد بکە',
+
+  // Customers
+  customersList: 'لیستی کڕیارەکان',
+  searchByName: 'گەڕان بە ناو...',
+  totalOrders: 'کۆی داواکاریەکان',
+  joiningDate: 'بەرواری بەشداربوون',
+  totalOrderAmount: 'کۆی پارەی داواکاری',
+  loadingCustomers: 'کڕیارەکان بار دەبن...',
+  noCustomersFound: 'هیچ کڕیارێک نەدۆزرایەوە.',
+
+  // Employees
+  employeeList: 'لیستی کارمەندەکان',
+  employeeName: 'ناوی کارمەند',
+
+  // Cuisine Categories
+  searchCuisine: 'گەڕان بە خواردنەوە...',
+  activeStatus: 'دۆخی چالاکبوون',
+  cuisineId: 'ناسنامەی خواردنەوە',
+  cuisineName: 'ناوی خواردنەوە',
+  displayOrder: 'ڕیزبەندی',
+  noCuisineCategoriesFound: 'هیچ پۆلی خواردنەوە نەدۆزرایەوە.',
 };
 
 export default ku;

@@ -10,10 +10,38 @@ const rtlLocales = ['ar', 'ku'];
 
 const LanguageContext = createContext();
 
+function createTranslationProxy(locale) {
+  const active = translations[locale] || translations.en;
+  const fallback = translations.en;
+  const shouldWarn = process.env.NODE_ENV !== 'production';
+
+  return new Proxy(active, {
+    get(target, prop) {
+      if (typeof prop !== 'string') return target[prop];
+      if (prop in target) return target[prop];
+
+      // Fallback to English if present, but warn so we can reach full coverage.
+      if (prop in fallback) {
+        if (shouldWarn) {
+          // eslint-disable-next-line no-console
+          console.warn(`[i18n] Missing key "${prop}" for locale "${locale}"`);
+        }
+        return fallback[prop];
+      }
+
+      if (shouldWarn) {
+        // eslint-disable-next-line no-console
+        console.warn(`[i18n] Missing key "${prop}" (not in en, ar, ku)`);
+      }
+      return prop; // show key name so it’s obvious what to add
+    },
+  });
+}
+
 export function LanguageProvider({ children }) {
   const [locale, setLocale] = useState('en');
   const dir = rtlLocales.includes(locale) ? 'rtl' : 'ltr';
-  const t = translations[locale] || translations.en;
+  const t = createTranslationProxy(locale);
 
   useEffect(() => {
     const saved = localStorage.getItem('locale');

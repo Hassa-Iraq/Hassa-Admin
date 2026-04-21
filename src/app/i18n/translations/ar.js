@@ -74,6 +74,34 @@ const ar = {
   pushNotification: 'الإشعارات',
   cuisineCategories: 'فئات المطبخ',
   addCuisine: 'إضافة مطبخ',
+  marketingPromosSubtitle: 'التسويق — عروض تظهر في تطبيق العملاء',
+  manageEmployeesHere: 'إدارة جميع الموظفين هنا',
+  manageOrdersSubtitle: 'إدارة جميع الطلبات النشطة والمجدولة',
+  searchingDeliverymenOrders: 'البحث عن طلبات عمال التوصيل',
+  foodList: 'قائمة الأطعمة',
+  categoryList: 'قائمة التصنيفات',
+  subCategoryList: 'قائمة التصنيفات الفرعية',
+  newFood: '+ طعام جديد',
+  addCategoryCta: '+ إضافة تصنيف',
+  addCuisineCta: '+ إضافة مطبخ',
+  foodManagement: 'إدارة الطعام',
+  foods: 'الأطعمة',
+  categories: 'التصنيفات',
+  reviews: 'المراجعات',
+  reportManagement: 'إدارة التقارير',
+  restaurantVATReport: 'تقرير ضريبة المطاعم',
+  businessSetup: 'إعدادات العمل',
+  addCategory: 'إضافة تصنيف',
+  addSubcategory: 'إضافة تصنيف فرعي',
+  employeeRole: 'دور الموظف',
+  addNewEmployee: 'إضافة موظف جديد',
+  newJoinRequest: 'طلب انضمام جديد',
+  addNewDeliveryman: 'إضافة عامل توصيل',
+  deliverymanList: 'قائمة عمال التوصيل',
+  deliverymanReviews: 'مراجعات عمال التوصيل',
+  regularOrderReport: 'تقرير الطلبات العادية',
+  couponOrderReport: 'تقرير طلبات الكوبون',
+  customerWalletReport: 'محفظة العميل',
 
   // Orders filters
   all: 'الكل',
@@ -104,6 +132,31 @@ const ar = {
   showing: 'عرض',
   of: 'من',
   results: 'نتائج',
+  loadingOrders: 'جاري تحميل الطلبات...',
+  orderType: 'نوع الطلب',
+  allOrders: 'كل الطلبات',
+  homeDelivery: 'توصيل للمنزل',
+  dineIn: 'داخل المطعم',
+  paymentStatus: 'حالة الدفع',
+  paid: 'مدفوع',
+  failed: 'فشل',
+  clearFilters: 'مسح الفلاتر',
+
+  // Common table/pagination
+  sl: 'تسلسل',
+  page: 'الصفحة',
+  prev: 'السابق',
+  next: 'التالي',
+  name: 'الاسم',
+  contact: 'التواصل',
+  createdAt: 'تاريخ الإنشاء',
+  role: 'الدور',
+  image: 'الصورة',
+  active: 'نشط',
+  inactive: 'غير نشط',
+  clear: 'مسح',
+  apply: 'تطبيق',
+  noRecordsFound: 'لا توجد سجلات.',
 
   // Restaurant List
   totalRestaurants: 'إجمالي المطاعم',
@@ -178,6 +231,28 @@ const ar = {
   // Common
   addNewRestaurant: 'إضافة مطعم جديد',
   newRestaurant: '+ مطعم جديد',
+  addBranch: '+ إضافة فرع',
+
+  // Customers
+  customersList: 'قائمة العملاء',
+  searchByName: 'ابحث بالاسم...',
+  totalOrders: 'إجمالي الطلبات',
+  joiningDate: 'تاريخ الانضمام',
+  totalOrderAmount: 'إجمالي مبلغ الطلبات',
+  loadingCustomers: 'جاري تحميل العملاء...',
+  noCustomersFound: 'لا يوجد عملاء.',
+
+  // Employees
+  employeeList: 'قائمة الموظفين',
+  employeeName: 'اسم الموظف',
+
+  // Cuisine Categories
+  searchCuisine: 'ابحث عن المطبخ...',
+  activeStatus: 'حالة التفعيل',
+  cuisineId: 'معرّف المطبخ',
+  cuisineName: 'اسم المطبخ',
+  displayOrder: 'الترتيب',
+  noCuisineCategoriesFound: 'لا توجد فئات مطبخ.',
 };
 
 export default ar;

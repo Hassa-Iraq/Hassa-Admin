@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Topbar from '@/app/components/Topbar';
+import { useLanguage } from '@/app/i18n/LanguageContext';
 
 export default function RestaurantListLayout({ children }) {
   const [userRole, setUserRole] = useState('');
+  const { t } = useLanguage();
 
   useEffect(() => {
     try {
@@ -16,11 +18,13 @@ export default function RestaurantListLayout({ children }) {
     }
   }, []);
 
-  const addButtonLabel = userRole === 'restaurant' ? '+ Add Branch' : '+ New Restaurant';
+  const addButtonLabel = userRole === 'restaurant' ? t.addBranch : t.newRestaurant;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Topbar
+        titleKey="restaurantList"
+        subtitleKey="welcomeBack"
         title="Restaurant List"
         subtitle="Welcome back Admin!"
         rightContent={

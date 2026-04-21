@@ -5,6 +5,8 @@ export default function EmployeeListLayout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <Topbar
+        titleKey="employees"
+        subtitleKey="manageEmployeesHere"
         title="Employees"
         subtitle="Manage all your employees here"
         rightContent={

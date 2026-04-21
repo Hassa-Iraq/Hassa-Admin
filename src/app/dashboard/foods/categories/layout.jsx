@@ -1,16 +1,22 @@
+'use client';
+
 import Link from 'next/link';
 import Topbar from '@/app/components/Topbar';
+import { useLanguage } from '@/app/i18n/LanguageContext';
 
 export default function FoodCategoriesLayout({ children }) {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-gray-50">
       <Topbar
+        titleKey="categoryList"
+        subtitleKey="welcomeBack"
         title="Category List"
         subtitle="Welcome back Admin!"
         rightContent={
           <Link href="/dashboard/foods/categories/add">
             <button className="rounded-lg bg-[#7C3AED] px-4 py-2 text-xs font-semibold text-white hover:bg-[#6D28D9]">
-              + Add Category
+              {t.addCategoryCta}
             </button>
           </Link>
         }

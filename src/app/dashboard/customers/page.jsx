@@ -2,14 +2,16 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, Eye, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Eye, Search } from 'lucide-react';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { API_BASE_URL } from '@/app/config';
 import { APP_CURRENCY, formatCurrencyFixed2 } from '@/app/lib/currency';
+import { useLanguage } from '@/app/i18n/LanguageContext';
 
 const INITIAL_FILTERS = {
   search: '',
 };
+const PER_PAGE = 20;
 
 const toAbsoluteAssetUrl = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -53,11 +55,14 @@ const toDisplayName = (entity) => {
 
 export default function CustomersPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [apiRows, setApiRows] = useState([]);
   const [statusMap, setStatusMap] = useState({});
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -66,14 +71,16 @@ export default function CustomersPage() {
 
       try {
         const token = localStorage.getItem('token') || '';
-        const response = await fetch(
-          '/api/orders/customers?page=1&limit=20&search=&restaurant_id=&date_from=&date_to=',
-          {
-            headers: {
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-          }
-        );
+        const endpoint = `/api/orders/customers?page=${encodeURIComponent(
+          String(page)
+        )}&limit=${encodeURIComponent(String(PER_PAGE))}&search=${encodeURIComponent(
+          filters.search.trim()
+        )}&restaurant_id=&date_from=&date_to=`;
+        const response = await fetch(endpoint, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
 
         const payload = await response.json();
         if (!response.ok) {
@@ -141,8 +148,19 @@ export default function CustomersPage() {
         });
 
         setApiRows(rows);
+
+        const total =
+          payload?.data?.total ??
+          payload?.total ??
+          payload?.data?.total_size ??
+          payload?.total_size ??
+          payload?.data?.count ??
+          rows.length;
+        const parsedTotal = Number(total);
+        setTotalCount(Number.isFinite(parsedTotal) ? parsedTotal : rows.length);
       } catch (error) {
         setApiRows([]);
+        setTotalCount(0);
         setFetchError(error?.message || 'Failed to fetch customers');
       } finally {
         setLoading(false);
@@ -150,13 +168,10 @@ export default function CustomersPage() {
     };
 
     fetchCustomers();
-  }, []);
+  }, [page, filters.search]);
 
-  const rows = useMemo(() => {
-    const query = filters.search.trim().toLowerCase();
-    if (!query) return apiRows;
-    return apiRows.filter((row) => row.name.toLowerCase().includes(query));
-  }, [filters.search, apiRows]);
+  const rows = apiRows;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
 
   const handleExport = () => {
     if (!rows.length) return;
@@ -215,6 +230,7 @@ export default function CustomersPage() {
   const updateFilter = (event) => {
     const { name, value } = event.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
+    if (name === 'search') setPage(1);
   };
 
   const toggleStatus = (key) => {
@@ -225,7 +241,7 @@ export default function CustomersPage() {
     <div className="pt-36 pb-8 space-y-4">
       <section className="rounded-xl border border-gray-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-3">
-          <h3 className="text-base font-semibold text-[#1E1E24]">Customers List</h3>
+          <h3 className="text-base font-semibold text-[#1E1E24]">{t.customersList}</h3>
 
           <div className="flex items-center gap-2">
             <div className="relative w-[250px]">
@@ -234,7 +250,7 @@ export default function CustomersPage() {
                 name="search"
                 value={filters.search}
                 onChange={updateFilter}
-                placeholder="Search by name..."
+                placeholder={t.searchByName}
                 className="w-full rounded-lg border border-gray-200 py-2 pl-3 pr-8 text-xs text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
               />
             </div>
@@ -244,7 +260,7 @@ export default function CustomersPage() {
               className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
             >
               <Download size={12} />
-              <span>Export</span>
+              <span>{t.export}</span>
             </button>
           </div>
         </div>
@@ -253,21 +269,21 @@ export default function CustomersPage() {
           <table className="w-full min-w-[1150px] text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/70">
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">SI</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Name</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Contact</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Total Orders</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Joining Date</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Total Order Amount</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Order Status</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Actions</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.sl}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.name}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.contact}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.totalOrders}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.joiningDate}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.totalOrderAmount}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.orderStatus}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.actions}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
                   <td colSpan={8} className="px-3 py-8 text-center text-sm text-gray-500">
-                    Loading customers...
+                    {t.loadingCustomers}
                   </td>
                 </tr>
               )}
@@ -344,12 +360,40 @@ export default function CustomersPage() {
               {!loading && !fetchError && rows.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-3 py-8 text-center text-sm text-gray-500">
-                    No customers found.
+                    {t.noCustomersFound}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-4 py-3">
+          <p className="text-xs text-gray-500">
+            {t.page}{' '}
+            <span className="font-semibold text-gray-700">{page}</span> {t.of}{' '}
+            <span className="font-semibold text-gray-700">{totalPages}</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft size={14} />
+              {t.prev}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t.next}
+              <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
       </section>
     </div>

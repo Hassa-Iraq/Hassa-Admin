@@ -214,13 +214,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     Pending: ['orders'],
     Accepted: ['orders'],
     Processing: ['orders'],
-    Scheduled: ['orders'],
     'Food On The Way': ['orders'],
     Delivered: ['orders'],
     Cancelled: ['orders'],
     Refunded: ['orders'],
     'Offline Payments': ['orders'],
-    'Payments Failed': ['orders'],
     'Dispatch Management': ['orders', 'deliveryman'],
     'Searching Deliverymen': ['orders', 'deliveryman'],
     'Ongoing Orders': ['orders', 'deliveryman'],
@@ -298,13 +296,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     Pending: 'pending',
     Accepted: 'accepted',
     Processing: 'processing',
-    Scheduled: 'scheduled',
     'Food On The Way': 'food-on-the-way',
     Delivered: 'delivered',
     Cancelled: 'cancelled',
     Refunded: 'refunded',
     'Offline Payments': 'offline-payments',
-    'Payments Failed': 'payments-failed',
   }), []);
 
   const ordersFilterLabelBySlug = useMemo(() => {
@@ -621,9 +617,9 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
 
   const submenuTKeys = {
     'All': 'all', 'Pending': 'pending', 'Accepted': 'accepted', 'Processing': 'processing',
-    'Scheduled': 'scheduled', 'Food On The Way': 'foodOnTheWay', 'Delivered': 'delivered',
+    'Food On The Way': 'foodOnTheWay', 'Delivered': 'delivered',
     'Cancelled': 'cancelled', 'Refunded': 'refunded', 'Offline Payments': 'offlinePayments',
-    'Payments Failed': 'paymentsFailed', 'Add Restaurants': 'addRestaurants',
+    'Add Restaurants': 'addRestaurants',
     'Restaurant List': 'restaurantList', 'New Joining Request': 'newJoiningRequest',
     'Searching Deliverymen': 'searchingDeliverymen',
     'Ongoing Orders': 'ongoingOrders',
@@ -670,7 +666,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       label: 'ORDER MANAGEMENT', tKey: 'orderManagement',
       isHeader: true,
       items: [
-        { icon: SIDEBAR_ICONS.orders, label: 'Orders', tKey: 'orders', key: 'orderManagement', submenu: ['All', 'Pending', 'Accepted', 'Processing', 'Scheduled', 'Food On The Way', 'Delivered', 'Cancelled', 'Refunded', 'Offline Payments', 'Payments Failed'] },
+        { icon: SIDEBAR_ICONS.orders, label: 'Orders', tKey: 'orders', key: 'orderManagement', submenu: ['All', 'Pending', 'Accepted', 'Processing', 'Food On The Way', 'Delivered', 'Cancelled', 'Refunded', 'Offline Payments'] },
       ]
     },
     {

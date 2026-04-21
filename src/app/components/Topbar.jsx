@@ -105,10 +105,12 @@ const getRestaurantRestriction = (payload, user) => {
   return null;
 };
 
-export default function Topbar({ title, subtitle, rightContent }) {
+export default function Topbar({ title, titleKey, subtitle, subtitleKey, rightContent }) {
   const router = useRouter();
   const { locale, dir, t, changeLanguage } = useLanguage();
   const isRTL = dir === 'rtl';
+  const resolvedTitle = titleKey ? (t[titleKey] || title) : title;
+  const resolvedSubtitle = subtitleKey ? (t[subtitleKey] || subtitle) : subtitle;
   const [langOpen, setLangOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [admin, setAdmin] = useState({ name: '', email: '', image: '' });
@@ -411,11 +413,11 @@ export default function Topbar({ title, subtitle, rightContent }) {
         <div className="min-h-[60px] md:h-[80px] bg-gray-50 flex items-center justify-between px-4 md:px-6 py-3 md:py-0">
           <div className={isRTL ? 'pr-10 md:pr-0' : 'pl-10 md:pl-0'}>
             <h2 className="text-base md:text-xl font-semibold text-gray-900">
-              {title}
+              {resolvedTitle}
             </h2>
-            {subtitle && (
+            {resolvedSubtitle && (
               <p className="text-xs md:text-sm text-gray-500 mt-0.5">
-                {subtitle}
+                {resolvedSubtitle}
               </p>
             )}
           </div>

@@ -74,6 +74,34 @@ const en = {
   pushNotification: 'Push Notification',
   cuisineCategories: 'Cuisine Categories',
   addCuisine: 'Add Cuisine',
+  marketingPromosSubtitle: 'Marketing — promos shown in the customer app',
+  manageEmployeesHere: 'Manage all your employees here',
+  manageOrdersSubtitle: 'Manage all active and scheduled orders',
+  searchingDeliverymenOrders: 'Searching for Deliverymen Orders',
+  foodList: 'Food List',
+  categoryList: 'Category List',
+  subCategoryList: 'Sub Category List',
+  newFood: '+ New Food',
+  addCategoryCta: '+ Add Category',
+  addCuisineCta: '+ Add Cuisine',
+  foodManagement: 'FOOD MANAGEMENT',
+  foods: 'Foods',
+  categories: 'Categories',
+  reviews: 'Reviews',
+  reportManagement: 'REPORT MANAGEMENT',
+  restaurantVATReport: 'Restaurant VAT Report',
+  businessSetup: 'Business Setup',
+  addCategory: 'Add Category',
+  addSubcategory: 'Add Subcategory',
+  employeeRole: 'Employee Role',
+  addNewEmployee: 'Add New Employee',
+  newJoinRequest: 'New Join Request',
+  addNewDeliveryman: 'Add New Deliveryman',
+  deliverymanList: 'Deliveryman List',
+  deliverymanReviews: 'Deliveryman Reviews',
+  regularOrderReport: 'Regular Order Report',
+  couponOrderReport: 'Coupon Order Report',
+  customerWalletReport: 'Customer Wallet',
 
   // Orders filters
   all: 'All',
@@ -104,6 +132,31 @@ const en = {
   showing: 'Showing',
   of: 'of',
   results: 'results',
+  loadingOrders: 'Loading orders...',
+  orderType: 'Order Type',
+  allOrders: 'All orders',
+  homeDelivery: 'Home Delivery',
+  dineIn: 'Dine In',
+  paymentStatus: 'Payment Status',
+  paid: 'Paid',
+  failed: 'Failed',
+  clearFilters: 'Clear filters',
+
+  // Common table/pagination
+  sl: 'Sl',
+  page: 'Page',
+  prev: 'Prev',
+  next: 'Next',
+  name: 'Name',
+  contact: 'Contact',
+  createdAt: 'Created At',
+  role: 'Role',
+  image: 'Image',
+  active: 'Active',
+  inactive: 'Inactive',
+  clear: 'Clear',
+  apply: 'Apply',
+  noRecordsFound: 'No records found.',
 
   // Restaurant List
   totalRestaurants: 'Total Restaurants',
@@ -178,6 +231,28 @@ const en = {
   // Common
   addNewRestaurant: 'Add New Restaurant',
   newRestaurant: '+ New Restaurant',
+  addBranch: '+ Add Branch',
+
+  // Customers
+  customersList: 'Customers List',
+  searchByName: 'Search by name...',
+  totalOrders: 'Total Orders',
+  joiningDate: 'Joining Date',
+  totalOrderAmount: 'Total Order Amount',
+  loadingCustomers: 'Loading customers...',
+  noCustomersFound: 'No customers found.',
+
+  // Employees
+  employeeList: 'Employee List',
+  employeeName: 'Employee Name',
+
+  // Cuisine Categories
+  searchCuisine: 'Search cuisine...',
+  activeStatus: 'Active status',
+  cuisineId: 'Cuisine ID',
+  cuisineName: 'Cuisine Name',
+  displayOrder: 'Order',
+  noCuisineCategoriesFound: 'No cuisine categories found.',
 };
 
 export default en;

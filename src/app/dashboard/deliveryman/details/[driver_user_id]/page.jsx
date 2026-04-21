@@ -119,7 +119,7 @@ export default function DeliverymanDetailsPage() {
         subtitle="View selected deliveryman information"
       />
 
-      <div className="pt-36 px-6 pb-10">
+      <div className="pt-36 px-4 sm:px-6 pb-10">
         {loading && (
           <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6">
             <div className="h-6 w-56 animate-pulse rounded bg-gray-200/80" />
@@ -136,9 +136,9 @@ export default function DeliverymanDetailsPage() {
         )}
 
         {!loading && !error && (
-          <div className="grid grid-cols-12 gap-6">
-            <div className="col-span-8 bg-white rounded-xl border border-gray-100 p-6">
-              <div className="flex items-start justify-between gap-4">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <div className="col-span-12 rounded-xl border border-gray-100 bg-white p-4 sm:p-6 lg:col-span-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold text-[#1E1E24]">{viewModel.fullName}</h2>
                   <p className="mt-1 text-sm text-gray-500">{viewModel.email}</p>
@@ -152,7 +152,7 @@ export default function DeliverymanDetailsPage() {
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
+              <div className="mt-6 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                 <DetailRow icon={UserCircle} iconClass="text-violet-600 bg-violet-50" label="Owner Type" value={viewModel.ownerType} />
                 <DetailRow icon={Phone} iconClass="text-amber-600 bg-amber-50" label="Phone" value={formatPhoneWithFlag(viewModel.phone)} />
                 <DetailRow icon={Bike} iconClass="text-sky-600 bg-sky-50" label="Vehicle Type" value={viewModel.vehicleType} />
@@ -170,7 +170,7 @@ export default function DeliverymanDetailsPage() {
               </div>
             </div>
 
-            <div className="col-span-4 space-y-4">
+            <div className="col-span-12 space-y-4 lg:col-span-4">
               <AssetPreview title="Driver Image" src={viewModel.driverImage} />
               <AssetPreview title="Vehicle Image" src={viewModel.vehicleImage} />
               <AssetPreview title="Driving License Image" src={viewModel.licenseImage} />

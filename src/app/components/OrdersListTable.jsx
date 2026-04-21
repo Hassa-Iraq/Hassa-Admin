@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { formatCurrencyFixed2 } from '@/app/lib/currency';
 import { mapApiOrderStatusToUiLabel } from '@/app/lib/orderStatus';
+import { useLanguage } from '@/app/i18n/LanguageContext';
 
 const statusStyles = {
   Scheduled: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -39,6 +40,7 @@ const paymentStatusStyles = {
  * - filterLabel: "All" | "Pending" | "Accepted" | ...
  */
 export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' }) {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [orderTypeFilter, setOrderTypeFilter] = useState('All');
@@ -54,6 +56,19 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
   useEffect(() => {
     setPage(1);
   }, [filterLabel]);
+
+  const statusLabelToTKey = useMemo(() => ({
+    Scheduled: 'scheduled',
+    Pending: 'pending',
+    Accepted: 'accepted',
+    Processing: 'processing',
+    'Food On The Way': 'foodOnTheWay',
+    Delivered: 'delivered',
+    Cancelled: 'cancelled',
+    Refunded: 'refunded',
+    'Offline Payments': 'offlinePayments',
+    'Payments Failed': 'paymentsFailed',
+  }), []);
 
   useEffect(() => {
     const formatDate = (value) => {
@@ -264,7 +279,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
             <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6001D2]" />
             <input
               type="text"
-              placeholder="Search any order..."
+              placeholder={t.searchAnyOrder}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="w-56 pl-3 pr-9 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -278,21 +293,21 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Export</span>
+            <span>{t.export}</span>
           </button>
           <button
             onClick={() => setIsFilterOpen((prev) => !prev)}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>Filters</span>
+            <span>{t.filters}</span>
           </button>
 
           {isFilterOpen && (
             <div className="absolute right-0 top-11 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-4 space-y-4 z-10">
               <div>
                 <p className="text-xs font-semibold text-gray-700 mb-2">
-                  Order Type
+                  {t.orderType}
                 </p>
                 <div className="space-y-1">
                   <label className="flex items-center gap-2 text-xs text-gray-700">
@@ -303,7 +318,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                       checked={orderTypeFilter === 'All'}
                       onChange={() => setOrderTypeFilter('All')}
                     />
-                    <span>All orders</span>
+                    <span>{t.allOrders}</span>
                   </label>
                   <label className="flex items-center gap-2 text-xs text-gray-700">
                     <input
@@ -313,7 +328,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                       checked={orderTypeFilter === 'Home Delivery'}
                       onChange={() => setOrderTypeFilter('Home Delivery')}
                     />
-                    <span>Home Delivery</span>
+                    <span>{t.homeDelivery}</span>
                   </label>
                   <label className="flex items-center gap-2 text-xs text-gray-700">
                     <input
@@ -323,14 +338,14 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                       checked={orderTypeFilter === 'Dine In'}
                       onChange={() => setOrderTypeFilter('Dine In')}
                     />
-                    <span>Dine In</span>
+                    <span>{t.dineIn}</span>
                   </label>
                 </div>
               </div>
 
               <div>
                 <p className="text-xs font-semibold text-gray-700 mb-2">
-                  Payment Status
+                  {t.paymentStatus}
                 </p>
                 <div className="space-y-1">
                   <label className="flex items-center gap-2 text-xs text-gray-700">
@@ -341,7 +356,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                       checked={paymentStatusFilter === 'All'}
                       onChange={() => setPaymentStatusFilter('All')}
                     />
-                    <span>All</span>
+                    <span>{t.all}</span>
                   </label>
                   <label className="flex items-center gap-2 text-xs text-gray-700">
                     <input
@@ -351,7 +366,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                       checked={paymentStatusFilter === 'Paid'}
                       onChange={() => setPaymentStatusFilter('Paid')}
                     />
-                    <span>Paid</span>
+                    <span>{t.paid}</span>
                   </label>
                   <label className="flex items-center gap-2 text-xs text-gray-700">
                     <input
@@ -361,7 +376,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                       checked={paymentStatusFilter === 'Failed'}
                       onChange={() => setPaymentStatusFilter('Failed')}
                     />
-                    <span>Failed</span>
+                    <span>{t.failed}</span>
                   </label>
                   <label className="flex items-center gap-2 text-xs text-gray-700">
                     <input
@@ -371,7 +386,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                       checked={paymentStatusFilter === 'Refunded'}
                       onChange={() => setPaymentStatusFilter('Refunded')}
                     />
-                    <span>Refunded</span>
+                    <span>{t.refunded}</span>
                   </label>
                 </div>
               </div>
@@ -385,14 +400,14 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                   }}
                   className="text-[11px] font-medium text-gray-500 hover:text-gray-700"
                 >
-                  Clear filters
+                  {t.clearFilters}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsFilterOpen(false)}
                   className="px-3 py-1.5 text-[11px] font-medium rounded-lg bg-purple-600 text-white hover:bg-purple-700"
                 >
-                  Apply
+                  {t.apply}
                 </button>
               </div>
             </div>
@@ -405,21 +420,21 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
         <table className="min-w-full text-[16px] md:text-sm">
           <thead className="bg-gray-50">
             <tr className="text-left text-black font-bold">
-              <th className="py-3 px-4 font-bold whitespace-nowrap">Sl</th>
-              <th className="py-3 px-4 font-bold whitespace-nowrap">Order ID</th>
-              <th className="py-3 px-4 font-bold whitespace-nowrap">Order Date</th>
-              <th className="py-3 px-4 font-bold whitespace-nowrap">Customer Information</th>
-              <th className="py-3 px-4 font-bold whitespace-nowrap">Restaurant</th>
-              <th className="py-3 px-4 font-bold whitespace-nowrap">Total Amount</th>
-              <th className="py-3 px-4 font-bold whitespace-nowrap">Order Status</th>
-              <th className="py-3 px-4 font-bold whitespace-nowrap text-right">Actions</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">{t.sl}</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">{t.orderId}</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">{t.orderDate}</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">{t.customerInformation}</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">{t.restaurant}</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">{t.totalAmount}</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap">{t.orderStatus}</th>
+              <th className="py-3 px-4 font-bold whitespace-nowrap text-right">{t.actions}</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
                 <td colSpan={8} className="py-10 text-center text-sm text-gray-500">
-                  Loading orders...
+                  {t.loadingOrders}
                 </td>
               </tr>
             )}
@@ -480,7 +495,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full border text-[11px] font-semibold ${chipClass}`}
                     >
-                      {order.status}
+                      {t[statusLabelToTKey[order.status]] || order.status}
                     </span>
                     <div className="mt-1 text-[11px] text-gray-500">
                       {order.orderType}

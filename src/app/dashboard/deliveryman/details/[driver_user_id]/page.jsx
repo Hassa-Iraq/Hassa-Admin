@@ -8,7 +8,7 @@ import { API_BASE_URL } from '@/app/config';
 import { Bike, Car, CreditCard, FileText, Mail, Phone, UserCircle } from 'lucide-react';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 
-const DEFAULT_IMAGE = '/default-restaurant-image.svg';
+const DEFAULT_IMAGE = '/default-image.svg';
 
 const pickText = (...values) => {
   for (const value of values) {

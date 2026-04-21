@@ -154,19 +154,15 @@ export default function CustomerDetailPage() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <section className="rounded-xl border border-gray-200 bg-white p-5 lg:col-span-1">
             <div className="flex items-center gap-3">
-              {view.avatar ? (
-                <img
-                  src={view.avatar}
-                  alt={view.name}
-                  className="h-14 w-14 rounded-full object-cover"
-                  onError={(event) => {
-                    event.currentTarget.onerror = null;
-                    event.currentTarget.src = '/default-image.svg';
-                  }}
-                />
-              ) : (
-                <div className="h-14 w-14 rounded-full bg-gray-200" />
-              )}
+              <img
+                src={view.avatar || '/default-image.svg'}
+                alt={view.name}
+                className="h-14 w-14 rounded-full object-cover"
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = '/default-image.svg';
+                }}
+              />
               <div>
                 <h2 className="text-lg font-semibold text-[#1E1E24]">{view.name}</h2>
                 <p className="text-xs text-gray-500">Customer details</p>

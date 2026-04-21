@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import Topbar from '@/app/components/Topbar';
 import {
   Printer,
@@ -9,6 +9,7 @@ import {
   Mail,
   MapPin,
   Store,
+  X,
 } from 'lucide-react';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { API_BASE_URL } from '@/app/config';
@@ -140,9 +141,14 @@ function buildDeliveryDisplayRows(delivery) {
 
 export default function OrderDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const [orderPayload, setOrderPayload] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const hasAutoPrintedRef = useRef(false);
+  const [isProofModalOpen, setIsProofModalOpen] = useState(false);
+  const [proofFile, setProofFile] = useState(null);
+  const [proofPreviewUrl, setProofPreviewUrl] = useState('');
 
   const orderId = useMemo(() => {
     const rawId = params?.id;
@@ -177,6 +183,22 @@ export default function OrderDetailPage() {
 
     fetchOrderDetails();
   }, [orderId]);
+
+  useEffect(() => {
+    if (hasAutoPrintedRef.current) return;
+    const shouldAutoPrint = searchParams?.get('print') === '1';
+    if (!shouldAutoPrint) return;
+    if (loading || error) return;
+
+    hasAutoPrintedRef.current = true;
+    window.setTimeout(() => window.print(), 150);
+  }, [searchParams, loading, error]);
+
+  useEffect(() => {
+    return () => {
+      if (proofPreviewUrl) URL.revokeObjectURL(proofPreviewUrl);
+    };
+  }, [proofPreviewUrl]);
 
   const order = useMemo(() => {
     const payload = orderPayload || {};
@@ -345,6 +367,89 @@ export default function OrderDetailPage() {
       />
 
       <div className="pt-36 px-6 pb-10">
+        {isProofModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Add delivery proof"
+            onMouseDown={() => setIsProofModalOpen(false)}
+          >
+            <div
+              className="w-full max-w-3xl rounded-2xl bg-white shadow-xl"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                <h3 className="text-sm font-semibold text-[#1E1E24]">Add delivery proof</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsProofModalOpen(false)}
+                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
+                  aria-label="Close"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="px-6 py-5">
+                <p className="mb-2 text-xs font-semibold text-gray-500">Upload image</p>
+
+                <label className="flex min-h-[180px] w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setProofFile(file);
+                      if (proofPreviewUrl) URL.revokeObjectURL(proofPreviewUrl);
+                      setProofPreviewUrl(file ? URL.createObjectURL(file) : '');
+                    }}
+                  />
+
+                  {proofPreviewUrl ? (
+                    <img
+                      src={proofPreviewUrl}
+                      alt="Delivery proof preview"
+                      className="h-40 w-full max-w-[520px] rounded-lg object-cover"
+                    />
+                  ) : (
+                    <p className="text-xs text-gray-400">Click to select an image</p>
+                  )}
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-gray-200 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsProofModalOpen(false);
+                    setProofFile(null);
+                    if (proofPreviewUrl) URL.revokeObjectURL(proofPreviewUrl);
+                    setProofPreviewUrl('');
+                  }}
+                  className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!proofFile}
+                  onClick={() => {
+                    // UI-only for now: close modal after selecting.
+                    setIsProofModalOpen(false);
+                    setProofFile(null);
+                    if (proofPreviewUrl) URL.revokeObjectURL(proofPreviewUrl);
+                    setProofPreviewUrl('');
+                  }}
+                  className="rounded-lg bg-[#7C3AED] px-6 py-2 text-xs font-semibold text-white hover:bg-[#6D28D9] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {loading && (
           <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
             Loading order details...
@@ -484,19 +589,15 @@ export default function OrderDetailPage() {
               <div className="rounded-xl bg-[#F5F5FA] p-4">
                 <h3 className="text-sm font-semibold text-[#1E1E24]">Customer Info</h3>
                 <div className="mt-3 flex items-start gap-3">
-                  {customerImage ? (
-                    <img
-                      src={customerImage}
-                      alt={customerName}
-                      className="h-14 w-14 rounded-full object-cover"
-                      onError={(event) => {
-                        event.currentTarget.onerror = null;
-                        event.currentTarget.src = '/default-image.svg';
-                      }}
-                    />
-                  ) : (
-                    <div className="h-14 w-14 rounded-full bg-gray-200" />
-                  )}
+                  <img
+                    src={customerImage || '/default-image.svg'}
+                    alt={customerName}
+                    className="h-14 w-14 rounded-full object-cover"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = '/default-image.svg';
+                    }}
+                  />
                   <div className="min-w-0">
                     <p className="truncate text-[30px] font-semibold leading-none text-[#1E1E24]">{customerName}</p>
                     <p className="mt-1 text-xs text-gray-500">Customer Details</p>
@@ -555,7 +656,11 @@ export default function OrderDetailPage() {
               <div className="rounded-xl bg-[#F5F5FA] p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-[#1E1E24]">Delivery Proof</h3>
-                  <button className="rounded-lg bg-[#7C3AED] px-3 py-1 text-xs font-semibold text-white hover:bg-[#6D28D9]">
+                  <button
+                    type="button"
+                    onClick={() => setIsProofModalOpen(true)}
+                    className="rounded-lg bg-[#7C3AED] px-3 py-1 text-xs font-semibold text-white hover:bg-[#6D28D9]"
+                  >
                     Add
                   </button>
                 </div>

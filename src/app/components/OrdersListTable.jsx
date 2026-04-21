@@ -504,7 +504,11 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
     <button
       onClick={(e) => {
         e.stopPropagation();
-        console.log('Print order', order.orderId);
+        window.open(
+          `/dashboard/orders/${filterSlug}/${order.id}?print=1`,
+          '_blank',
+          'noopener,noreferrer'
+        );
       }}
       className="w-8 h-8 flex items-center justify-center rounded-md border border-purple-200 bg-purple-50 text-purple-600 hover:bg-purple-100 transition"
     >

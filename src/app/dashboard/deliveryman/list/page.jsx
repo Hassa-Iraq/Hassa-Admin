@@ -321,9 +321,13 @@ export default function DeliverymanListPage() {
                   <td className="px-3 py-3 group-hover:bg-purple-50">
                     <div className="flex items-center gap-2">
                       <img
-                        src={item.avatar || 'https://i.pravatar.cc/40?img=41'}
+                        src={item.avatar || '/default-image.svg'}
                         alt={item.name}
                         className="h-7 w-7 rounded-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = '/default-image.svg';
+                        }}
                       />
                       <div>
                         <p className="text-xs font-semibold text-[#1E1E24]">{item.name}</p>

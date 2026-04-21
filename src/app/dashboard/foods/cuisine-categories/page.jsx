@@ -26,6 +26,8 @@ export default function CuisineCategoriesListPage() {
   const [deletingId, setDeletingId] = useState('');
   const [fetchError, setFetchError] = useState('');
   const [search, setSearch] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('All'); // All | Active | Inactive
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -141,10 +143,51 @@ export default function CuisineCategoriesListPage() {
   }, [page]);
 
   const filteredItems = useMemo(() => {
+    let base = items;
+
+    if (activeFilter === 'Active') base = base.filter((item) => item.isActive);
+    if (activeFilter === 'Inactive') base = base.filter((item) => !item.isActive);
+
     const query = search.trim().toLowerCase();
-    if (!query) return items;
-    return items.filter((item) => item.name.toLowerCase().includes(query));
-  }, [search, items]);
+    if (query) base = base.filter((item) => item.name.toLowerCase().includes(query));
+
+    return base;
+  }, [search, items, activeFilter]);
+
+  const handleExport = () => {
+    if (!filteredItems.length) return;
+
+    const headers = ['Sl', 'Cuisine ID', 'Cuisine Name', 'Order', 'Active'];
+    const rows = filteredItems.map((item, index) => [
+      index + 1,
+      item.displayId,
+      item.name,
+      item.displayOrder,
+      item.isActive ? 'Yes' : 'No',
+    ]);
+
+    const escapeCsv = (value) => {
+      const raw = value === null || value === undefined ? '' : String(value);
+      const needsQuotes = /[",\n]/.test(raw);
+      const escaped = raw.replace(/"/g, '""');
+      return needsQuotes ? `"${escaped}"` : escaped;
+    };
+
+    const csvContent = [
+      headers.map(escapeCsv).join(','),
+      ...rows.map((row) => row.map(escapeCsv).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'cuisine-categories-export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const handleDelete = async (id) => {
     if (!id) return;
@@ -189,15 +232,60 @@ export default function CuisineCategoriesListPage() {
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <button className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50">
+          <div className="relative flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExport}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+            >
               <Download size={12} />
               <span>Export</span>
             </button>
-            <button className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50">
+            <button
+              type="button"
+              onClick={() => setIsFilterOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+            >
               <SlidersHorizontal size={12} />
               <span>Filters</span>
             </button>
+
+            {isFilterOpen && (
+              <div className="absolute right-0 top-11 z-10 w-64 rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
+                <p className="mb-2 text-xs font-semibold text-gray-700">Active status</p>
+                <div className="space-y-1">
+                  {['All', 'Active', 'Inactive'].map((value) => (
+                    <label key={value} className="flex cursor-pointer items-center gap-2 text-xs text-gray-700">
+                      <input
+                        type="radio"
+                        name="activeFilter"
+                        value={value}
+                        checked={activeFilter === value}
+                        onChange={() => setActiveFilter(value)}
+                      />
+                      <span>{value}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setActiveFilter('All')}
+                    className="text-[11px] font-medium text-gray-500 hover:text-gray-700"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterOpen(false)}
+                    className="rounded-lg bg-purple-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-purple-700"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

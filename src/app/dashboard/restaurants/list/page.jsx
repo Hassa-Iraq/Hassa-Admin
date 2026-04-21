@@ -58,7 +58,6 @@ export default function RestaurantListPage() {
   const [page, setPage] = useState(1);
   const [cuisineFilter, setCuisineFilter] = useState('');
   const [radiusFilter, setRadiusFilter]   = useState('');
-  const [modelFilter, setModelFilter]     = useState('');
 
   useEffect(() => {
     try {
@@ -299,9 +298,7 @@ export default function RestaurantListPage() {
           limit: String(PER_PAGE),
         });
         if (search.trim()) params.set('search', search.trim());
-        if (modelFilter) params.set('business_model', modelFilter);
         if (cuisineFilter) params.set('cuisine', cuisineFilter);
-        if (radiusFilter) params.set('radius', radiusFilter);
         const effectiveRole =
           userRole || String(localStorage.getItem('userRole') || '').trim().toLowerCase();
         let effectiveRestaurantId =
@@ -465,7 +462,7 @@ export default function RestaurantListPage() {
     };
 
     fetchRestaurants();
-  }, [page, search, modelFilter, cuisineFilter, radiusFilter, userRole, currentRestaurantId]);
+  }, [page, search, cuisineFilter, radiusFilter, userRole, currentRestaurantId]);
 
   useEffect(() => {
     setStatuses((prev) => {
@@ -652,27 +649,6 @@ export default function RestaurantListPage() {
 
           {/* ── Filter Bar ── */}
           <div className="flex flex-wrap gap-3 mb-6">
-        {[
-          { label: 'All', value: '', setter: setModelFilter,  state: modelFilter },
-        ].map(f => (
-          <button
-            key={f.label}
-            onClick={() => f.setter('')}
-            className="px-4 py-2 text-sm rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-purple-400 transition"
-          >
-            All ▾
-          </button>
-        ))}
-        <select
-          value={modelFilter}
-          onChange={e => setModelFilter(e.target.value)}
-          className="px-4 py-2 text-sm rounded-lg border border-gray-200 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-300"
-        >
-          <option value="">Business Model</option>
-          <option>Dine-in</option>
-          <option>Delivery</option>
-          <option>Takeaway</option>
-        </select>
         <select
           value={cuisineFilter}
           onChange={e => setCuisineFilter(e.target.value)}
@@ -682,15 +658,6 @@ export default function RestaurantListPage() {
           {['Italian','Arabian','Chinese','Pakistani','Sea Food','Halal','Syrian','Saudi','Turkish','Indian'].map(c => (
             <option key={c}>{c}</option>
           ))}
-        </select>
-        <select
-          value={radiusFilter}
-          onChange={e => setRadiusFilter(e.target.value)}
-          className="px-4 py-2 text-sm rounded-lg border border-gray-200 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-300"
-        >
-          <option value="">Select Radius</option>
-          <option>5 km</option>
-          <option>All over the world</option>
         </select>
           </div>
 

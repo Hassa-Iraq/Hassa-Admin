@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Download, Pencil, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Pencil, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
 import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
+import { useLanguage } from '@/app/i18n/LanguageContext';
 
 const PER_PAGE = 20;
 
@@ -20,6 +21,7 @@ const getShortDisplayId = (value, fallback) => {
 
 export default function CuisineCategoriesListPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [items, setItems] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -154,6 +156,8 @@ export default function CuisineCategoriesListPage() {
     return base;
   }, [search, items, activeFilter]);
 
+  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
+
   const handleExport = () => {
     if (!filteredItems.length) return;
 
@@ -227,7 +231,7 @@ export default function CuisineCategoriesListPage() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search cuisine..."
+              placeholder={t.searchCuisine}
               className="w-full rounded-lg border border-gray-200 py-2 pl-3 pr-8 text-xs text-gray-700 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
             />
           </div>
@@ -239,7 +243,7 @@ export default function CuisineCategoriesListPage() {
               className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
             >
               <Download size={12} />
-              <span>Export</span>
+              <span>{t.export}</span>
             </button>
             <button
               type="button"
@@ -247,12 +251,12 @@ export default function CuisineCategoriesListPage() {
               className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
             >
               <SlidersHorizontal size={12} />
-              <span>Filters</span>
+              <span>{t.filters}</span>
             </button>
 
             {isFilterOpen && (
               <div className="absolute right-0 top-11 z-10 w-64 rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
-                <p className="mb-2 text-xs font-semibold text-gray-700">Active status</p>
+                <p className="mb-2 text-xs font-semibold text-gray-700">{t.activeStatus}</p>
                 <div className="space-y-1">
                   {['All', 'Active', 'Inactive'].map((value) => (
                     <label key={value} className="flex cursor-pointer items-center gap-2 text-xs text-gray-700">
@@ -263,7 +267,13 @@ export default function CuisineCategoriesListPage() {
                         checked={activeFilter === value}
                         onChange={() => setActiveFilter(value)}
                       />
-                      <span>{value}</span>
+                      <span>
+                        {value === 'All'
+                          ? t.all
+                          : value === 'Active'
+                            ? t.active
+                            : t.inactive}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -274,14 +284,14 @@ export default function CuisineCategoriesListPage() {
                     onClick={() => setActiveFilter('All')}
                     className="text-[11px] font-medium text-gray-500 hover:text-gray-700"
                   >
-                    Clear
+                    {t.clear}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsFilterOpen(false)}
                     className="rounded-lg bg-purple-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-purple-700"
                   >
-                    Apply
+                    {t.apply}
                   </button>
                 </div>
               </div>
@@ -293,13 +303,13 @@ export default function CuisineCategoriesListPage() {
           <table className="w-full min-w-[820px] text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/70">
-                <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">SI</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Image</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Cuisine ID</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Cuisine Name</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Order</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Active</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Action</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.sl}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.image}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.cuisineId}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.cuisineName}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.displayOrder}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.active}</th>
+                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.actions}</th>
               </tr>
             </thead>
             <tbody>
@@ -354,12 +364,40 @@ export default function CuisineCategoriesListPage() {
               {!loading && !fetchError && filteredItems.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-10 text-center text-sm text-gray-400">
-                    No cuisine categories found.
+                    {t.noCuisineCategoriesFound}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-4 py-3">
+          <p className="text-xs text-gray-500">
+            {t.page}{' '}
+            <span className="font-semibold text-gray-700">{page}</span> {t.of}{' '}
+            <span className="font-semibold text-gray-700">{totalPages}</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft size={14} />
+              {t.prev}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t.next}
+              <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

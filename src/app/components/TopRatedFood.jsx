@@ -38,18 +38,41 @@ export default function TopRatedFood() {
         const list =
           payload?.data?.foods ||
           payload?.data?.top_foods ||
+          payload?.data?.items ||
           payload?.data ||
           payload?.foods ||
           payload?.top_foods ||
+          payload?.items ||
           payload ||
           [];
 
         const normalized = (Array.isArray(list) ? list : []).slice(0, 8).map((f, idx) => ({
           id: f?.id ?? f?.food_id ?? f?.menu_item_id ?? `${idx}`,
-          name: String(f?.name || f?.food_name || f?.title || '').trim() || 'N/A',
-          rating: Number(f?.rating ?? f?.avg_rating ?? f?.avgRating ?? 0) || 0,
-          reviews: Number(f?.reviews ?? f?.review_count ?? f?.rating_count ?? 0) || 0,
-          image: toAbsoluteAssetUrl(f?.image_url || f?.image || f?.photo_url || f?.photo || ''),
+          name: String(f?.name || f?.food_name || f?.title || f?.menu_item_name || '').trim() || 'N/A',
+          rating:
+            Number(
+              f?.rating ??
+              f?.avg_rating ??
+              f?.avgRating ??
+              f?.rating_score ??
+              0
+            ) || 0,
+          reviews:
+            Number(
+              f?.reviews ??
+              f?.review_count ??
+              f?.rating_count ??
+              f?.order_items_count ??
+              0
+            ) || 0,
+          image: toAbsoluteAssetUrl(
+            f?.menu_item_image_url ||
+              f?.image_url ||
+              f?.image ||
+              f?.photo_url ||
+              f?.photo ||
+              ''
+          ),
         }));
 
         if (!cancelled) setFoods(normalized);
@@ -88,9 +111,12 @@ export default function TopRatedFood() {
             >
               <div className="mb-1.5">
                 <img
-                  src={food.image || '/images/food.webp'}
+                  src={food.image || '/icons/food.png'}
                   alt={food.name}
                   className="w-14 h-14 rounded-lg object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = '/icons/food.png';
+                  }}
                 />
               </div>
 

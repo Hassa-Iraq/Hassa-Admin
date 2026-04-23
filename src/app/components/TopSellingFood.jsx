@@ -39,16 +39,25 @@ export default function TopSellingFoods() {
         const list =
           payload?.data?.foods ||
           payload?.data?.top_foods ||
+          payload?.data?.items ||
           payload?.data ||
           payload?.foods ||
           payload?.top_foods ||
+          payload?.items ||
           payload ||
           [];
 
         const normalized = (Array.isArray(list) ? list : []).slice(0, 6).map((f, idx) => ({
           id: f?.id ?? f?.food_id ?? f?.menu_item_id ?? `${idx}`,
-          name: String(f?.name || f?.food_name || f?.title || '').trim() || 'N/A',
-          image: toAbsoluteAssetUrl(f?.image_url || f?.image || f?.photo_url || f?.photo || ''),
+          name: String(f?.name || f?.food_name || f?.title || f?.menu_item_name || '').trim() || 'N/A',
+          image: toAbsoluteAssetUrl(
+            f?.menu_item_image_url ||
+              f?.image_url ||
+              f?.image ||
+              f?.photo_url ||
+              f?.photo ||
+              ''
+          ),
         }));
 
         if (!cancelled) setFoods(normalized);
@@ -87,9 +96,12 @@ export default function TopSellingFoods() {
             >
               <div className="mb-1.5 w-full">
                 <img
-                  src={food.image || '/images/food.webp'}
+                  src={food.image || '/icons/food.png'}
                   alt={food.name}
                   className="w-full h-20 rounded-lg object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = '/icons/food.png';
+                  }}
                 />
               </div>
 

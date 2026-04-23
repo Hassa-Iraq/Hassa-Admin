@@ -10,6 +10,7 @@ export default function UserStatistics() {
     { name: 'Delivery Man', value: 0, color: '#f87171' },
   ]);
   const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState('overall'); // overall | this_month | this_week | today
 
   useEffect(() => {
     let cancelled = false;
@@ -18,7 +19,7 @@ export default function UserStatistics() {
       setLoading(true);
       try {
         const token = localStorage.getItem('token') || '';
-        const res = await fetch(`/api/admin/analytics/statistics?filter=overall`, {
+        const res = await fetch(`/api/admin/analytics/statistics?filter=${encodeURIComponent(filter)}`, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
@@ -34,6 +35,7 @@ export default function UserStatistics() {
           raw?.customers_count ??
           raw?.customersCount ??
           raw?.total_customers ??
+          raw?.customers_registered ??
           0;
 
         const restaurants =
@@ -42,6 +44,7 @@ export default function UserStatistics() {
           raw?.restaurants_count ??
           raw?.restaurantsCount ??
           raw?.total_restaurants ??
+          raw?.restaurants_registered ??
           0;
 
         const deliveryMan =
@@ -53,6 +56,7 @@ export default function UserStatistics() {
           raw?.deliveryMenCount ??
           raw?.total_delivery_men ??
           raw?.total_deliverymen ??
+          raw?.delivery_men_registered ??
           0;
 
         if (!cancelled) {
@@ -78,15 +82,23 @@ export default function UserStatistics() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [filter]);
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
+  const hasAnyValue = total > 0;
 
   const COLORS = ['#7c3aed', '#14b8a6', '#f87171'];
+  const placeholderData = useMemo(
+    () => [{ name: 'No Data', value: 1, color: '#e5e7eb' }],
+    []
+  );
 
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+    // Hide tiny labels to avoid clipping/overlap near edges.
+    if (!Number.isFinite(percent) || percent < 0.03) return null;
     const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    // Keep labels comfortably inside the donut ring.
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.35;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -95,9 +107,12 @@ export default function UserStatistics() {
         x={x}
         y={y}
         fill="white"
-        textAnchor={x > cx ? 'start' : 'end'}
+        textAnchor="middle"
         dominantBaseline="central"
-        className="text-sm font-semibold"
+        className="text-[11px] font-semibold"
+        stroke="rgba(0,0,0,0.25)"
+        strokeWidth={2}
+        paintOrder="stroke"
       >
         {`${(percent * 100).toFixed(1)}%`}
       </text>
@@ -130,11 +145,15 @@ export default function UserStatistics() {
       {/* Overall Dropdown */}
       <div className="flex justify-end mb-4">
         <div className="relative w-32">
-          <select className="appearance-none w-full bg-white border border-[#8A8A9E80] rounded-lg px-4 py-2 pr-10 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer">
-            <option>Overall</option>
-            <option>This Month</option>
-            <option>This Week</option>
-            <option>Today</option>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="appearance-none w-full bg-white border border-[#8A8A9E80] rounded-lg px-4 py-2 pr-10 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+          >
+            <option value="overall">Overall</option>
+            <option value="this_month">This Month</option>
+            <option value="this_year">This Year</option>
+            <option value="today">Today</option>
           </select>
           <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>
@@ -146,25 +165,37 @@ export default function UserStatistics() {
           Loading...
         </div>
       ) : (
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={renderCustomLabel}
-            outerRadius={120}
-            innerRadius={70}
-            fill="#8884d8"
-            dataKey="value"
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index]} />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
+        <div className="relative">
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={hasAnyValue ? data : placeholderData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={hasAnyValue ? renderCustomLabel : undefined}
+                outerRadius={120}
+                innerRadius={70}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {(hasAnyValue ? data : placeholderData).map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={hasAnyValue ? COLORS[index] : entry.color}
+                  />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+
+          {!hasAnyValue && (
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <div className="text-2xl font-bold text-gray-800">0</div>
+              <div className="mt-1 text-xs text-gray-500">No data for this period</div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Custom Legend */}

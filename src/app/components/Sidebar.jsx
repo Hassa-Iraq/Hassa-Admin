@@ -629,6 +629,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Customer Wallet': 'customerWallet', 'Vendor Wallet': 'vendorWallet', 'Driver Wallet': 'driverWallet', 'Add Fund': 'addFund',
     'All Apartments': 'allEmployees', 'Add New': 'addNewRestaurant',
     'Add New Item': 'addNewItem',
+    'List': 'foodList',
     'Items options & add-ons': 'itemsOptionsAndAddons',
     'Category': 'category',
     'Sub category': 'subCategory',

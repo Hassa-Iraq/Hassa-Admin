@@ -138,13 +138,24 @@ export default function NewJoiningRequestsPage() {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.message || 'Failed to approve request');
 
-      setRows((prev) =>
-        prev.map((row) =>
-          String(row.id) === String(id)
-            ? { ...row, status: 'approved' }
-            : row
-        )
-      );
+      if (tab === 'pending') {
+        setRows((prev) => {
+          const next = prev.filter((row) => String(row.id) !== String(id));
+          if (next.length === 0 && page > 1) {
+            setPage((p) => Math.max(1, p - 1));
+          }
+          return next;
+        });
+        setTotalCount((prev) => Math.max(0, Number(prev || 0) - 1));
+      } else {
+        setRows((prev) =>
+          prev.map((row) =>
+            String(row.id) === String(id)
+              ? { ...row, status: 'approved' }
+              : row
+          )
+        );
+      }
       toast.success('Restaurant approved successfully.');
     } catch (e) {
       toast.error(e?.message || 'Failed to approve request');
@@ -544,13 +555,24 @@ export default function NewJoiningRequestsPage() {
                             throw new Error(payload?.message || 'Failed to reject request');
                           }
 
-                          setRows((prev) =>
-                            prev.map((row) =>
-                              String(row.id) === String(selectedRejectId)
-                                ? { ...row, status: 'rejected', raw: { ...row.raw, rejection_reason: rejectReason.trim() } }
-                                : row
-                            )
-                          );
+                          if (tab === 'pending') {
+                            setRows((prev) => {
+                              const next = prev.filter((row) => String(row.id) !== String(selectedRejectId));
+                              if (next.length === 0 && page > 1) {
+                                setPage((p) => Math.max(1, p - 1));
+                              }
+                              return next;
+                            });
+                            setTotalCount((prev) => Math.max(0, Number(prev || 0) - 1));
+                          } else {
+                            setRows((prev) =>
+                              prev.map((row) =>
+                                String(row.id) === String(selectedRejectId)
+                                  ? { ...row, status: 'rejected', raw: { ...row.raw, rejection_reason: rejectReason.trim() } }
+                                  : row
+                              )
+                            );
+                          }
 
                           toast.success('Restaurant rejected successfully.');
                           setRejectStep('closed');

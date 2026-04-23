@@ -79,6 +79,7 @@ const en = {
   manageOrdersSubtitle: 'Manage all active and scheduled orders',
   searchingDeliverymenOrders: 'Searching for Deliverymen Orders',
   foodList: 'Food List',
+  addNewItem: 'Add New Item',
   categoryList: 'Category List',
   subCategoryList: 'Sub Category List',
   newFood: '+ New Food',

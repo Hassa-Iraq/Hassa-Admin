@@ -79,6 +79,7 @@ const ar = {
   manageOrdersSubtitle: 'إدارة جميع الطلبات النشطة والمجدولة',
   searchingDeliverymenOrders: 'البحث عن طلبات عمال التوصيل',
   foodList: 'قائمة الأطعمة',
+  addNewItem: 'إضافة عنصر جديد',
   categoryList: 'قائمة التصنيفات',
   subCategoryList: 'قائمة التصنيفات الفرعية',
   newFood: '+ طعام جديد',

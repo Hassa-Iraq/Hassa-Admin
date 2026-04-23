@@ -79,6 +79,7 @@ const ku = {
   manageOrdersSubtitle: 'بەڕێوەبردنی هەموو داواکاریە چالاکەکان و خشتەبەندکراوەکان',
   searchingDeliverymenOrders: 'گەڕان بۆ داواکاریەکانی گەیەنەرەکان',
   foodList: 'لیستی خواردنەکان',
+  addNewItem: 'زیادکردنی بەرهەمی نوێ',
   categoryList: 'لیستی پۆلەکان',
   subCategoryList: 'لیستی پۆلی لاوەکی',
   newFood: '+ خواردنی نوێ',

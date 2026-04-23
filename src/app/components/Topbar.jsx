@@ -115,6 +115,7 @@ export default function Topbar({ title, titleKey, subtitle, subtitleKey, rightCo
   const [profileOpen, setProfileOpen] = useState(false);
   const [admin, setAdmin] = useState({ name: '', email: '', image: '' });
   const [profileReady, setProfileReady] = useState(false);
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(null);
   const langRef = useRef(null);
   const profileRef = useRef(null);
 
@@ -299,6 +300,79 @@ export default function Topbar({ title, titleKey, subtitle, subtitleKey, rightCo
     hydrateAdmin();
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    let intervalId;
+
+    const parseCount = (data) => {
+      const total =
+        data?.data?.total ??
+        data?.total ??
+        data?.data?.total_size ??
+        data?.total_size ??
+        data?.data?.count ??
+        data?.count ??
+        null;
+      const parsed = Number(total);
+      if (Number.isFinite(parsed)) return parsed;
+
+      const list =
+        data?.data?.orders ||
+        data?.data?.list ||
+        data?.orders ||
+        data?.list ||
+        data?.data ||
+        [];
+      return Array.isArray(list) ? list.length : 0;
+    };
+
+    const fetchPendingOrdersCount = async () => {
+      try {
+        const token = localStorage.getItem('token') || '';
+        const params = new URLSearchParams({
+          page: '1',
+          // Prefer counting the returned list when backend omits total/total_size.
+          // Large enough for typical pending volumes in admin UI.
+          limit: '200',
+          status: 'Pending',
+          q: '',
+          date_from: '',
+          date_to: '',
+          restaurant_id: '',
+          user_id: '',
+        });
+        const response = await fetch(`/api/orders/?${params.toString()}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        const list =
+          data?.data?.orders ||
+          data?.data?.list ||
+          data?.orders ||
+          data?.list ||
+          data?.data ||
+          [];
+        const listCount = Array.isArray(list) ? list.length : 0;
+        const totalCount = parseCount(data);
+        const count = totalCount > 0 ? totalCount : listCount;
+        if (mounted) setPendingOrdersCount(count);
+      } catch {
+        // Keep last known count.
+      }
+    };
+
+    fetchPendingOrdersCount();
+    intervalId = window.setInterval(fetchPendingOrdersCount, 30_000);
+
+    return () => {
+      mounted = false;
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, []);
+
   const handleLogout = () => {
     try {
       localStorage.removeItem('token');
@@ -343,10 +417,21 @@ export default function Topbar({ title, titleKey, subtitle, subtitleKey, rightCo
           </div>
 
           <div className="relative">
-            <ShoppingCart className="w-5 h-5 text-purple-600" />
-            <span className={`absolute -top-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center ${isRTL ? '-left-1' : '-right-1'}`}>
-              2
-            </span>
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard/orders/pending')}
+              className="relative inline-flex"
+              aria-label="Pending orders"
+            >
+              <ShoppingCart className="w-5 h-5 text-purple-600" />
+              {pendingOrdersCount !== null && (
+                <span
+                  className={`absolute -top-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-4 h-4 px-1 flex items-center justify-center ${isRTL ? '-left-1' : '-right-1'}`}
+                >
+                  {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
+                </span>
+              )}
+            </button>
           </div>
 
           {/* Language Selector */}

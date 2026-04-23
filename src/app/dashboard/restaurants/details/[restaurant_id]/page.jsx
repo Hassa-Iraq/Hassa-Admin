@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import axios from 'axios';
 import Topbar from '@/app/components/Topbar';
 import { API_BASE_URL } from '@/app/config';
@@ -154,6 +155,13 @@ export default function RestaurantDetailsPage() {
       <Topbar
         title="Restaurant Details"
         subtitle="View selected restaurant information"
+        rightContent={
+          <Link href="/dashboard/restaurants/list">
+            <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+              Back to list
+            </button>
+          </Link>
+        }
       />
 
       <div className="pt-36 px-4 sm:px-6 pb-10">

@@ -1,9 +1,10 @@
-export default function OrderStats({ children }) {
+export default function OrderStats({ children, rightContent = null }) {
   return (
-    <div className="bg-white rounded-xl border border-[#8A8A9E80] shadow-sm">
+    <div className="ui-card">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#8A8A9E80]">
+      <div className="ui-card-header flex items-center justify-between gap-3 px-4 py-3">
         <h3 className="font-semibold text-gray-800">Order Statistics</h3>
+        {rightContent}
       </div>
 
       {/* Cards */}

@@ -13,10 +13,12 @@ import TopSellingFoods from "../components/TopSellingFood";
 import Topbar from "../components/Topbar";
 import { useLanguage } from "../i18n/LanguageContext";
 import { useEffect, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 export default function Dashboard() {
     const { t } = useLanguage();
     const [orderStatsCards, setOrderStatsCards] = useState(statsTemplate);
+    const [orderStatsFilter, setOrderStatsFilter] = useState('overall');
 
     useEffect(() => {
       let cancelled = false;
@@ -24,14 +26,12 @@ export default function Dashboard() {
       const fetchOrderStats = async () => {
         try {
           const token = localStorage.getItem('token') || '';
-          const res = await fetch(
-          `/api/admin/analytics/order-statistics?filter=today`,
-            {
-              headers: {
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              },
-            }
-          );
+          const params = new URLSearchParams({ filter: orderStatsFilter });
+          const res = await fetch(`/api/admin/analytics/order-statistics?${params.toString()}`, {
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          });
           const payload = await res.json();
           if (!res.ok) {
             throw new Error(payload?.message || 'Failed to fetch order statistics');
@@ -119,7 +119,7 @@ export default function Dashboard() {
       return () => {
         cancelled = true;
       };
-    }, []);
+    }, [orderStatsFilter]);
 
     return (
         <>
@@ -128,7 +128,23 @@ export default function Dashboard() {
                 subtitle={t.welcomeBack}
             />
             <div className="pt-32 md:pt-36 px-4 md:px-6 space-y-6 pb-16">
-                <OrderStats>
+                <OrderStats
+                  rightContent={
+                    <div className="relative w-32">
+                      <select
+                        value={orderStatsFilter}
+                        onChange={(e) => setOrderStatsFilter(e.target.value)}
+                        className="appearance-none w-full bg-white border border-[#8A8A9E80] rounded-lg px-4 py-2 pr-10 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                      >
+                        <option value="overall">{t.overall || 'Overall'}</option>
+                        <option value="this_month">{t.thisMonth || 'This Month'}</option>
+                        <option value="this_year">{t.thisYear || 'This Year'}</option>
+                        <option value="today">{t.today || 'Today'}</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  }
+                >
                     {orderStatsCards.map((s, i) => (
                         <StatCard key={i} {...s} index={i} />
                     ))}

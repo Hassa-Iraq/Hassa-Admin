@@ -236,11 +236,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Items options & add-ons': ['restaurants'],
     Categories: ['restaurants'],
     Category: ['restaurants'],
-    'Sub category': ['restaurants'],
+    // 'Sub category': ['restaurants'], // commented per request (hide subcategory screens)
     'Cuisine Categories': ['restaurants'],
     'Add Cuisine': ['restaurants'],
     'Add Category': ['restaurants'],
-    'Add Subcategory': ['restaurants'],
+    // 'Add Subcategory': ['restaurants'], // commented per request (hide subcategory screens)
     Reviews: ['restaurants'],
     Customers: ['customers'],
     Wallet: ['collect_cash', 'restaurant_withdraws', 'disbursement'],
@@ -351,12 +351,12 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'List': '/dashboard/foods/list',
     'Items options & add-ons': '/dashboard/foods/menu-item-options',
     'Category': '/dashboard/foods/categories',
-    'Sub category': '/dashboard/foods/sub-categories',
+    // 'Sub category': '/dashboard/foods/sub-categories', // commented per request
     'Cuisine Categories': '/dashboard/foods/cuisine-categories',
     'Add Cuisine': '/dashboard/foods/cuisine-categories/add',
     'Cuisine List': '/dashboard/foods/cuisine-categories',
     'Add Category': '/dashboard/foods/categories/add',
-    'Add Subcategory': '/dashboard/foods/sub-categories/add',
+    // 'Add Subcategory': '/dashboard/foods/sub-categories/add', // commented per request
     'Reviews': '/dashboard/foods/reviews',
     'Employee Role': '/dashboard/employees/role',
     'Add New Employee': '/dashboard/employees/add',
@@ -445,15 +445,16 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       return;
     }
 
-    if (pathname === '/dashboard/foods/sub-categories') {
-      setActiveItem('Sub category');
-      return;
-    }
-
-    if (pathname === '/dashboard/foods/sub-categories/add') {
-      setActiveItem('Add Subcategory');
-      return;
-    }
+    // Subcategory screens commented per request (keep code, hide navigation)
+    // if (pathname === '/dashboard/foods/sub-categories') {
+    //   setActiveItem('Sub category');
+    //   return;
+    // }
+    //
+    // if (pathname === '/dashboard/foods/sub-categories/add') {
+    //   setActiveItem('Add Subcategory');
+    //   return;
+    // }
 
     if (pathname === '/dashboard/foods/cuisine-categories') {
       setActiveItem('Cuisine List');
@@ -632,12 +633,12 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'List': 'foodList',
     'Items options & add-ons': 'itemsOptionsAndAddons',
     'Category': 'category',
-    'Sub category': 'subCategory',
+    // 'Sub category': 'subCategory', // commented per request
     'Cuisine Categories': 'cuisineCategories',
     'Add Cuisine': 'addCuisine',
     'Cuisine List': 'cuisineCategories',
     'Add Category': 'addCategory',
-    'Add Subcategory': 'addSubcategory',
+    // 'Add Subcategory': 'addSubcategory', // commented per request
     'Employee Role': 'employeeRole',
     'Add New Employee': 'addNewEmployee',
     'Employee List': 'employeeList',
@@ -688,7 +689,13 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           key: 'foodManagement',
           submenu: ['Add New Item', 'List', 'Items options & add-ons'],
         },
-        { icon: SIDEBAR_ICONS.categories, label: 'Categories', tKey: 'categories', key: 'categoriesManagement', submenu: ['Add Category', 'Category', 'Add Subcategory', 'Sub category'] },
+        {
+          icon: SIDEBAR_ICONS.categories,
+          label: 'Categories',
+          tKey: 'categories',
+          key: 'categoriesManagement',
+          submenu: ['Add Category', 'Category', /* 'Add Subcategory', 'Sub category', */],
+        },
         { icon: SIDEBAR_ICONS.categories, label: 'Cuisine Categories', tKey: 'cuisineCategories', key: 'cuisineCategories', submenu: ['Add Cuisine', 'Cuisine List'] },
         { icon: SIDEBAR_ICONS.reviews, label: 'Reviews', tKey: 'reviews', hasSubmenu: false },
       ]

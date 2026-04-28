@@ -58,7 +58,6 @@ export default function CustomersPage() {
   const { t } = useLanguage();
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [apiRows, setApiRows] = useState([]);
-  const [statusMap, setStatusMap] = useState({});
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
   const [page, setPage] = useState(1);
@@ -221,20 +220,10 @@ export default function CustomersPage() {
     URL.revokeObjectURL(url);
   };
 
-  useEffect(() => {
-    setStatusMap(
-      Object.fromEntries(rows.map((row) => [row.key, row.active]))
-    );
-  }, [rows]);
-
   const updateFilter = (event) => {
     const { name, value } = event.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
     if (name === 'search') setPage(1);
-  };
-
-  const toggleStatus = (key) => {
-    setStatusMap((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
@@ -266,7 +255,7 @@ export default function CustomersPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1150px] text-sm">
+          <table className="w-full min-w-[1050px] text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/70">
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.sl}</th>
@@ -275,14 +264,13 @@ export default function CustomersPage() {
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.totalOrders}</th>
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.joiningDate}</th>
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.totalOrderAmount}</th>
-                <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.orderStatus}</th>
                 <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">{t.actions}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={7} className="px-3 py-8 text-center text-sm text-gray-500">
                     {t.loadingCustomers}
                   </td>
                 </tr>
@@ -290,17 +278,16 @@ export default function CustomersPage() {
 
               {!loading && fetchError && (
                 <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-sm text-rose-500">
+                  <td colSpan={7} className="px-3 py-8 text-center text-sm text-rose-500">
                     {fetchError}
                   </td>
                 </tr>
               )}
 
               {!loading && !fetchError && rows.map((row, index) => {
-                const key = row.key;
                 return (
                   <tr
-                    key={key}
+                    key={row.key}
                     onClick={() => router.push(`/dashboard/customers/${row.id}`)}
                     className="cursor-pointer border-b border-gray-100 hover:bg-gray-50 last:border-b-0"
                   >
@@ -330,20 +317,6 @@ export default function CustomersPage() {
                     <td className="px-3 py-3 text-xs text-[#1E1E24]">{row.totalAmount}</td>
                     <td className="px-3 py-3">
                       <button
-                        onClick={() => toggleStatus(key)}
-                        className={`relative inline-flex h-4.5 w-8 items-center rounded-full transition-colors ${
-                          statusMap[key] ? 'bg-[#7C3AED]' : 'bg-gray-300'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                            statusMap[key] ? 'translate-x-[17px]' : 'translate-x-0.5'
-                          }`}
-                        />
-                      </button>
-                    </td>
-                    <td className="px-3 py-3">
-                      <button
                         onClick={(event) => {
                           event.stopPropagation();
                           router.push(`/dashboard/customers/${row.id}`);
@@ -359,7 +332,7 @@ export default function CustomersPage() {
 
               {!loading && !fetchError && rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={7} className="px-3 py-8 text-center text-sm text-gray-500">
                     {t.noCustomersFound}
                   </td>
                 </tr>

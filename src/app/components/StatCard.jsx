@@ -1,5 +1,6 @@
-export default function StatCard({ title, value , color, bg, icon, index }) {
+export default function StatCard({ title, value, color, bg, icon, index, loading = false }) {
   const isBottomRow = index >= 4;
+  const showSkeleton = loading || value === null || typeof value === 'undefined';
 
   return (
     <div
@@ -33,7 +34,11 @@ export default function StatCard({ title, value , color, bg, icon, index }) {
             isBottomRow ? "text-2xl" : "text-2xl"
           }`}
         >
-          {value}
+          {showSkeleton ? (
+            <span className="inline-block h-7 w-12 rounded-md bg-gray-200/80 animate-pulse align-middle" />
+          ) : (
+            value
+          )}
         </h2>
       </div>
     </div>

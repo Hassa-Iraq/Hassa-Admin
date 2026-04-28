@@ -519,6 +519,11 @@ export default function AddFoodPage() {
                 ))}
               </select>
             </FormField>
+            {/*
+              Sub Category field hidden per request.
+              Code kept (commented) to avoid removing functionality.
+            */}
+            {/*
             <FormField label="Sub Category">
               <select
                 name="subcategoryId"
@@ -535,6 +540,7 @@ export default function AddFoodPage() {
                 ))}
               </select>
             </FormField>
+            */}
           </div>
         </Card>
 

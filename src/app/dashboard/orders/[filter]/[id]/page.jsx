@@ -80,6 +80,9 @@ const DELIVERY_FIELD_LABELS = {
   contact_email: 'Contact email',
 };
 
+// Temporary: hide delivery proof section from UI.
+const ENABLE_DELIVERY_PROOF = false;
+
 function titleCaseDeliveryKey(key) {
   return String(key || '')
     .replace(/_/g, ' ')
@@ -367,7 +370,7 @@ export default function OrderDetailPage() {
       />
 
       <div className="pt-36 px-6 pb-10">
-        {isProofModalOpen && (
+        {ENABLE_DELIVERY_PROOF && isProofModalOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
             role="dialog"
@@ -653,18 +656,20 @@ export default function OrderDetailPage() {
                 ) : null}
               </div>
 
-              <div className="rounded-xl bg-[#F5F5FA] p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-[#1E1E24]">Delivery Proof</h3>
-                  <button
-                    type="button"
-                    onClick={() => setIsProofModalOpen(true)}
-                    className="rounded-lg bg-[#7C3AED] px-3 py-1 text-xs font-semibold text-white hover:bg-[#6D28D9]"
-                  >
-                    Add
-                  </button>
+              {ENABLE_DELIVERY_PROOF ? (
+                <div className="rounded-xl bg-[#F5F5FA] p-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-[#1E1E24]">Delivery Proof</h3>
+                    <button
+                      type="button"
+                      onClick={() => setIsProofModalOpen(true)}
+                      className="rounded-lg bg-[#7C3AED] px-3 py-1 text-xs font-semibold text-white hover:bg-[#6D28D9]"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               <div className="rounded-xl bg-[#F5F5FA] p-4">
                 <h3 className="text-sm font-semibold text-[#1E1E24]">Restaurant Info</h3>

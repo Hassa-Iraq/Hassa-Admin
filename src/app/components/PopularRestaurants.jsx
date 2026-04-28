@@ -49,19 +49,10 @@ export default function MostPopularRestaurants() {
           [];
 
         const normalized = (Array.isArray(list) ? list : []).slice(0, 5).map((r, idx) => ({
-          id: r?.id ?? r?.restaurant_id ?? r?.vendor_id ?? `${idx}`,
+          id: r?.restaurant_id ?? r?.id ?? r?.vendor_id ?? `${idx}`,
+          rank: Number(r?.rank ?? r?.position ?? idx + 1) || idx + 1,
           name: normalizeName(r),
           image: toAbsoluteAssetUrl(r?.logo_url || r?.image_url || r?.image || r?.photo_url || ''),
-          favorites:
-            Number(
-              r?.favorites ??
-                r?.favorite_count ??
-                r?.liked_count ??
-                r?.likes ??
-                r?.order_count ??
-                r?.orders ??
-                0
-            ) || 0,
         }));
 
         if (!cancelled) setRestaurants(normalized);
@@ -98,7 +89,7 @@ export default function MostPopularRestaurants() {
           >
             <option value="overall">Overall</option>
             <option value="this_month">This Month</option>
-            <option value="this_week">This Week</option>
+            <option value="this_year">This Year</option>
             <option value="today">Today</option>
           </select>
           <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -131,7 +122,7 @@ export default function MostPopularRestaurants() {
 
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-gray-900">
-                  {restaurant.favorites}
+                  {restaurant.rank}
                 </span>
                 <Heart className="w-5 h-5 text-red-500 fill-red-500" />
               </div>

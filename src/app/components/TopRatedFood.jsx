@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react';
-import { Star } from 'lucide-react';
+import { ChevronDown, Star } from 'lucide-react';
 import { useLanguage } from '@/app/i18n/LanguageContext';
 import { API_BASE_URL } from '@/app/config';
 
@@ -16,6 +16,7 @@ const toAbsoluteAssetUrl = (value) => {
 
 export default function TopRatedFood() {
   const { t } = useLanguage();
+  const [filter, setFilter] = useState('overall');
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +28,8 @@ export default function TopRatedFood() {
       setLoading(true);
       try {
         const token = localStorage.getItem('token') || '';
-        const res = await fetch('/api/admin/analytics/top-rated-food?filter=overall', {
+        const params = new URLSearchParams({ filter });
+        const res = await fetch(`/api/admin/analytics/top-rated-food?${params.toString()}`, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
@@ -87,7 +89,7 @@ export default function TopRatedFood() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [filter]);
 
   return (
     <div className="bg-white rounded-xl border border-[#8A8A9E80] shadow-sm">
@@ -97,6 +99,19 @@ export default function TopRatedFood() {
         <h2 className="text-lg font-bold text-gray-900">
           {t.topRatedFood}
         </h2>
+        <div className="relative w-32">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="appearance-none w-full bg-white border border-[#8A8A9E80] rounded-lg px-4 py-2 pr-10 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+          >
+            <option value="overall">{t.overall || 'Overall'}</option>
+            <option value="this_month">{t.thisMonth || 'This Month'}</option>
+            <option value="this_year">{t.thisYear || 'This Year'}</option>
+            <option value="today">{t.today || 'Today'}</option>
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        </div>
       </div>
 
       <div className="p-6">

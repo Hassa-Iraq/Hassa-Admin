@@ -48,6 +48,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
   const [page, setPage] = useState(1);
   const [orders, setOrders] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [totalPagesFromApi, setTotalPagesFromApi] = useState(1);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
   const PER_PAGE = 20;
@@ -145,10 +146,11 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
       setFetchError('');
       try {
         const token = localStorage.getItem('token');
+        const statusParam = filterSlug && filterSlug !== 'all' ? filterSlug : '';
         const params = new URLSearchParams({
           page: String(page),
           limit: String(PER_PAGE),
-          status: filterLabel || 'All',
+          ...(statusParam ? { status: statusParam } : {}),
           q: search.trim(),
           date_from: '',
           date_to: '',
@@ -178,7 +180,9 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
         const normalized = rawOrders.map(normalizeOrder);
         setOrders(normalized);
 
+        const pagination = data?.data?.pagination ?? data?.pagination ?? {};
         const apiTotal =
+          pagination?.total ??
           data?.data?.total ??
           data?.total ??
           data?.data?.total_size ??
@@ -186,9 +190,19 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
           normalized.length;
         const parsedTotal = Number(apiTotal);
         setTotalCount(Number.isFinite(parsedTotal) ? parsedTotal : normalized.length);
+
+        const apiTotalPages =
+          pagination?.totalPages ??
+          pagination?.total_pages ??
+          data?.data?.totalPages ??
+          data?.totalPages ??
+          null;
+        const parsedTotalPages = Number(apiTotalPages);
+        setTotalPagesFromApi(Number.isFinite(parsedTotalPages) && parsedTotalPages > 0 ? parsedTotalPages : 1);
       } catch (error) {
         setOrders([]);
         setTotalCount(0);
+        setTotalPagesFromApi(1);
         setFetchError(error?.message || 'Failed to fetch orders');
       } finally {
         setLoading(false);
@@ -214,7 +228,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
     return base;
   }, [orders, orderTypeFilter, paymentStatusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
+  const totalPages = Math.max(totalPagesFromApi || 1, Math.ceil(totalCount / PER_PAGE), 1);
   const paginatedOrders = filteredOrders;
 
   const handleExport = () => {

@@ -26,6 +26,26 @@ const toAbsoluteAssetUrl = (value) => {
   return `${API_BASE_URL}/${trimmed}`;
 };
 
+const humanizeEnum = (value) => {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  return raw
+    .replace(/_/g, ' ')
+    .replace(/-/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+};
+
+const toOrderTypeUi = (orderTypeValue) => {
+  const raw = String(orderTypeValue || '').toLowerCase();
+  if (!raw) return '—';
+  if (raw.includes('dine')) return 'Dine In';
+  if (raw.includes('delivery')) return 'Home Delivery';
+  return humanizeEnum(orderTypeValue) || '—';
+};
+
 /** Preferred order for known delivery_address keys; any extra keys from API are appended after. */
 const DELIVERY_KEY_ORDER = [
   'complete_address',
@@ -298,13 +318,14 @@ export default function OrderDetailPage() {
       })
     : '-';
 
-  const paymentStatus = order?.payment_status || 'Unpaid';
+  const paymentType = humanizeEnum(order?.payment_type || order?.paymentType || '');
+  const paymentStatus = humanizeEnum(order?.payment_status || order?.paymentStatus || '') || '—';
   const orderStatus = order?.status
     ? mapApiOrderStatusToUiLabel(order.status)
     : '-';
-  const paymentMethod = order?.payment_method || 'N/A';
+  const paymentMethod = humanizeEnum(order?.payment_method || order?.paymentMethod || '') || paymentType || '—';
   const referenceCode = order?.reference_code || order?.reference || '-';
-  const orderType = order?.order_type || order?.delivery_type || 'Home Delivery';
+  const orderType = toOrderTypeUi(order?.order_type || order?.delivery_type || order?.type);
   const cutleryRaw = order?.need_cutlery ?? order?.cutlery ?? order?.is_cutlery_required;
   const cutlery = cutleryRaw === true || cutleryRaw === 'yes' ? 'Yes' : 'No';
 
@@ -349,7 +370,15 @@ export default function OrderDetailPage() {
       ? 'text-amber-600'
       : paymentKey === 'failed'
       ? 'text-rose-600'
-      : 'text-indigo-600';
+    : paymentKey === 'refunded'
+      ? 'text-indigo-600'
+    : paymentKey === 'cash'
+      ? 'text-emerald-600'
+    : paymentKey === 'wallet'
+      ? 'text-purple-600'
+    : paymentKey === 'card'
+      ? 'text-indigo-600'
+      : 'text-gray-600';
   const customerImage = toAbsoluteAssetUrl(
     customer?.profile_picture_url ||
     customer?.image_url ||
@@ -505,8 +534,12 @@ export default function OrderDetailPage() {
                     </button>
                     <MetaLine label="Order Type" value={orderType} />
                     <MetaLine label="Payment Method" value={paymentMethod} />
-                    <MetaLine label="Payment Status" value={paymentStatus} valueClass={paymentStatusClass} />
-                    <MetaLine label="Reference Code" value={referenceCode} />
+                    {paymentStatus && paymentStatus !== '—' ? (
+                      <MetaLine label="Payment Status" value={paymentStatus} valueClass={paymentStatusClass} />
+                    ) : null}
+                    {referenceCode && referenceCode !== '-' ? (
+                      <MetaLine label="Reference Code" value={referenceCode} />
+                    ) : null}
                     <MetaLine label="Status" value={orderStatus} valueAsPill pillClass={orderStatusClass} />
                     <MetaLine
                       label="Cutlery"

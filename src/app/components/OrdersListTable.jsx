@@ -33,6 +33,22 @@ const paymentStatusStyles = {
   Unpaid: 'text-amber-500',
   Failed: 'text-rose-500',
   Refunded: 'text-indigo-500',
+  Cash: 'text-emerald-600',
+  Card: 'text-indigo-600',
+  Wallet: 'text-purple-600',
+  Online: 'text-indigo-600',
+};
+
+const humanizeEnum = (value) => {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  return raw
+    .replace(/_/g, ' ')
+    .replace(/-/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
 };
 
 /**
@@ -122,6 +138,9 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
       );
       const statusKey = statusLabel;
 
+      const paymentType = humanizeEnum(item?.payment_type || item?.paymentType || '');
+      const paymentStatus = humanizeEnum(item?.payment_status || item?.paymentStatus || '') || paymentType || 'Unpaid';
+
       return {
         id: item?.id ?? item?.order_id ?? `${page}-${index}`,
         orderId: String(item?.order_number || item?.orderNo || item?.order_id || item?.id || '-'),
@@ -136,8 +155,9 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
         status: statusLabel,
         statusKey,
         orderType: toOrderType(item?.order_type || item?.delivery_type || item?.type),
-        paymentMethod: item?.payment_method || 'Online',
-        paymentStatus: item?.payment_status || 'Unpaid',
+        paymentMethod: humanizeEnum(item?.payment_method || item?.paymentMethod || '') || paymentType || 'Online',
+        paymentStatus,
+        paymentType: paymentType || '',
       };
     };
 
@@ -146,7 +166,15 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
       setFetchError('');
       try {
         const token = localStorage.getItem('token');
-        const statusParam = filterSlug && filterSlug !== 'all' ? filterSlug : '';
+        const statusParamRaw = filterSlug && filterSlug !== 'all' ? filterSlug : '';
+        // Backend expects specific human-readable statuses for these two filters.
+        // Keep other statuses untouched since they already work with current API.
+        const statusParam =
+          statusParamRaw === 'food-on-the-way'
+            ? 'Food on the way'
+            : statusParamRaw === 'offline-payments'
+            ? 'Offline Payments'
+            : statusParamRaw;
         const params = new URLSearchParams({
           page: String(page),
           limit: String(PER_PAGE),

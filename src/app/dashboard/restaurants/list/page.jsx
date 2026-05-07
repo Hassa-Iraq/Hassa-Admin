@@ -270,8 +270,8 @@ export default function RestaurantListPage() {
           normalizeImage(item?.image) ||
           normalizeImage(item?.cover_photo_full_url) ||
           normalizeImage(item?.cover_photo),
-        rating: Number(item?.avg_rating || item?.rating || 0),
-        reviews: Number(item?.rating_count || item?.reviews_count || item?.total_reviews || 0),
+        rating: Number(item?.rating_avg ?? item?.avg_rating ?? item?.rating ?? 0),
+        reviews: Number(item?.rating_count ?? item?.reviews_count ?? item?.total_reviews ?? 0),
         owner: ownerName || item?.owner_name || 'N/A',
         ownerEmail: item?.vendor?.email || item?.owner_email || item?.email || '-',
         // List UI should show phone only (no country label like "PK").

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import axios from 'axios';
 import Topbar from '@/app/components/Topbar';
 import { API_BASE_URL } from '@/app/config';
-import { Bike, Car, CreditCard, FileText, Mail, Phone, UserCircle } from 'lucide-react';
+import { Bike, Car, CreditCard, FileText, Mail, Phone, Star, UserCircle, Wallet } from 'lucide-react';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 
 const DEFAULT_IMAGE = '/default-image.svg';
@@ -37,6 +37,12 @@ const toBool = (value) => {
     if (normalized === 'false' || normalized === 'inactive' || normalized === 'offline') return false;
   }
   return false;
+};
+
+const formatMoney = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '-';
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n);
 };
 
 export default function DeliverymanDetailsPage() {
@@ -90,6 +96,15 @@ export default function DeliverymanDetailsPage() {
       ? driver.additional_data
       : {};
     const isActive = toBool(driver?.is_active ?? driver?.active ?? driver?.status);
+    const stats = driver?.driver_stats && typeof driver.driver_stats === 'object'
+      ? driver.driver_stats
+      : {};
+    const totalOrders =
+      Number(stats?.total_orders ?? driver?.total_orders ?? driver?.orders_completed ?? 0) || 0;
+    const cashInHand = Number(stats?.cash_in_hand ?? stats?.cashInHand ?? 0) || 0;
+    const payableBalance = Number(stats?.payable_balance ?? stats?.payableBalance ?? 0) || 0;
+    const totalWithdrawn = Number(stats?.total_withdrawn ?? stats?.totalWithdrawn ?? 0) || 0;
+    const rating = Number(stats?.rating ?? stats?.avg_rating ?? driver?.avg_rating ?? 0) || 0;
 
     return {
       fullName: pickText(driver?.full_name, driver?.name) || 'N/A',
@@ -110,6 +125,13 @@ export default function DeliverymanDetailsPage() {
         pickText(driver?.driving_license_image_url, driver?.drivingLicenseImageUrl)
       ),
       status: isActive ? 'Active' : 'Inactive',
+      stats: {
+        totalOrders,
+        cashInHand,
+        payableBalance,
+        totalWithdrawn,
+        rating,
+      },
     };
   }, [driver]);
 
@@ -144,8 +166,42 @@ export default function DeliverymanDetailsPage() {
         )}
 
         {!loading && !error && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <div className="col-span-12 rounded-xl border border-gray-100 bg-white p-4 sm:p-6 lg:col-span-8">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
+              <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <StatCard
+                  label="Total Orders"
+                  value={String(viewModel.stats.totalOrders)}
+                  icon={FileText}
+                  iconClass="text-[#7C3AED] bg-purple-50"
+                />
+                <StatCard
+                  label="Cash In Hand"
+                  value={formatMoney(viewModel.stats.cashInHand)}
+                  icon={Wallet}
+                  iconClass="text-amber-600 bg-amber-50"
+                />
+                <StatCard
+                  label="Payable Balance"
+                  value={formatMoney(viewModel.stats.payableBalance)}
+                  icon={CreditCard}
+                  iconClass="text-sky-600 bg-sky-50"
+                />
+                <StatCard
+                  label="Total Withdrawn"
+                  value={formatMoney(viewModel.stats.totalWithdrawn)}
+                  icon={CreditCard}
+                  iconClass="text-emerald-600 bg-emerald-50"
+                />
+                <StatCard
+                  label="Rating"
+                  value={String(viewModel.stats.rating)}
+                  icon={Star}
+                  iconClass="text-rose-600 bg-rose-50"
+                />
+              </section>
+
+              <section className="rounded-xl border border-gray-100 bg-white p-4 sm:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold text-[#1E1E24]">{viewModel.fullName}</h2>
@@ -176,13 +232,14 @@ export default function DeliverymanDetailsPage() {
                 </h3>
                 <p className="text-sm text-gray-700">{viewModel.notes}</p>
               </div>
+              </section>
             </div>
 
-            <div className="col-span-12 space-y-4 lg:col-span-4">
+            <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <AssetPreview title="Driver Image" src={viewModel.driverImage} />
               <AssetPreview title="Vehicle Image" src={viewModel.vehicleImage} />
               <AssetPreview title="Driving License Image" src={viewModel.licenseImage} />
-            </div>
+            </section>
           </div>
         )}
       </div>
@@ -222,6 +279,22 @@ function DetailRow({ icon: Icon, iconClass, label, value }) {
       <span>
         {label}: <span className="font-medium">{value}</span>
       </span>
+    </div>
+  );
+}
+
+function StatCard({ label, value, icon: Icon, iconClass }) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold text-gray-500">{label}</p>
+          <p className="mt-1 text-lg font-semibold text-[#1E1E24]">{value}</p>
+        </div>
+        <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${iconClass}`}>
+          <Icon size={18} />
+        </span>
+      </div>
     </div>
   );
 }

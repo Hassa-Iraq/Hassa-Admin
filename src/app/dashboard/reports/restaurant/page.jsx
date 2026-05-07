@@ -326,7 +326,7 @@ export default function RestaurantReportPage() {
               />
             </div>
             <button
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11px] font-normal text-gray-600 disabled:opacity-60"
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11px] !font-normal !normal-case !tracking-normal text-gray-600 disabled:opacity-60"
               onClick={exportRows}
               disabled={loading || visibleRows.length === 0}
             >

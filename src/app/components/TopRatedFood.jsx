@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Star } from 'lucide-react';
 import { useLanguage } from '@/app/i18n/LanguageContext';
 import { API_BASE_URL } from '@/app/config';
+import { FoodCardSkeletonGrid } from '@/app/components/LoadingSpinner';
 
 const toAbsoluteAssetUrl = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -117,7 +118,7 @@ export default function TopRatedFood() {
       <div className="p-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {loading ? (
-            <div className="col-span-full text-sm text-gray-500">Loading...</div>
+            <FoodCardSkeletonGrid count={8} columnsClass="grid-cols-2 md:grid-cols-4" />
           ) : (
             listToRender.map((food) => (
             <div

@@ -7,6 +7,7 @@ import axios from 'axios';
 import { Mail, Phone, User, Shield, CalendarDays, Pencil } from 'lucide-react';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { API_BASE_URL } from '@/app/config';
+import { CenteredSpinner } from '@/app/components/LoadingSpinner';
 
 const DEFAULT_EMPLOYEE_IMAGE = '/default-image.svg';
 
@@ -125,8 +126,8 @@ export default function EmployeeDetailPage() {
   return (
     <div className="pt-36 pb-8 space-y-4">
       {loading && (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
-          Loading employee details...
+        <div className="rounded-xl border border-gray-200 bg-white p-6">
+          <CenteredSpinner minHeight="12rem" label="Loading employee details" />
         </div>
       )}
 

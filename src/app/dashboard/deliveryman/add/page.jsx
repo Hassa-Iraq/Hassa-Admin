@@ -7,6 +7,7 @@ import axios from 'axios';
 import PhoneCodeSelect from '@/app/components/PhoneCodeSelect';
 import { API_BASE_URL } from '@/app/config';
 import { toast } from 'sonner';
+import { CenteredSpinner } from '@/app/components/LoadingSpinner';
 
 const INITIAL_FORM = {
   firstName: '',
@@ -348,8 +349,8 @@ export default function AddDeliverymanPage() {
         )}
 
         {loadingDriver && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-            Loading deliveryman details...
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-6">
+            <CenteredSpinner minHeight="8rem" label="Loading deliveryman details" />
           </div>
         )}
 

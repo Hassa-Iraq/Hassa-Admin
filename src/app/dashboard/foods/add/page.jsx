@@ -9,6 +9,7 @@ import { API_BASE_URL } from '@/app/config';
 import { toast } from 'sonner';
 import { apiErrorMessage } from '@/app/lib/apiErrorMessage';
 import MenuItemOptionGroupsPanel from '@/app/components/MenuItemOptionGroupsPanel';
+import { CenteredSpinner, LoadingSpinner } from '@/app/components/LoadingSpinner';
 
 const INITIAL_FORM = {
   itemName: '',
@@ -437,8 +438,8 @@ export default function AddFoodPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {loadingItem && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-            Loading menu item details...
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-6">
+            <CenteredSpinner minHeight="8rem" label="Loading menu item details" />
           </div>
         )}
         <section className="rounded-xl border border-gray-200 bg-white p-4">
@@ -501,7 +502,14 @@ export default function AddFoodPage() {
 
         <Card title="Restaurant & Category Info">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <FormField label="Category">
+            <FormField
+              label={
+                <span className="inline-flex items-center gap-2">
+                  Category
+                  {categoriesLoading ? <LoadingSpinner size="xs" label="Loading categories" /> : null}
+                </span>
+              }
+            >
               <select
                 name="categoryId"
                 value={form.categoryId}
@@ -509,9 +517,7 @@ export default function AddFoodPage() {
                 disabled={categoriesLoading}
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#7C3AED] focus:outline-none"
               >
-                <option value="">
-                  {categoriesLoading ? 'Loading categories...' : 'Select Category'}
-                </option>
+                <option value="">{categoriesLoading ? '\u00A0' : 'Select Category'}</option>
                 {categoryOptions.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}

@@ -6,6 +6,7 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import PhoneCodeSelect from '@/app/components/PhoneCodeSelect';
 import { toast } from 'sonner';
+import { CenteredSpinner, LoadingSpinner } from '@/app/components/LoadingSpinner';
 
 const INITIAL_FORM = {
   firstName: '',
@@ -318,8 +319,8 @@ export default function AddEmployeePage() {
     <div className="pt-36 pb-8">
       <form onSubmit={onSubmit} className="space-y-4">
         {loadingEmployee && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-            Loading employee details...
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-6">
+            <CenteredSpinner minHeight="8rem" label="Loading employee details" />
           </div>
         )}
         <section className="rounded-xl border border-gray-200 bg-white">
@@ -342,7 +343,14 @@ export default function AddEmployeePage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-1">
-                  <Field label="Role">
+                  <Field
+                    label={
+                      <span className="inline-flex items-center gap-2">
+                        Role
+                        {rolesLoading ? <LoadingSpinner size="xs" label="Loading roles" /> : null}
+                      </span>
+                    }
+                  >
                     <select
                       name="role"
                       value={form.role}
@@ -350,9 +358,7 @@ export default function AddEmployeePage() {
                       disabled={rolesLoading}
                       className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#7C3AED] focus:outline-none"
                     >
-                      <option value="">
-                        {rolesLoading ? 'Loading roles...' : 'Select Employee Role'}
-                      </option>
+                      <option value="">{rolesLoading ? '\u00A0' : 'Select Employee Role'}</option>
                       {roles.map((role) => (
                         <option key={role.id} value={role.id}>
                           {role.name}

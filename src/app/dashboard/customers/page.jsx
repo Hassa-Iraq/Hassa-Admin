@@ -7,11 +7,12 @@ import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { API_BASE_URL } from '@/app/config';
 import { APP_CURRENCY, formatCurrencyFixed2 } from '@/app/lib/currency';
 import { useLanguage } from '@/app/i18n/LanguageContext';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const INITIAL_FILTERS = {
   search: '',
 };
-const PER_PAGE = 20;
+const PER_PAGE_OPTIONS = [10, 20, 50];
 
 const toAbsoluteAssetUrl = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -61,6 +62,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
@@ -72,7 +74,7 @@ export default function CustomersPage() {
         const token = localStorage.getItem('token') || '';
         const endpoint = `/api/orders/customers?page=${encodeURIComponent(
           String(page)
-        )}&limit=${encodeURIComponent(String(PER_PAGE))}&search=${encodeURIComponent(
+        )}&limit=${encodeURIComponent(String(perPage))}&search=${encodeURIComponent(
           filters.search.trim()
         )}&restaurant_id=&date_from=&date_to=`;
         const response = await fetch(endpoint, {
@@ -148,7 +150,11 @@ export default function CustomersPage() {
 
         setApiRows(rows);
 
+        const paginationMeta = payload?.data?.pagination || payload?.pagination || {};
         const total =
+          paginationMeta.total ??
+          paginationMeta.total_count ??
+          paginationMeta.totalCount ??
           payload?.data?.total ??
           payload?.total ??
           payload?.data?.total_size ??
@@ -167,10 +173,12 @@ export default function CustomersPage() {
     };
 
     fetchCustomers();
-  }, [page, filters.search]);
+  }, [page, perPage, filters.search]);
 
   const rows = apiRows;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
+  const rangeStart = totalCount === 0 ? 0 : (page - 1) * perPage + 1;
+  const rangeEnd = totalCount === 0 ? 0 : Math.min(page * perPage, totalCount);
 
   const handleExport = () => {
     if (!rows.length) return;
@@ -187,7 +195,7 @@ export default function CustomersPage() {
     ];
 
     const csvRows = rows.map((row, index) => [
-      index + 1,
+      (page - 1) * perPage + index + 1,
       row.name,
       row.email,
       row.phone,
@@ -268,13 +276,7 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-sm text-gray-500">
-                    {t.loadingCustomers}
-                  </td>
-                </tr>
-              )}
+              {loading && <TableLoadingSkeleton colSpan={7} rows={8} variant="cells" />}
 
               {!loading && fetchError && (
                 <tr>
@@ -291,7 +293,9 @@ export default function CustomersPage() {
                     onClick={() => router.push(`/dashboard/customers/${row.id}`)}
                     className="cursor-pointer border-b border-gray-100 hover:bg-gray-50 last:border-b-0"
                   >
-                    <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
+                    <td className="px-3 py-3 text-xs text-gray-500">
+                      {(page - 1) * perPage + index + 1}
+                    </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <img
@@ -341,17 +345,51 @@ export default function CustomersPage() {
           </table>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-4 py-3">
-          <p className="text-xs text-gray-500">
-            {t.page}{' '}
-            <span className="font-semibold text-gray-700">{page}</span> {t.of}{' '}
-            <span className="font-semibold text-gray-700">{totalPages}</span>
-          </p>
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
+            <p>
+              <span className="font-semibold text-gray-700">
+                {rangeStart === 0 ? '0' : `${rangeStart}–${rangeEnd}`}
+              </span>{' '}
+              {t.of}{' '}
+              <span className="font-semibold text-gray-700">{totalCount}</span>
+            </p>
+            <p>
+              {t.page}{' '}
+              <span className="font-semibold text-gray-700">{page}</span> {t.of}{' '}
+              <span className="font-semibold text-gray-700">{totalPages}</span>
+            </p>
+            <label className="inline-flex items-center gap-2">
+              <span className="text-gray-500">{t.perPage}</span>
+              <select
+                value={perPage}
+                onChange={(e) => {
+                  setPerPage(Number(e.target.value) || 20);
+                  setPage(1);
+                }}
+                className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-800 focus:border-[#7C3AED] focus:outline-none"
+              >
+                {PER_PAGE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage(1)}
+              disabled={page <= 1 || loading}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t.firstPage}
+            </button>
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
+              disabled={page <= 1 || loading}
               className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ChevronLeft size={14} />
@@ -360,11 +398,19 @@ export default function CustomersPage() {
             <button
               type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
+              disabled={page >= totalPages || loading}
               className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t.next}
               <ChevronRight size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage(totalPages)}
+              disabled={page >= totalPages || loading}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t.lastPage}
             </button>
           </div>
         </div>

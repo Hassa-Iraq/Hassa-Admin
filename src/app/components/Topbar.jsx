@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Mail, ShoppingCart, Search, Globe, ChevronDown, LogOut } from 'lucide-react';
+import { Mail, ShoppingCart, Search, Globe, ChevronDown, LogOut, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/app/i18n/LanguageContext';
 
@@ -396,12 +396,11 @@ export default function Topbar({ title, titleKey, subtitle, subtitleKey, rightCo
     : '';
 
   return (
-    <div className="w-full h-auto md:h-[144px] bg-white z-30">
-      <div className="h-full flex flex-col">
+    <div className="z-30 h-auto w-full overflow-visible bg-white md:h-[144px]">
+      <div className="flex h-full flex-col overflow-visible">
 
         {/* ===== ROW 1 ===== */}
-        <div className="h-[56px] md:h-[64px] flex items-center justify-end gap-3 md:gap-6 border-b border-gray-100 px-4 md:px-6">
-
+        <div className="flex h-[56px] w-full min-h-[56px] items-stretch overflow-visible border-b border-gray-100 px-3 pe-2 md:h-[64px] md:min-h-0 md:items-center md:px-6 md:pe-6">
           <div className="relative hidden md:block">
             <Search className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-purple-600 ${isRTL ? 'right-3' : 'left-3'}`} />
             <input
@@ -411,86 +410,108 @@ export default function Topbar({ title, titleKey, subtitle, subtitleKey, rightCo
             />
           </div>
 
-          <div className="relative">
-            <Mail className="w-5 h-5 text-purple-600" />
-            <span className={`absolute -top-1 w-2 h-2 bg-red-500 rounded-full ${isRTL ? '-left-1' : '-right-1'}`}></span>
-          </div>
+          <div
+            className={`flex min-h-0 min-w-0 flex-1 items-center justify-end gap-1.5 overflow-visible sm:gap-3 md:gap-6 ${isRTL ? 'pe-10 ps-0' : 'ps-10 pe-0'} md:ps-0 md:pe-0`}
+          >
+            <div className="relative shrink-0">
+              <Mail className="h-5 w-5 text-purple-600" />
+              <span
+                className={`absolute -top-0.5 h-2 w-2 rounded-full bg-red-500 ${isRTL ? '-left-0.5' : '-right-0.5'}`}
+              />
+            </div>
 
-          <div className="relative">
             <button
               type="button"
               onClick={() => router.push('/dashboard/orders/pending')}
-              className="relative inline-flex"
-              aria-label="Pending orders"
+              className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-visible rounded-lg text-purple-600 transition hover:bg-gray-50 md:h-9 md:w-9"
+              aria-label={
+                pendingOrdersCount !== null
+                  ? `Pending orders, ${pendingOrdersCount}`
+                  : 'Pending orders'
+              }
             >
-              <ShoppingCart className="w-5 h-5 text-purple-600" />
-              {pendingOrdersCount !== null && (
+              <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
+              {pendingOrdersCount !== null && pendingOrdersCount > 0 ? (
                 <span
-                  className={`absolute -top-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-4 h-4 px-1 flex items-center justify-center ${isRTL ? '-left-1' : '-right-1'}`}
+                  className={`pointer-events-none absolute z-10 flex h-3 min-h-3 min-w-3 max-w-[18px] items-center justify-center rounded-full bg-red-500 px-px text-[7px] font-bold tabular-nums leading-none text-white shadow-sm ring-[1px] ring-white md:h-[11px] md:min-w-[11px] md:max-w-[20px] md:px-[2px] md:text-[8px] md:ring-[1.5px] ${
+                    isRTL ? 'left-0 top-0' : 'right-0 top-0'
+                  }`}
                 >
                   {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
                 </span>
+              ) : null}
+            </button>
+
+            {/* Language Selector */}
+            <div ref={langRef} className="relative hidden sm:block">
+              <button
+                onClick={() => setLangOpen(!langOpen)}
+                className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 transition hover:bg-gray-50"
+              >
+                <Globe className="h-4 w-4 text-gray-600" />
+                <span className="text-sm text-gray-700">{currentLang.label}</span>
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${langOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {langOpen && (
+                <div className={`absolute top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px] z-50 ${isRTL ? 'left-0' : 'right-0'}`}>
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => {
+                        changeLanguage(lang.code);
+                        setLangOpen(false);
+                      }}
+                      className={`w-full ${isRTL ? 'text-right' : 'text-left'} px-4 py-2 text-sm flex items-center gap-2 hover:bg-purple-50 transition ${
+                        locale === lang.code ? 'text-purple-600 font-medium bg-purple-50' : 'text-gray-700'
+                      }`}
+                    >
+                      <span>{lang.flag}</span>
+                      <span>{lang.label}</span>
+                    </button>
+                  ))}
+                </div>
               )}
-            </button>
-          </div>
+            </div>
 
-          {/* Language Selector */}
-          <div ref={langRef} className="relative hidden sm:block">
-            <button
-              onClick={() => setLangOpen(!langOpen)}
-              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-lg transition"
-            >
-              <Globe className="w-4 h-4 text-gray-600" />
-              <span className="text-sm text-gray-700">{currentLang.label}</span>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${langOpen ? 'rotate-180' : ''}`} />
-            </button>
+            <div ref={profileRef} className="relative shrink-0">
+              <button
+                onClick={() => setProfileOpen((prev) => !prev)}
+                className="flex min-w-0 max-w-none items-center gap-2 rounded-lg px-0.5 py-1 hover:bg-gray-50 sm:min-w-[190px] sm:px-1.5 md:gap-3"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-600 text-xs font-semibold text-white md:h-10 md:w-10 md:text-sm">
+                  {adminInitials || (profileReady ? '' : '...')}
+                </div>
+                <div className="hidden min-w-0 flex-1 text-left sm:block">
+                  <p className="truncate text-sm font-semibold text-gray-900">
+                    {admin.name ||
+                      (profileReady ? (
+                        ''
+                      ) : (
+                        <span className="inline-flex items-center" aria-label="Loading profile">
+                          <Loader2 className="h-4 w-4 animate-spin text-gray-400" aria-hidden />
+                        </span>
+                      ))}
+                  </p>
+                  <p className="truncate text-xs text-gray-500">{admin.email || ''}</p>
+                </div>
+                <ChevronDown
+                  className={`hidden h-4 w-4 shrink-0 text-gray-400 transition-transform sm:block ${profileOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
 
-            {langOpen && (
-              <div className={`absolute top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px] z-50 ${isRTL ? 'left-0' : 'right-0'}`}>
-                {LANGUAGES.map((lang) => (
+              {profileOpen && (
+                <div className={`absolute top-full mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg z-50 ${isRTL ? 'left-0' : 'right-0'}`}>
                   <button
-                    key={lang.code}
-                    onClick={() => { changeLanguage(lang.code); setLangOpen(false); }}
-                    className={`w-full ${isRTL ? 'text-right' : 'text-left'} px-4 py-2 text-sm flex items-center gap-2 hover:bg-purple-50 transition ${
-                      locale === lang.code ? 'text-purple-600 font-medium bg-purple-50' : 'text-gray-700'
-                    }`}
+                    onClick={handleLogout}
+                    className={`flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 ${isRTL ? 'justify-end text-right' : 'justify-start text-left'}`}
                   >
-                    <span>{lang.flag}</span>
-                    <span>{lang.label}</span>
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
                   </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div ref={profileRef} className="relative">
-            <button
-              onClick={() => setProfileOpen((prev) => !prev)}
-              className="flex min-w-[190px] items-center gap-2 md:gap-3 rounded-lg px-1.5 py-1 hover:bg-gray-50"
-            >
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-xs md:text-sm">
-                {adminInitials || (profileReady ? '' : '...')}
-              </div>
-              <div className="hidden sm:block min-w-0 flex-1 text-left">
-                <p className="truncate text-sm font-semibold text-gray-900">
-                  {admin.name || (profileReady ? '' : 'Loading...')}
-                </p>
-                <p className="truncate text-xs text-gray-500">{admin.email || ''}</p>
-              </div>
-              <ChevronDown className={`hidden sm:block h-4 w-4 text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {profileOpen && (
-              <div className={`absolute top-full mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg z-50 ${isRTL ? 'left-0' : 'right-0'}`}>
-                <button
-                  onClick={handleLogout}
-                  className={`w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 ${isRTL ? 'justify-end text-right' : 'justify-start text-left'}`}
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </button>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

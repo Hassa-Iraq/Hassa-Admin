@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
 import { toast } from 'sonner';
+import { CenteredSpinner } from '@/app/components/LoadingSpinner';
 
 const INITIAL_FORM = {
   name: '',
@@ -244,7 +245,9 @@ export default function AddCuisineCategoryPage() {
           </h3>
 
           {loadingItem ? (
-            <p className="mt-3 text-xs text-gray-500">Loading cuisine category...</p>
+            <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50/80 px-4 py-8">
+              <CenteredSpinner minHeight="6rem" label="Loading cuisine category" />
+            </div>
           ) : null}
 
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">

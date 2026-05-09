@@ -3,6 +3,7 @@
 import { Download, Eye, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const PER_PAGE = 20;
 
@@ -160,11 +161,7 @@ export default function RestaurantWithdrawPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-xs text-gray-500">
-                  Loading withdraw requests...
-                </td>
-              </tr>
+              <TableLoadingSkeleton colSpan={6} rows={8} variant="cells" />
             ) : error ? (
               <tr>
                 <td colSpan={6} className="px-3 py-8 text-center text-xs text-rose-600">

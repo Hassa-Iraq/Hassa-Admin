@@ -4,6 +4,7 @@ import { Download, Pencil, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const TABS = ['Default', 'English (EN)', 'Arabic (AR)'];
 const MODULES = [
@@ -358,13 +359,7 @@ export default function EmployeeRolePage() {
               </tr>
             </thead>
             <tbody>
-              {loadingRoles && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-400">
-                    Loading roles...
-                  </td>
-                </tr>
-              )}
+              {loadingRoles && <TableLoadingSkeleton colSpan={6} rows={8} variant="cells" />}
 
               {!loadingRoles && filteredRoles.map((row, index) => {
                 const modules = Object.entries(row?.permissions || {})

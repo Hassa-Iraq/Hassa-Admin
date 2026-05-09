@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/app/config';
+import { LoadingSpinner } from '@/app/components/LoadingSpinner';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const PER_PAGE = 20;
 
@@ -238,8 +240,12 @@ export default function AdminBannerListPage() {
                       <span className="min-w-0 flex-1 truncate font-medium">{selectedRestaurant.name}</span>
                     </>
                   ) : (
-                    <span className="flex-1 text-gray-500">
-                      {loadingRestaurants ? 'Loading restaurants...' : 'All restaurants'}
+                    <span className="flex flex-1 items-center gap-2 text-gray-500">
+                      {loadingRestaurants ? (
+                        <LoadingSpinner size="xs" label="Loading restaurants" />
+                      ) : (
+                        'All restaurants'
+                      )}
                     </span>
                   )}
                   <ChevronDown size={16} className="flex-shrink-0 text-gray-400" />
@@ -274,7 +280,27 @@ export default function AdminBannerListPage() {
             </div>
           </div>
 
-          {loading && <p className="p-4 text-xs text-gray-500">Loading advertisements...</p>}
+          {loading && (
+            <div className="overflow-x-auto px-2 pb-2">
+              <table className="w-full min-w-[1080px] table-fixed text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50/70">
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">SI</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Advertisement</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Restaurant</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Valid from</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Valid to</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Status</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Public</th>
+                    <th className="px-4 py-3 text-center text-[11px] font-semibold text-[#1E1E24]">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <TableLoadingSkeleton colSpan={8} rows={8} variant="cells" />
+                </tbody>
+              </table>
+            </div>
+          )}
           {!loading && error && <p className="p-4 text-xs text-red-500">{error}</p>}
 
           {!loading && !error && (

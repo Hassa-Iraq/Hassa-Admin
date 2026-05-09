@@ -2,6 +2,8 @@
 
 import { Download, Eye, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { LoadingSpinner } from '@/app/components/LoadingSpinner';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const METHOD_OPTIONS = ['Cash', 'Bank Transfer'];
 
@@ -350,14 +352,21 @@ export default function DeliverymanPaymentsPage() {
       <section className="rounded-xl border border-gray-200 bg-white">
         <h3 className="border-b border-gray-200 px-4 py-3 text-sm font-semibold text-[#1E1E24]">Provide Deliveryman Earning</h3>
         <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2">
-          <Field label="Deliveryman">
+          <Field
+            label={
+              <span className="inline-flex items-center gap-2">
+                Deliveryman
+                {driversLoading ? <LoadingSpinner size="xs" label="Loading delivery people" /> : null}
+              </span>
+            }
+          >
             <select
               value={driverUserId}
               onChange={(e) => setDriverUserId(e.target.value)}
               disabled={driversLoading}
               className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-50"
             >
-              <option value="">{driversLoading ? 'Loading...' : 'Select Deliveryman'}</option>
+              <option value="">{driversLoading ? '\u00A0' : 'Select Deliveryman'}</option>
               {driverOptions.map((opt) => (
                 <option key={opt.id} value={opt.id}>
                   {opt.name}
@@ -425,7 +434,13 @@ export default function DeliverymanPaymentsPage() {
             onClick={handleSubmit}
             className="rounded-md bg-[#7C3AED] px-5 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitLoading ? 'Saving...' : 'Save'}
+            {submitLoading ? (
+              <span className="inline-flex items-center justify-center px-1">
+                <LoadingSpinner size="sm" className="[&_svg]:text-white" label="Saving payment" />
+              </span>
+            ) : (
+              'Save'
+            )}
           </button>
         </div>
       </section>
@@ -459,11 +474,7 @@ export default function DeliverymanPaymentsPage() {
             </thead>
             <tbody>
               {tableLoading ? (
-                <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-xs text-gray-500">
-                    Loading payments...
-                  </td>
-                </tr>
+                <TableLoadingSkeleton colSpan={8} rows={8} variant="cells" />
               ) : tableError ? (
                 <tr>
                   <td colSpan={8} className="px-3 py-8 text-center text-xs text-rose-600">

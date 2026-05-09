@@ -14,12 +14,14 @@ import {
 import { formatCurrencyFixed2 } from '@/app/lib/currency';
 import { mapApiOrderStatusToUiLabel } from '@/app/lib/orderStatus';
 import { useLanguage } from '@/app/i18n/LanguageContext';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const statusStyles = {
   Scheduled: 'bg-yellow-50 text-yellow-700 border-yellow-200',
   Pending: 'bg-amber-50 text-amber-700 border-amber-200',
   Accepted: 'bg-blue-50 text-blue-700 border-blue-200',
   Processing: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  'Ready for Pickup': 'bg-cyan-50 text-cyan-800 border-cyan-200',
   'Food On The Way': 'bg-purple-50 text-purple-700 border-purple-200',
   Delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   Cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
@@ -79,6 +81,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
     Pending: 'pending',
     Accepted: 'accepted',
     Processing: 'processing',
+    'Ready for Pickup': 'readyForPickup',
     'Food On The Way': 'foodOnTheWay',
     Delivered: 'delivered',
     Cancelled: 'cancelled',
@@ -331,6 +334,13 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
 
         <div className="relative flex items-center gap-3">
           <button
+            type="button"
+            onClick={() => router.push('/dashboard/orders/create')}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+          >
+            Create Order
+          </button>
+          <button
             onClick={handleExport}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
           >
@@ -473,13 +483,7 @@ export default function OrdersListTable({ filterLabel = 'All', filterSlug='all' 
             </tr>
           </thead>
           <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={8} className="py-10 text-center text-sm text-gray-500">
-                  {t.loadingOrders}
-                </td>
-              </tr>
-            )}
+            {loading && <TableLoadingSkeleton colSpan={8} rows={8} variant="cells" />}
             {!loading && fetchError && (
               <tr>
                 <td colSpan={8} className="py-10 text-center text-sm text-rose-500">

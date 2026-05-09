@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { X } from 'lucide-react';
+import { CenteredSpinner, LoadingSpinner } from '@/app/components/LoadingSpinner';
 
 const formatDateTime = (value) => {
   if (!value) return '-';
@@ -252,8 +253,8 @@ export default function RestaurantWithdrawDetailPage() {
   return (
     <div className="pt-36 pb-10">
       {loading ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
-          Loading withdraw request...
+        <div className="rounded-xl border border-gray-200 bg-white p-6">
+          <CenteredSpinner minHeight="12rem" label="Loading withdraw request" />
         </div>
       ) : error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-600">
@@ -362,7 +363,13 @@ export default function RestaurantWithdrawDetailPage() {
                     onClick={handleSubmit}
                     className="rounded-lg bg-[#0EA5E9] px-6 py-2 text-xs font-semibold text-white hover:bg-[#0284C7] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {submitLoading ? 'Submitting...' : 'Submit'}
+                    {submitLoading ? (
+                      <span className="inline-flex items-center justify-center px-2">
+                        <LoadingSpinner size="sm" className="[&_svg]:text-white" label="Submitting" />
+                      </span>
+                    ) : (
+                      'Submit'
+                    )}
                   </button>
                 </div>
               </div>

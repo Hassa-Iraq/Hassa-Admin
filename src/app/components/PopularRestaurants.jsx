@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Heart } from 'lucide-react';
 import { API_BASE_URL } from '@/app/config';
+import { PopularRestaurantRowSkeleton } from '@/app/components/LoadingSpinner';
 
 const toAbsoluteAssetUrl = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -99,9 +100,7 @@ export default function MostPopularRestaurants() {
       {/* Restaurant List (No Scroll) */}
       <div>
         <div className="space-y-3">
-          {loading && (
-            <div className="text-sm text-gray-500">Loading...</div>
-          )}
+          {loading && <PopularRestaurantRowSkeleton rows={5} />}
 
           {!loading &&
             restaurantsToRender.map((restaurant) => (

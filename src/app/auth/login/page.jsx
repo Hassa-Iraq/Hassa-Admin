@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { toast } from 'sonner';
+import { LoadingSpinner } from '@/app/components/LoadingSpinner';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -340,7 +341,13 @@ export default function LoginPage() {
                     disabled={loading}
                     className="w-full bg-[#6001D2] hover:bg-purple-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors shadow-md hover:shadow-lg"
                   >
-                    {loading ? 'Signing In...' : 'Sign In'}
+                    {loading ? (
+                      <span className="inline-flex w-full items-center justify-center">
+                        <LoadingSpinner size="sm" className="[&_svg]:text-white" label="Signing in" />
+                      </span>
+                    ) : (
+                      'Sign In'
+                    )}
                   </button>
                 </form>
 

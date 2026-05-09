@@ -2,6 +2,8 @@
 
 import { Download, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { LoadingSpinner } from '@/app/components/LoadingSpinner';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const toNumber = (value) => {
   const n = Number(value);
@@ -337,26 +339,29 @@ export default function CustomerWalletReportPage() {
               placeholder="To"
             />
           </div>
-          <select
-            value={customerId}
-            onChange={(e) => {
-              const next = e.target.value;
-              setCustomerId(next);
-              setApplied((prev) => ({
-                ...prev,
-                customerId: next,
-              }));
-            }}
-            disabled={customersLoading}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-xs disabled:cursor-not-allowed disabled:bg-gray-50 md:col-span-2"
-          >
-            <option value="">{customersLoading ? 'Loading customers...' : 'Select Customer'}</option>
-            {customerOptions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2 md:col-span-2">
+            {customersLoading ? <LoadingSpinner size="xs" label="Loading customers" /> : null}
+            <select
+              value={customerId}
+              onChange={(e) => {
+                const next = e.target.value;
+                setCustomerId(next);
+                setApplied((prev) => ({
+                  ...prev,
+                  customerId: next,
+                }));
+              }}
+              disabled={customersLoading}
+              className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs disabled:cursor-not-allowed disabled:bg-gray-50"
+            >
+              <option value="">{customersLoading ? '\u00A0' : 'Select Customer'}</option>
+              {customerOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             type="button"
             onClick={handleReset}
@@ -422,11 +427,7 @@ export default function CustomerWalletReportPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={9} className="px-3 py-10 text-center text-xs text-gray-500">
-                    Loading transactions...
-                  </td>
-                </tr>
+                <TableLoadingSkeleton colSpan={9} rows={8} variant="cells" />
               ) : error ? (
                 <tr>
                   <td colSpan={9} className="px-3 py-10 text-center text-xs text-rose-600">

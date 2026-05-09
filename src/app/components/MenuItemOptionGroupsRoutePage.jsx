@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import MenuItemOptionGroupsPanel from '@/app/components/MenuItemOptionGroupsPanel';
+import { LoadingSpinner } from '@/app/components/LoadingSpinner';
 
 function normalizeListItem(raw, index) {
   const id = String(
@@ -122,7 +123,10 @@ export default function MenuItemOptionGroupsRoutePage({ basePath = DEFAULT_BASE 
       </div>
 
       <section className="rounded-xl border border-gray-200 bg-white p-4">
-        <label className="mb-1.5 block text-[11px] font-medium text-gray-700">Menu item</label>
+        <label className="mb-1.5 flex items-center gap-2 text-[11px] font-medium text-gray-700">
+          Menu item
+          {loadingItems ? <LoadingSpinner size="xs" label="Loading menu items" /> : null}
+        </label>
         <p className="mb-2 text-[11px] text-gray-500">{copy.selectHelp}</p>
         <select
           value={menuItemIdFromUrl}
@@ -130,7 +134,7 @@ export default function MenuItemOptionGroupsRoutePage({ basePath = DEFAULT_BASE 
           disabled={loadingItems}
           className="w-full max-w-md rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-[#7C3AED] focus:outline-none disabled:opacity-60"
         >
-          <option value="">{loadingItems ? 'Loading items…' : 'Select a menu item…'}</option>
+          <option value="">{loadingItems ? '\u00A0' : 'Select a menu item…'}</option>
           {items.map((row) => (
             <option key={row.id} value={row.id}>
               {row.name}

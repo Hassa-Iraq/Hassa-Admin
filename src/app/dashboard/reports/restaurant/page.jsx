@@ -3,6 +3,8 @@
 import { Download, Search } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { API_BASE_URL } from '@/app/config';
+import { ChartSkeleton, LoadingSpinner } from '@/app/components/LoadingSpinner';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 export default function RestaurantReportPage() {
   // Draft inputs (user typing) vs applied filters (used for API call).
@@ -242,7 +244,13 @@ export default function RestaurantReportPage() {
             className="w-full justify-self-stretch rounded-md bg-[#6D28D9] px-8 py-2 text-sm font-medium text-white disabled:opacity-60 md:w-auto md:justify-self-end"
             disabled={loading}
           >
-            {loading ? 'Loading...' : 'Filter'}
+            {loading ? (
+              <span className="inline-flex w-full items-center justify-center py-0.5">
+                <LoadingSpinner size="sm" className="[&_svg]:text-white" label="Applying filters" />
+              </span>
+            ) : (
+              'Filter'
+            )}
           </button>
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-600">
@@ -287,10 +295,10 @@ export default function RestaurantReportPage() {
 
       <section className="rounded-xl border border-gray-200 bg-white p-4">
         <div className="h-64 rounded-lg border border-gray-100 bg-white p-4">
-          {chartBars.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-xs text-gray-500">
-              {loading ? 'Loading chart...' : 'No chart data.'}
-            </div>
+          {loading ? (
+            <ChartSkeleton className="h-full min-h-[12rem]" heightClass="h-full" />
+          ) : chartBars.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-xs text-gray-500">No chart data.</div>
           ) : (
             <div className="flex h-full items-end justify-around gap-6">
               {chartBars.slice(-7).map((c, i) => (
@@ -362,11 +370,7 @@ export default function RestaurantReportPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-xs text-gray-500">
-                    Loading restaurants...
-                  </td>
-                </tr>
+                <TableLoadingSkeleton colSpan={10} rows={8} variant="cells" />
               ) : visibleRows.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-4 py-10 text-center text-xs text-gray-500">

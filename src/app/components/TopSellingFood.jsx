@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/app/i18n/LanguageContext';
 import { API_BASE_URL } from '@/app/config';
+import { FoodWideCardSkeletonGrid } from '@/app/components/LoadingSpinner';
 
 const toAbsoluteAssetUrl = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -103,7 +104,7 @@ export default function TopSellingFoods() {
       <div className="p-6">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {loading ? (
-            <div className="col-span-full text-sm text-gray-500">Loading...</div>
+            <FoodWideCardSkeletonGrid count={6} columnsClass="grid-cols-2 md:grid-cols-3" />
           ) : (
             listToRender.map((food) => (
             <div

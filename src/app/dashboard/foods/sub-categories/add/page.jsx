@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { API_BASE_URL } from '@/app/config';
 import { toast } from 'sonner';
+import { CenteredSpinner, LoadingSpinner } from '@/app/components/LoadingSpinner';
 
 export default function AddSubcategoryPage() {
   const router = useRouter();
@@ -284,8 +285,8 @@ export default function AddSubcategoryPage() {
           </h3>
 
           {loadingSubcategory && (
-            <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-              Loading subcategory details...
+            <div className="mt-4 rounded-lg border border-gray-200 bg-white px-4 py-6">
+              <CenteredSpinner minHeight="8rem" label="Loading subcategory details" />
             </div>
           )}
 
@@ -293,16 +294,17 @@ export default function AddSubcategoryPage() {
             <div className="space-y-3 lg:col-span-2">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
-                  <label className="mb-1.5 block text-[11px] font-medium text-gray-700">Parent Category</label>
+                  <label className="mb-1.5 flex items-center gap-2 text-[11px] font-medium text-gray-700">
+                    Parent Category
+                    {categoriesLoading ? <LoadingSpinner size="xs" label="Loading categories" /> : null}
+                  </label>
                   <select
                     value={parentCategoryId}
                     onChange={(e) => setParentCategoryId(e.target.value)}
                     disabled={categoriesLoading}
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#7C3AED] focus:outline-none disabled:bg-gray-50"
                   >
-                    <option value="">
-                      {categoriesLoading ? 'Loading categories...' : 'Select Parent Category'}
-                    </option>
+                    <option value="">{categoriesLoading ? '\u00A0' : 'Select Parent Category'}</option>
                     {categories.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name}

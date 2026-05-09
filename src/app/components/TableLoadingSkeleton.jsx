@@ -1,6 +1,25 @@
 'use client';
 
-export default function TableLoadingSkeleton({ colSpan = 1, rows = 6 }) {
+/**
+ * @param {'bar' | 'cells'} variant — bar: one pulse bar per row; cells: one pulse cell per column (richer table UX)
+ */
+export default function TableLoadingSkeleton({ colSpan = 1, rows = 6, variant = 'bar' }) {
+  if (variant === 'cells' && colSpan > 1) {
+    return (
+      <>
+        {Array.from({ length: rows }).map((_, index) => (
+          <tr key={index} className="border-b border-gray-100 last:border-b-0">
+            {Array.from({ length: colSpan }).map((__, ci) => (
+              <td key={ci} className="px-3 py-3 md:px-4">
+                <div className="h-4 max-w-[140px] animate-pulse rounded bg-gray-200/80" />
+              </td>
+            ))}
+          </tr>
+        ))}
+      </>
+    );
+  }
+
   return (
     <>
       {Array.from({ length: rows }).map((_, index) => (

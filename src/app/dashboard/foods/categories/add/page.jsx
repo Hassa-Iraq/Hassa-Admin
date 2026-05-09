@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '@/app/config';
 import { toast } from 'sonner';
+import { CenteredSpinner } from '@/app/components/LoadingSpinner';
 
 const INITIAL_FORM = {
   name: '',
@@ -219,8 +220,8 @@ export default function AddCategoryPage() {
     <div className="pt-36 pb-8">
       <form onSubmit={handleSubmit} className="space-y-4">
         {loadingCategory && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-            Loading category details...
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-6">
+            <CenteredSpinner minHeight="8rem" label="Loading category details" />
           </div>
         )}
         <section className="rounded-xl border border-gray-200 bg-white p-4">

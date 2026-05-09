@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Download, Eye, Search, X } from 'lucide-react';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { useRouter } from 'next/navigation';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const PER_PAGE = 20;
 const DEFAULT_AVATAR = '/default-image.svg';
@@ -264,16 +265,10 @@ export default function NewJoinRequestPage() {
               </tr>
             </thead>
             <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={8} className="px-3 py-10 text-center text-xs text-gray-400">
-                    Loading...
-                  </td>
-                </tr>
-              )}
+              {loading && <TableLoadingSkeleton colSpan={6} rows={8} variant="cells" />}
               {!loading && fetchError && (
                 <tr>
-                  <td colSpan={8} className="px-3 py-10 text-center text-xs text-red-500">
+                  <td colSpan={6} className="px-3 py-10 text-center text-xs text-red-500">
                     {fetchError}
                   </td>
                 </tr>

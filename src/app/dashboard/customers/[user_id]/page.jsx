@@ -7,6 +7,7 @@ import { ArrowLeft, Mail, Phone, ShoppingBag, Wallet, CalendarDays } from 'lucid
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { API_BASE_URL } from '@/app/config';
 import { APP_CURRENCY, formatCurrencyFixed2 } from '@/app/lib/currency';
+import { CenteredSpinner } from '@/app/components/LoadingSpinner';
 
 const toAbsoluteAssetUrl = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -71,33 +72,62 @@ export default function CustomerDetailPage() {
       setError('');
       try {
         const token = localStorage.getItem('token') || '';
-        const endpoint = `/api/orders/customers?page=1&limit=20&search=${encodeURIComponent(userId)}&restaurant_id=&date_from=&date_to=`;
-        const response = await fetch(endpoint, {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-        const payload = await response.json();
-        if (!response.ok) {
-          throw new Error(payload?.message || 'Failed to fetch customer details');
-        }
+        const PAGE_LIMIT = 50;
+        const MAX_PAGES = 10;
+        let found = null;
+        let lastPayload = null;
 
-        const list =
-          payload?.data?.customers ||
-          payload?.data?.list ||
-          payload?.customers ||
-          payload?.list ||
-          payload?.data ||
-          [];
-        const rows = Array.isArray(list) ? list : [];
-        const found = rows.find((item) => String(item?.user_id || item?.id || '').trim() === userId) || rows[0] || null;
+        for (let page = 1; page <= MAX_PAGES; page += 1) {
+          const endpoint = `/api/orders/customers?page=${encodeURIComponent(
+            String(page)
+          )}&limit=${encodeURIComponent(String(PAGE_LIMIT))}&search=&restaurant_id=&date_from=&date_to=`;
+          const response = await fetch(endpoint, {
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          });
+          const payload = await response.json();
+          lastPayload = payload;
+          if (!response.ok) {
+            throw new Error(payload?.message || 'Failed to fetch customer details');
+          }
+
+          const list =
+            payload?.data?.customers ||
+            payload?.data?.list ||
+            payload?.customers ||
+            payload?.list ||
+            payload?.data ||
+            [];
+          const rows = Array.isArray(list) ? list : [];
+
+          found =
+            rows.find((item) => String(item?.user_id || item?.id || '').trim() === userId) ||
+            null;
+
+          const totalPagesRaw =
+            payload?.data?.pagination?.totalPages ??
+            payload?.pagination?.totalPages ??
+            payload?.data?.totalPages ??
+            payload?.totalPages ??
+            null;
+          const totalPages = Number(totalPagesRaw);
+
+          if (found) break;
+          if (Number.isFinite(totalPages) && totalPages > 0 && page >= totalPages) break;
+          if (rows.length === 0) break;
+        }
 
         if (!found) {
-          setError('Customer not found.');
+          const msg =
+            lastPayload?.message ||
+            'Customer not found in customers list.';
+          setError(msg);
           setCustomer(null);
-        } else {
-          setCustomer(found);
+          return;
         }
+
+        setCustomer(found);
       } catch (fetchError) {
         setError(fetchError?.message || 'Failed to fetch customer details');
         setCustomer(null);
@@ -139,8 +169,8 @@ export default function CustomerDetailPage() {
       </div>
 
       {loading && (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
-          Loading customer details...
+        <div className="rounded-xl border border-gray-200 bg-white p-6">
+          <CenteredSpinner minHeight="12rem" label="Loading customer details" />
         </div>
       )}
 

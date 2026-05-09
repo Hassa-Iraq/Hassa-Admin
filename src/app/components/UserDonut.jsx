@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { ChevronDown } from 'lucide-react';
+import { ChartSkeleton } from '@/app/components/LoadingSpinner';
 
 export default function UserStatistics() {
   const [data, setData] = useState([
@@ -161,9 +162,7 @@ export default function UserStatistics() {
 
       {/* Donut Chart */}
       {loading ? (
-        <div className="mt-6 h-[260px] flex items-center justify-center text-sm text-gray-500">
-          Loading...
-        </div>
+        <ChartSkeleton heightClass="h-[300px]" className="mt-6" />
       ) : (
         <div className="relative">
           <ResponsiveContainer width="100%" height={300}>

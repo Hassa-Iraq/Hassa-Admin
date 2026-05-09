@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import Topbar from '@/app/components/Topbar';
+import { CenteredSpinner } from '@/app/components/LoadingSpinner';
 
 export default function MenuItemOptionsLayout({ children }) {
   return (
@@ -10,7 +11,11 @@ export default function MenuItemOptionsLayout({ children }) {
       />
       <div className="px-6 pb-16">
         <main className="p-0">
-          <Suspense fallback={<p className="pt-36 text-sm text-gray-500">Loading…</p>}>{children}</Suspense>
+          <Suspense
+            fallback={<CenteredSpinner className="pt-36" minHeight="40vh" label="Loading" />}
+          >
+            {children}
+          </Suspense>
         </main>
       </div>
     </div>

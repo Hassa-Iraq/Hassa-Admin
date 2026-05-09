@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { apiErrorMessage } from '@/app/lib/apiErrorMessage';
 import { formatOptionDelta } from '@/app/lib/currency';
+import { CenteredSpinner } from '@/app/components/LoadingSpinner';
 
 function extractGroups(data) {
   const payload = data?.data && typeof data.data === 'object' ? data.data : data;
@@ -278,7 +279,7 @@ export default function MenuItemOptionGroupsPanel({ menuItemId }) {
       </div>
 
       {loading ? (
-        <p className="mt-4 text-xs text-gray-500">Loading option groups…</p>
+        <CenteredSpinner className="mt-6 text-violet-600" minHeight="8rem" label="Loading option groups" />
       ) : groups.length === 0 ? (
         <p className="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50/80 px-4 py-6 text-center text-xs text-gray-500">
           No option groups yet. Use <span className="font-semibold text-[#7C3AED]">Add group</span> to create

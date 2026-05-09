@@ -3,6 +3,8 @@
 import { Download, Search } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { API_BASE_URL } from '@/app/config';
+import { LoadingSpinner } from '@/app/components/LoadingSpinner';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const toNumber = (value) => {
   const n = typeof value === 'number' ? value : Number(String(value ?? '').replace(/,/g, ''));
@@ -469,9 +471,13 @@ export default function TransactionReportPage() {
                   <span className="h-5 w-5 flex-none rounded-full border border-gray-200 bg-gray-50" />
                 )}
                 <span className="min-w-0 truncate">
-                  {restaurantsLoading
-                    ? 'Loading restaurants...'
-                    : selectedRestaurant?.name || 'All Restaurants'}
+                  {restaurantsLoading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <LoadingSpinner size="xs" label="Loading restaurants" />
+                    </span>
+                  ) : (
+                    selectedRestaurant?.name || 'All Restaurants'
+                  )}
                 </span>
               </span>
               <span className="text-gray-400">▾</span>
@@ -557,7 +563,13 @@ export default function TransactionReportPage() {
             className="w-full justify-self-stretch rounded-md bg-[#6D28D9] px-8 py-2 text-sm font-medium text-white disabled:opacity-60 md:w-auto md:justify-self-end"
             disabled={loading}
           >
-            {loading ? 'Loading...' : 'Filter'}
+            {loading ? (
+              <span className="inline-flex w-full items-center justify-center py-0.5">
+                <LoadingSpinner size="sm" className="[&_svg]:text-white" label="Applying filters" />
+              </span>
+            ) : (
+              'Filter'
+            )}
           </button>
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-600">
@@ -665,11 +677,7 @@ export default function TransactionReportPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={17} className="px-4 py-10 text-center text-xs text-gray-500">
-                    Loading transactions...
-                  </td>
-                </tr>
+                <TableLoadingSkeleton colSpan={17} rows={8} variant="cells" />
               ) : visibleRows.length === 0 ? (
                 <tr>
                   <td colSpan={17} className="px-4 py-10 text-center text-xs text-gray-500">

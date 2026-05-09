@@ -8,6 +8,7 @@ import { API_BASE_URL } from '@/app/config';
 import PhoneCodeSelect from '@/app/components/PhoneCodeSelect';
 import ImageCropModal from '@/app/components/ImageCropModal';
 import { toast } from 'sonner';
+import { CenteredSpinner, LoadingSpinner } from '@/app/components/LoadingSpinner';
 
 /** Logo crop: square (1:1). Change here if the app-wide logo ratio changes. */
 const RESTAURANT_LOGO_CROP_ASPECT = 1;
@@ -1071,8 +1072,8 @@ export default function AddRestaurantPage() {
     <div className="pt-36 pb-8">
       <form onSubmit={handleSubmit} className="space-y-6">
         {loadingRestaurant && (
-          <div className="rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-700">
-            Loading restaurant details...
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-6">
+            <CenteredSpinner minHeight="8rem" label="Loading restaurant details" />
           </div>
         )}
 
@@ -1123,7 +1124,8 @@ export default function AddRestaurantPage() {
                   value={form.cuisine}
                   options={cuisineOptions}
                   onChange={handleCuisinePick}
-                  placeholder={cuisineLoading ? 'Loading cuisines...' : 'Select Cuisine'}
+                  placeholder="Select Cuisine"
+                  loading={cuisineLoading}
                 />
                 <SimpleSelect
                   label="Radius"
@@ -1154,9 +1156,11 @@ export default function AddRestaurantPage() {
               {errors.location && (
                 <p className="text-xs text-red-500">{errors.location}</p>
               )}
-              {mapLoading && (
-                <p className="text-xs text-gray-500">Searching location...</p>
-              )}
+              {mapLoading ? (
+                <div className="mt-1 flex items-center gap-2" role="status" aria-label="Searching location">
+                  <LoadingSpinner size="xs" label="Searching location" />
+                </div>
+              ) : null}
 
               {mapResults.length > 0 && (
                 <div className="border border-gray-200 rounded-lg max-h-44 overflow-auto">
@@ -1563,7 +1567,7 @@ function SelectField({ label, name, value, onChange, options, placeholder }) {
   );
 }
 
-function CuisineSelect({ label, value, options, onChange, placeholder }) {
+function CuisineSelect({ label, value, options, onChange, placeholder, loading }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const selected = useMemo(() => options.find((o) => o.name === value) || null, [options, value]);
@@ -1579,14 +1583,23 @@ function CuisineSelect({ label, value, options, onChange, placeholder }) {
 
   return (
     <div ref={rootRef}>
-      <label className="text-sm font-medium text-gray-700 block mb-2">{label}</label>
+      <label className="mb-2 block text-sm font-medium text-gray-700">{label}</label>
       <button
         type="button"
-        onClick={() => setOpen((p) => !p)}
-        className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-purple-400 focus:outline-none bg-white flex items-center justify-between gap-2 text-left"
+        disabled={loading}
+        onClick={() => !loading && setOpen((p) => !p)}
+        className="flex w-full items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-left text-sm focus:border-purple-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
       >
         <span className="min-w-0 truncate text-gray-900">
-          {selected ? selected.name : placeholder}
+          {loading ? (
+            <span className="inline-flex items-center gap-2 text-gray-500">
+              <LoadingSpinner size="sm" label="Loading cuisines" />
+            </span>
+          ) : selected ? (
+            selected.name
+          ) : (
+            placeholder
+          )}
         </span>
         <ChevronDown size={16} className="shrink-0 text-gray-900" strokeWidth={2.5} />
       </button>

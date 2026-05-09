@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Topbar from '@/app/components/Topbar';
 import {
+  AlertCircle,
+  Bike,
+  Loader2,
   Printer,
   Phone,
   Mail,
@@ -15,6 +18,169 @@ import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { API_BASE_URL } from '@/app/config';
 import { APP_CURRENCY } from '@/app/lib/currency';
 import { mapApiOrderStatusToUiLabel } from '@/app/lib/orderStatus';
+import {
+  isUsableLatLng,
+  parseLatLng,
+  parseLatLngFromRecord,
+  resolveDeliveryAssignmentOrderId,
+} from '@/app/lib/geo';
+import { CenteredSpinner } from '@/app/components/LoadingSpinner';
+import AssignDeliveryModal from '@/app/components/AssignDeliveryModal';
+
+function pickNonEmptyString(...values) {
+  for (const v of values) {
+    if (typeof v === 'string' && v.trim()) return v.trim();
+  }
+  return '';
+}
+
+function normalizeAssignedDriverFromOrder(order) {
+  if (!order || typeof order !== 'object') return null;
+
+  const unwrap = (raw) => {
+    if (raw == null) return null;
+    if (Array.isArray(raw)) return raw[0] && typeof raw[0] === 'object' ? raw[0] : null;
+    if (typeof raw === 'object') return raw;
+    return null;
+  };
+
+  const deliveryBlock = order.delivery && typeof order.delivery === 'object' ? order.delivery : null;
+
+  const candidates = [
+    unwrap(deliveryBlock?.driver),
+    unwrap(order.delivery_man),
+    unwrap(order.deliveryman),
+    unwrap(order.delivery_partner),
+    unwrap(order.assigned_driver),
+    unwrap(order.driver),
+    unwrap(order.rider),
+    unwrap(order.delivery_driver),
+    unwrap(order.delivery_details?.driver),
+    unwrap(order.delivery_assignment?.driver),
+    unwrap(order.delivery_assignment),
+    unwrap(order.assignment?.driver),
+  ].filter((x) => x != null && typeof x === 'object');
+
+  const dm = candidates[0];
+
+  const buildExtras = (d) => {
+    if (!d || typeof d !== 'object') {
+      return {
+        email: '',
+        vehicleType: '',
+        vehicleNumber: '',
+        role: '',
+        ownerType: '',
+        approvalStatus: '',
+        totalOrders: null,
+        isActive: null,
+      };
+    }
+    const totalRaw = d.total_orders ?? d.totalOrders;
+    const totalOrders = Number.isFinite(Number(totalRaw)) ? Number(totalRaw) : null;
+    return {
+      email: pickNonEmptyString(d.email, d.user?.email),
+      vehicleType: pickNonEmptyString(d.vehicle_type, d.vehicleType),
+      vehicleNumber: pickNonEmptyString(d.vehicle_number, d.vehicleNumber),
+      role: pickNonEmptyString(d.role),
+      ownerType: pickNonEmptyString(d.owner_type, d.ownerType),
+      approvalStatus: pickNonEmptyString(d.approval_status, d.approvalStatus),
+      totalOrders,
+      isActive: typeof d.is_active === 'boolean' ? d.is_active : typeof d.isActive === 'boolean' ? d.isActive : null,
+    };
+  };
+
+  const deliveryMeta = deliveryBlock
+    ? {
+        assignmentStatus: pickNonEmptyString(deliveryBlock.status, deliveryBlock.state),
+        assignedAt: deliveryBlock.assigned_at || deliveryBlock.assignedAt || null,
+        pickupLine: pickNonEmptyString(deliveryBlock.pickup_address),
+        dropLine: pickNonEmptyString(deliveryBlock.delivery_address),
+        jobNotes: pickNonEmptyString(deliveryBlock.delivery_notes, deliveryBlock.notes),
+      }
+    : {
+        assignmentStatus: '',
+        assignedAt: null,
+        pickupLine: '',
+        dropLine: '',
+        jobNotes: '',
+      };
+
+  if (dm) {
+    const driverUserId = pickNonEmptyString(
+      String(dm.user_id ?? ''),
+      String(dm.driver_user_id ?? ''),
+      String(dm.id ?? ''),
+      String(dm.driver_id ?? ''),
+      deliveryBlock ? String(deliveryBlock.driver_user_id ?? '') : ''
+    );
+    const name =
+      pickNonEmptyString(dm.full_name, dm.name, dm.driver_name, dm.user?.full_name, dm.user?.name) || '';
+    const phone = pickNonEmptyString(dm.phone, dm.mobile, dm.contact_phone, dm.user?.phone);
+    const avatar = pickNonEmptyString(
+      dm.image_url,
+      dm.driver_image_url,
+      dm.avatar,
+      dm.profile_picture_url,
+      dm.photo,
+      dm.picture
+    );
+    if (!name && !driverUserId) return null;
+    return {
+      driverUserId,
+      name: name || 'Delivery partner',
+      phone,
+      avatar,
+      ...buildExtras(dm),
+      ...deliveryMeta,
+    };
+  }
+
+  const driverUserId = pickNonEmptyString(
+    String(order.driver_user_id ?? ''),
+    String(order.delivery_man_id ?? ''),
+    String(order.deliveryman_id ?? ''),
+    String(order.delivery_man_user_id ?? ''),
+    String(order.assigned_driver_id ?? ''),
+    deliveryBlock ? String(deliveryBlock.driver_user_id ?? '') : ''
+  );
+  const name = pickNonEmptyString(
+    order.driver_name,
+    order.delivery_man_name,
+    order.deliveryman_name,
+    order.rider_name,
+    order.assigned_driver_name
+  );
+  const phone = pickNonEmptyString(
+    order.driver_phone,
+    order.delivery_man_phone,
+    order.deliveryman_phone,
+    order.rider_phone
+  );
+  const avatar = pickNonEmptyString(
+    order.driver_image_url,
+    order.driver_avatar,
+    order.delivery_man_image,
+    order.deliveryman_image
+  );
+
+  if (!driverUserId && !name) return null;
+  return {
+    driverUserId,
+    name: name || 'Delivery partner',
+    phone,
+    avatar,
+    ...buildExtras({}),
+    ...deliveryMeta,
+  };
+}
+
+/** When lat/lng are missing, open Maps search from address text (same UX as precise coordinates). */
+function googleMapsSearchFromAddress(addressText) {
+  const q = String(addressText || '').trim();
+  if (q.length < 4 || q === '—' || q === '-' || q === 'Customer address' || q === 'Restaurant kitchen') return '';
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
 
 const toAbsoluteAssetUrl = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -103,6 +269,47 @@ const DELIVERY_FIELD_LABELS = {
 // Temporary: hide delivery proof section from UI.
 const ENABLE_DELIVERY_PROOF = false;
 
+/** Backend order lifecycle — values sent to PATCH `/api/orders/:id/status`. */
+const ORDER_STATUS_FLOW_LABELS = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  preparing: 'Preparing',
+  ready_for_pickup: 'Ready for Pickup',
+  out_for_delivery: 'Out for delivery',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+};
+
+/**
+ * Allowed next statuses per current status (matches backend ALLOWED_NEXT_STATUSES).
+ */
+const ALLOWED_NEXT_ORDER_STATUSES = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['preparing', 'cancelled'],
+  preparing: ['ready_for_pickup', 'cancelled'],
+  ready_for_pickup: ['out_for_delivery', 'cancelled'],
+  out_for_delivery: ['delivered', 'cancelled'],
+  delivered: [],
+  cancelled: [],
+};
+
+function normalizeOrderStatusValue(raw) {
+  if (raw == null || raw === '') return 'pending';
+  let s = String(raw).trim().toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_');
+  const alias = {
+    canceled: 'cancelled',
+    food_on_the_way: 'out_for_delivery',
+    on_the_way: 'out_for_delivery',
+    processing: 'preparing',
+    handover: 'ready_for_pickup',
+    accepted: 'confirmed',
+  };
+  if (alias[s]) s = alias[s];
+  return s;
+}
+
+const ASSIGN_DELIVERY_STATUSES = new Set(['confirmed', 'preparing', 'ready_for_pickup', 'out_for_delivery']);
+
 function titleCaseDeliveryKey(key) {
   return String(key || '')
     .replace(/_/g, ' ')
@@ -172,6 +379,15 @@ export default function OrderDetailPage() {
   const [isProofModalOpen, setIsProofModalOpen] = useState(false);
   const [proofFile, setProofFile] = useState(null);
   const [proofPreviewUrl, setProofPreviewUrl] = useState('');
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [pendingApiStatus, setPendingApiStatus] = useState('');
+  const [statusReason, setStatusReason] = useState('');
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusActionError, setStatusActionError] = useState('');
+  const [selectStatusValue, setSelectStatusValue] = useState('pending');
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [geocodedPickup, setGeocodedPickup] = useState(null);
+  const [geocodedDelivery, setGeocodedDelivery] = useState(null);
 
   const orderId = useMemo(() => {
     const rawId = params?.id;
@@ -179,32 +395,48 @@ export default function OrderDetailPage() {
     return rawId || '';
   }, [params?.id]);
 
-  useEffect(() => {
-    const fetchOrderDetails = async () => {
-      if (!orderId) return;
-      setLoading(true);
-      setError('');
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`/api/orders/${orderId}`, {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data?.message || 'Failed to fetch order details');
-        }
-
-        setOrderPayload(data);
-      } catch (err) {
-        setError(err?.message || 'Failed to fetch order details');
-      } finally {
-        setLoading(false);
+  const loadOrderDetails = useCallback(async () => {
+    if (!orderId) return;
+    setLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      /** Order Service: GET /api/orders/:order_id */
+      const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || 'Failed to fetch order details');
       }
-    };
 
-    fetchOrderDetails();
+      setOrderPayload(data);
+    } catch (err) {
+      setError(err?.message || 'Failed to fetch order details');
+    } finally {
+      setLoading(false);
+    }
+  }, [orderId]);
+
+  useEffect(() => {
+    loadOrderDetails();
+  }, [loadOrderDetails]);
+
+  const refreshOrderPayload = useCallback(async () => {
+    if (!orderId) return;
+    const token = localStorage.getItem('token');
+    const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.message || 'Failed to refresh order');
+    }
+    setOrderPayload(data);
   }, [orderId]);
 
   useEffect(() => {
@@ -233,6 +465,40 @@ export default function OrderDetailPage() {
     );
   }, [orderPayload]);
 
+  const currentApiStatus = useMemo(() => normalizeOrderStatusValue(order?.status), [order?.status]);
+
+  const statusSelectOptions = useMemo(() => {
+    const current = currentApiStatus;
+    const nextAllowed = ALLOWED_NEXT_ORDER_STATUSES[current];
+
+    if (nextAllowed === undefined) {
+      return [
+        {
+          value: current,
+          label:
+            ORDER_STATUS_FLOW_LABELS[current] ||
+            mapApiOrderStatusToUiLabel(order?.status || current) ||
+            humanizeEnum(current),
+        },
+      ];
+    }
+
+    const values = new Set([current, ...nextAllowed]);
+    return Array.from(values).map((value) => ({
+      value,
+      label: ORDER_STATUS_FLOW_LABELS[value] || humanizeEnum(value),
+    }));
+  }, [currentApiStatus, order?.status]);
+
+  const canChangeOrderStatus = useMemo(() => {
+    const next = ALLOWED_NEXT_ORDER_STATUSES[currentApiStatus];
+    return Array.isArray(next) && next.length > 0;
+  }, [currentApiStatus]);
+
+  useEffect(() => {
+    setSelectStatusValue(currentApiStatus);
+  }, [currentApiStatus]);
+
   const customer = useMemo(() => {
     const direct = order?.customer || order?.user;
     return direct && typeof direct === 'object' ? direct : {};
@@ -252,16 +518,6 @@ export default function OrderDetailPage() {
   }, [order?.delivery_address]);
 
   const deliveryDisplayRows = useMemo(() => buildDeliveryDisplayRows(delivery), [delivery]);
-
-  const deliveryMapsUrl = useMemo(() => {
-    const lat = delivery?.latitude ?? delivery?.lat;
-    const lng = delivery?.longitude ?? delivery?.lng;
-    if (lat == null || lng == null) return '';
-    const la = Number(lat);
-    const ln = Number(lng);
-    if (!Number.isFinite(la) || !Number.isFinite(ln)) return '';
-    return `https://www.google.com/maps?q=${la},${ln}`;
-  }, [delivery]);
 
   const items = useMemo(
     () => (Array.isArray(order?.items) ? order.items : []),
@@ -352,6 +608,8 @@ export default function OrderDetailPage() {
       ? 'bg-blue-50 text-blue-700'
       : statusKey === 'processing'
       ? 'bg-indigo-50 text-indigo-700'
+      : statusKey === 'ready for pickup'
+      ? 'bg-cyan-50 text-cyan-800'
       : statusKey === 'food on the way'
       ? 'bg-purple-50 text-purple-700'
       : statusKey === 'scheduled'
@@ -390,6 +648,192 @@ export default function OrderDetailPage() {
     delivery?.line1 ||
     [delivery?.house, delivery?.road, delivery?.floor, delivery?.area, delivery?.city].filter(Boolean).join(', ') ||
     '—';
+
+  const orderTypeRaw = useMemo(
+    () => String(order?.order_type || order?.delivery_type || order?.type || '').toLowerCase(),
+    [order?.order_type, order?.delivery_type, order?.type]
+  );
+  const isDeliveryOrder = useMemo(() => {
+    const label = String(orderType || '').toLowerCase();
+    return (
+      orderTypeRaw.includes('delivery') ||
+      orderTypeRaw.includes('home') ||
+      label.includes('home') ||
+      label.includes('delivery')
+    );
+  }, [orderTypeRaw, orderType]);
+
+  const showAssignDelivery = useMemo(
+    () => isDeliveryOrder && ASSIGN_DELIVERY_STATUSES.has(currentApiStatus),
+    [isDeliveryOrder, currentApiStatus]
+  );
+
+  const assignedDriver = useMemo(() => normalizeAssignedDriverFromOrder(order), [order]);
+
+  const assignmentIds = useMemo(() => resolveDeliveryAssignmentOrderId(orderId, order), [orderId, order]);
+
+  const pickupFromApi = useMemo(() => {
+    const fromRestaurant = parseLatLngFromRecord(restaurant);
+    if (fromRestaurant) return fromRestaurant;
+    const orderLevel = [
+      parseLatLng(order?.pickup_latitude, order?.pickup_longitude),
+      parseLatLng(order?.pickup_lat, order?.pickup_lng),
+      parseLatLng(order?.pickupLatitude, order?.pickupLongitude),
+      parseLatLngFromRecord(order?.pickup_location),
+      parseLatLngFromRecord(order?.branch),
+      parseLatLng(order?.restaurant_latitude, order?.restaurant_longitude),
+      parseLatLng(
+        order?.restaurant_location?.latitude ?? order?.restaurant_location?.lat,
+        order?.restaurant_location?.longitude ?? order?.restaurant_location?.lng
+      ),
+      parseLatLng(order?.restaurant?.latitude ?? order?.restaurant?.lat, order?.restaurant?.longitude ?? order?.restaurant?.lng),
+    ].find(Boolean);
+    if (orderLevel) return orderLevel;
+    return null;
+  }, [restaurant, order]);
+
+  const deliveryFromApi = useMemo(() => {
+    const addressBlocks = [
+      order?.delivery_address,
+      order?.shipping_address,
+      order?.dropoff_address,
+      order?.drop_address,
+      order?.customer_address,
+    ];
+    for (const block of addressBlocks) {
+      if (block && typeof block === 'object') {
+        const p = parseLatLngFromRecord(block);
+        if (p) return p;
+      }
+    }
+    const fromMergedDelivery = parseLatLngFromRecord(delivery);
+    if (fromMergedDelivery) return fromMergedDelivery;
+    return (
+      parseLatLng(order?.delivery_latitude, order?.delivery_longitude) ||
+      parseLatLng(order?.deliveryLatitude, order?.deliveryLongitude) ||
+      parseLatLng(order?.drop_latitude, order?.drop_longitude) ||
+      parseLatLng(order?.customer_latitude, order?.customer_longitude) ||
+      parseLatLngFromRecord(order?.delivery_location) ||
+      parseLatLngFromRecord(customer?.default_address) ||
+      parseLatLngFromRecord(customer?.address) ||
+      null
+    );
+  }, [delivery, order, customer]);
+
+  /** Restaurant / pickup pin — never use customer delivery coords here. */
+  const pickupMapsUrl = useMemo(() => {
+    const p =
+      pickupFromApi ||
+      (geocodedPickup && isUsableLatLng(geocodedPickup.lat, geocodedPickup.lng) ? geocodedPickup : null);
+    if (!p) return '';
+    return `https://www.google.com/maps?q=${p.lat},${p.lng}`;
+  }, [pickupFromApi, geocodedPickup]);
+
+  const deliveryMapsUrl = useMemo(() => {
+    const p =
+      deliveryFromApi ||
+      (geocodedDelivery && isUsableLatLng(geocodedDelivery.lat, geocodedDelivery.lng) ? geocodedDelivery : null) ||
+      parseLatLng(delivery?.latitude ?? delivery?.lat, delivery?.longitude ?? delivery?.lng) ||
+      parseLatLng(order?.delivery_latitude, order?.delivery_longitude);
+    if (!p) return '';
+    return `https://www.google.com/maps?q=${p.lat},${p.lng}`;
+  }, [deliveryFromApi, geocodedDelivery, delivery, order?.delivery_latitude, order?.delivery_longitude]);
+
+  const pickupMapHref = useMemo(() => {
+    if (pickupMapsUrl) return pickupMapsUrl;
+    const addr =
+      String(restaurantAddress || '').trim() ||
+      String(order?.pickup_address || order?.pickup_address_line || '').trim();
+    return googleMapsSearchFromAddress(addr);
+  }, [pickupMapsUrl, restaurantAddress, order?.pickup_address, order?.pickup_address_line]);
+
+  const deliveryMapHref = useMemo(() => {
+    if (deliveryMapsUrl) return deliveryMapsUrl;
+    return googleMapsSearchFromAddress(deliveryAddressText);
+  }, [deliveryMapsUrl, deliveryAddressText]);
+
+  const assignPickupAddressDefault = useMemo(() => {
+    const addr = String(restaurantAddress || '').trim();
+    if (addr && addr !== '—') return addr;
+    const orderPickup = String(order?.pickup_address || order?.pickup_address_line || '').trim();
+    if (orderPickup) return orderPickup;
+    return 'Restaurant kitchen';
+  }, [restaurantAddress, order?.pickup_address, order?.pickup_address_line]);
+
+  const assignDeliveryAddressDefault = useMemo(() => {
+    if (deliveryAddressText && deliveryAddressText !== '—') return deliveryAddressText;
+    return 'Customer address';
+  }, [deliveryAddressText]);
+
+  const assignDeliveryNotesDefault = useMemo(
+    () => String(order?.notes || order?.delivery_notes || '').trim(),
+    [order?.notes, order?.delivery_notes]
+  );
+
+  useEffect(() => {
+    if (pickupFromApi) {
+      setGeocodedPickup(null);
+      return;
+    }
+    const q = assignPickupAddressDefault?.trim();
+    if (!q || q === 'Restaurant kitchen' || q === '—') {
+      setGeocodedPickup(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && data.lat != null && data.lng != null) {
+          setGeocodedPickup({ lat: Number(data.lat), lng: Number(data.lng) });
+        } else {
+          setGeocodedPickup(null);
+        }
+      } catch {
+        if (!cancelled) setGeocodedPickup(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pickupFromApi, assignPickupAddressDefault]);
+
+  useEffect(() => {
+    if (deliveryFromApi) {
+      setGeocodedDelivery(null);
+      return;
+    }
+    const q = assignDeliveryAddressDefault?.trim();
+    if (!q || q === 'Customer address' || q === '—') {
+      setGeocodedDelivery(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && data.lat != null && data.lng != null) {
+          setGeocodedDelivery({ lat: Number(data.lat), lng: Number(data.lng) });
+        } else {
+          setGeocodedDelivery(null);
+        }
+      } catch {
+        if (!cancelled) setGeocodedDelivery(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [deliveryFromApi, assignDeliveryAddressDefault]);
+
+  const pickupLat = pickupFromApi?.lat ?? geocodedPickup?.lat ?? null;
+  const pickupLng = pickupFromApi?.lng ?? geocodedPickup?.lng ?? null;
+  const deliveryLat = deliveryFromApi?.lat ?? geocodedDelivery?.lat ?? null;
+  const deliveryLng = deliveryFromApi?.lng ?? geocodedDelivery?.lng ?? null;
 
   return (
     <>
@@ -482,9 +926,10 @@ export default function OrderDetailPage() {
             </div>
           </div>
         )}
+
         {loading && (
-          <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
-            Loading order details...
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <CenteredSpinner minHeight="12rem" label="Loading order details" />
           </div>
         )}
         {!loading && error && (
@@ -495,35 +940,39 @@ export default function OrderDetailPage() {
         {!loading && !error && (
         <div className="rounded-2xl border border-gray-200 bg-[#FCFCFF] p-3 md:p-4">
           <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 lg:col-span-8">
+            <div className="col-span-12 order-2 min-w-0 lg:order-1 lg:col-span-8">
               <div className="rounded-xl bg-white p-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_210px]">
-                  <div>
-                    <h2 className="text-[34px] font-semibold leading-none text-[#1E1E24]">
+                <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(240px,280px)] xl:gap-8">
+                  <div className="min-w-0">
+                    <div
+                      className="break-words text-xs font-semibold leading-snug text-[#1E1E24]"
+                      role="heading"
+                      aria-level={2}
+                    >
                       Order ID # {order?.order_number || order?.id || orderId}
-                    </h2>
+                    </div>
                     <p className="mt-2 text-sm text-gray-500">Placed Date : {formattedDate}</p>
 
-                    <p className="mt-3 flex items-center gap-2 text-sm">
-                      <Store size={14} className="text-gray-500" />
+                    <p className="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-sm">
+                      <Store size={14} className="shrink-0 text-gray-500" />
                       <span className="font-medium">Restaurant :</span>
-                      <span className="text-purple-600">{restaurantName}</span>
+                      <span className="min-w-0 break-words text-purple-600">{restaurantName}</span>
                     </p>
-                    {deliveryMapsUrl ? (
+                    {pickupMapHref ? (
                       <a
-                        href={deliveryMapsUrl}
+                        href={pickupMapHref}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-2 inline-block rounded-md bg-purple-100 px-2.5 py-1 text-xs font-semibold text-purple-700 hover:bg-purple-200"
+                        className="mt-2 inline-flex text-xs font-semibold text-purple-700 hover:underline"
                       >
-                        Show Location On Map
+                        Open restaurant address in Google Maps
                       </a>
                     ) : (
-                      <p className="mt-2 text-xs text-gray-400">No map coordinates for this order.</p>
+                      <p className="mt-2 text-xs text-gray-400">Add a restaurant address to open in Maps.</p>
                     )}
                   </div>
 
-                  <div className="space-y-3 text-sm">
+                  <div className="min-w-0 space-y-3 text-sm xl:border-l xl:border-gray-100 xl:pl-6">
                     <button
                       type="button"
                       onClick={() => window.print()}
@@ -621,7 +1070,127 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            <div className="col-span-12 space-y-3 lg:col-span-4">
+            <div className="col-span-12 order-1 min-w-0 space-y-3 lg:order-2 lg:col-span-4">
+              <div className="rounded-xl bg-[#F5F5FA] p-4">
+                <h3 className="text-sm font-semibold text-[#1E1E24]">Order Setup</h3>
+                <label className="mt-3 block text-xs font-semibold text-gray-600" htmlFor="order-status-select">
+                  Change order status
+                </label>
+                <select
+                  id="order-status-select"
+                  disabled={!canChangeOrderStatus}
+                  className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-[#1E1E24] shadow-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-200 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
+                  value={selectStatusValue}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    if (next === currentApiStatus) return;
+                    setPendingApiStatus(next);
+                    setStatusReason('');
+                    setStatusActionError('');
+                    setStatusModalOpen(true);
+                    setSelectStatusValue(currentApiStatus);
+                  }}
+                >
+                  {statusSelectOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {!canChangeOrderStatus ? (
+                  <p className="mt-1.5 text-xs text-gray-500">
+                    No further status changes are allowed for this order.
+                  </p>
+                ) : null}
+                {!statusModalOpen && statusActionError ? (
+                  <p className="mt-2 text-xs text-rose-600">{statusActionError}</p>
+                ) : null}
+              </div>
+
+              {showAssignDelivery ? (
+                <div className="rounded-xl border border-violet-200/70 bg-gradient-to-br from-violet-50/90 via-white to-white p-4 shadow-sm">
+                  {assignedDriver ? (
+                    <>
+                      <h3 className="text-sm font-semibold text-[#1E1E24]">Delivery partner</h3>
+                      <p className="mt-1 text-xs text-gray-600">Currently assigned to this order.</p>
+                      <div className="mt-3 flex items-start gap-3">
+                        {assignedDriver.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={toAbsoluteAssetUrl(assignedDriver.avatar)}
+                            alt=""
+                            className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-violet-100"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-bold text-violet-800 ring-2 ring-violet-100">
+                            {assignedDriver.name.slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-[#1E1E24]">{assignedDriver.name}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 space-y-2 border-t border-violet-100/70 pt-3">
+                        {assignedDriver.phone ? (
+                          <InfoLine label="Phone" value={formatPhoneWithFlag(assignedDriver.phone)} />
+                        ) : null}
+                        {assignedDriver.email ? <InfoLine label="Email" value={assignedDriver.email} /> : null}
+                        {assignedDriver.vehicleType || assignedDriver.vehicleNumber ? (
+                          <InfoLine
+                            label="Type"
+                            value={
+                              [assignedDriver.vehicleType, assignedDriver.vehicleNumber].filter(Boolean).join(' · ') ||
+                              '—'
+                            }
+                          />
+                        ) : null}
+                        {assignedDriver.assignmentStatus || assignedDriver.approvalStatus ? (
+                          <InfoLine
+                            label="Status"
+                            value={humanizeEnum(
+                              assignedDriver.assignmentStatus || assignedDriver.approvalStatus || ''
+                            )}
+                          />
+                        ) : null}
+                        {assignedDriver.totalOrders != null ? (
+                          <InfoLine label="Total orders" value={String(assignedDriver.totalOrders)} />
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAssignModalOpen(true)}
+                        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-violet-600 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-violet-700"
+                      >
+                        <Bike className="h-4 w-4" aria-hidden />
+                        Change delivery person
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-[#1E1E24]">Assign delivery partner</h3>
+                        <p className="mt-1 text-xs leading-relaxed text-gray-600">
+                          Choose an available rider for this order. Distance from pickup is shown when live location is
+                          available.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAssignModalOpen(true)}
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-violet-700"
+                      >
+                        <Bike className="h-4 w-4" aria-hidden />
+                        Open
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
               <div className="rounded-xl bg-[#F5F5FA] p-4">
                 <h3 className="text-sm font-semibold text-[#1E1E24]">Customer Info</h3>
                 <div className="mt-3 flex items-start gap-3">
@@ -677,16 +1246,18 @@ export default function OrderDetailPage() {
                   <MapPin size={14} className="mt-0.5 shrink-0" />
                   <span className="min-w-0 break-words">{deliveryAddressText}</span>
                 </p>
-                {deliveryMapsUrl ? (
+                {deliveryMapHref ? (
                   <a
-                    href={deliveryMapsUrl}
+                    href={deliveryMapHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-2 inline-flex text-xs font-semibold text-purple-700 hover:underline"
                   >
-                    Open in Google Maps
+                    Open delivery address in Google Maps
                   </a>
-                ) : null}
+                ) : (
+                  <p className="mt-2 text-xs text-gray-400">Add a delivery address to open in Maps.</p>
+                )}
               </div>
 
               {ENABLE_DELIVERY_PROOF ? (
@@ -711,39 +1282,58 @@ export default function OrderDetailPage() {
                     <img
                       src={restaurantImage}
                       alt={restaurantName}
-                      className="h-14 w-14 rounded-lg object-cover"
+                      className="h-14 w-14 shrink-0 rounded-lg object-cover"
                       onError={(event) => {
                         event.currentTarget.onerror = null;
                         event.currentTarget.src = '/default-image.svg';
                       }}
                     />
                   ) : (
-                    <div className="h-14 w-14 rounded-lg bg-gray-200" />
+                    <div className="h-14 w-14 shrink-0 rounded-lg bg-gray-200" />
                   )}
                   <div className="min-w-0">
-                    <p className="truncate text-[30px] font-semibold leading-none text-[#1E1E24]">{restaurantName}</p>
+                    <p className="break-words text-2xl font-semibold leading-tight text-[#1E1E24] sm:text-[30px] sm:leading-none">
+                      {restaurantName}
+                    </p>
                     <p className="mt-1 text-xs text-gray-500">Restaurant Details</p>
                     <p className="mt-2 flex items-center gap-2 text-xs text-[#3A3A45]">
-                      <Phone size={13} className="text-gray-500" />
+                      <Phone size={13} className="shrink-0 text-gray-500" />
                       {formatPhoneWithFlag(restaurantPhone)}
                     </p>
                     {ownerPhone && ownerPhone !== restaurantPhone && (
                       <p className="mt-1 flex items-center gap-2 text-xs text-[#3A3A45]">
-                        <Phone size={13} className="text-gray-500" />
+                        <Phone size={13} className="shrink-0 text-gray-500" />
                         Owner: {formatPhoneWithFlag(ownerPhone)}
                       </p>
                     )}
                     {ownerEmail && (
                       <p className="mt-1 flex items-center gap-2 text-xs text-[#3A3A45]">
-                        <Mail size={13} className="text-gray-500" />
+                        <Mail size={13} className="shrink-0 text-gray-500" />
                         {ownerEmail}
                       </p>
                     )}
-                    <p className="mt-1 flex items-center gap-2 text-xs text-[#3A3A45]">
-                      <MapPin size={13} className="text-gray-500" />
-                      {restaurantAddress}
-                    </p>
                   </div>
+                </div>
+                <div className="mt-4 border-t border-gray-200 pt-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Restaurant / pickup address
+                  </p>
+                  <p className="mt-3 flex items-start gap-2 text-sm text-[#1E1E24]">
+                    <MapPin size={14} className="mt-0.5 shrink-0 text-gray-500" />
+                    <span className="min-w-0 break-words">{restaurantAddress}</span>
+                  </p>
+                  {pickupMapHref ? (
+                    <a
+                      href={pickupMapHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex text-xs font-semibold text-purple-700 hover:underline"
+                    >
+                      Open restaurant address in Google Maps
+                    </a>
+                  ) : (
+                    <p className="mt-2 text-xs text-gray-400">Add a restaurant address to open in Maps.</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -751,13 +1341,160 @@ export default function OrderDetailPage() {
         </div>
         )}
       </div>
+
+      {statusModalOpen ? (
+        <div
+          className="fixed inset-0 z-[65] flex items-center justify-center overflow-y-auto bg-black/45 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="status-confirm-title"
+          onMouseDown={(e) => {
+            if (statusSaving) return;
+            if (e.target === e.currentTarget) {
+              setStatusModalOpen(false);
+              setPendingApiStatus('');
+              setStatusReason('');
+              setStatusActionError('');
+            }
+          }}
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl border-2 border-orange-200 bg-white p-5 shadow-2xl ring-1 ring-orange-100/80"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              disabled={statusSaving}
+              onClick={() => {
+                setStatusModalOpen(false);
+                setPendingApiStatus('');
+                setStatusReason('');
+                setStatusActionError('');
+              }}
+              className="absolute right-3 top-3 rounded-lg p-1.5 text-gray-500 transition hover:bg-gray-100 disabled:opacity-50"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" aria-hidden />
+            </button>
+            <div className="flex gap-3 pr-8">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100">
+                <AlertCircle className="h-5 w-5 text-rose-600" aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 id="status-confirm-title" className="text-base font-semibold text-[#1E1E24]">
+                  Are you sure?
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Change status to{' '}
+                  <span className="font-medium text-[#1E1E24]">
+                    {statusSelectOptions.find((o) => o.value === pendingApiStatus)?.label ||
+                      humanizeEnum(pendingApiStatus)}
+                  </span>
+                  ?
+                </p>
+                <label className="mt-4 block">
+                  <span className="text-xs font-semibold text-gray-600">Note / reason (optional)</span>
+                  <textarea
+                    value={statusReason}
+                    onChange={(e) => setStatusReason(e.target.value)}
+                    rows={3}
+                    placeholder={
+                      pendingApiStatus === 'cancelled'
+                        ? 'e.g. Item not available'
+                        : 'Optional note for this change'
+                    }
+                    className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-200"
+                  />
+                </label>
+                {statusActionError ? (
+                  <p className="mt-2 text-xs text-rose-600">{statusActionError}</p>
+                ) : null}
+                <div className="mt-5 flex gap-2">
+                  <button
+                    type="button"
+                    disabled={statusSaving}
+                    onClick={() => {
+                      setStatusModalOpen(false);
+                      setPendingApiStatus('');
+                      setStatusReason('');
+                      setStatusActionError('');
+                    }}
+                    className="flex-1 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    No
+                  </button>
+                  <button
+                    type="button"
+                    disabled={statusSaving}
+                    onClick={async () => {
+                      setStatusSaving(true);
+                      setStatusActionError('');
+                      try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/status`, {
+                          method: 'PATCH',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                          },
+                          body: JSON.stringify({
+                            status: pendingApiStatus,
+                            ...(statusReason.trim() ? { reason: statusReason.trim() } : {}),
+                          }),
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                          throw new Error(
+                            typeof data?.message === 'string' ? data.message : 'Failed to update order status'
+                          );
+                        }
+                        await refreshOrderPayload();
+                        setStatusModalOpen(false);
+                        setPendingApiStatus('');
+                        setStatusReason('');
+                      } catch (e) {
+                        setStatusActionError(e?.message || 'Failed to update order status');
+                      } finally {
+                        setStatusSaving(false);
+                      }
+                    }}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-600 py-2.5 text-sm font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {statusSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden />
+                    ) : null}
+                    Yes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <AssignDeliveryModal
+        isOpen={assignModalOpen}
+        onClose={() => setAssignModalOpen(false)}
+        orderApiId={assignmentIds.orderId}
+        orderUuid={assignmentIds.orderUuid}
+        pickupAddress={assignPickupAddressDefault}
+        deliveryAddress={assignDeliveryAddressDefault}
+        pickupLatitude={pickupLat}
+        pickupLongitude={pickupLng}
+        deliveryLatitude={deliveryLat}
+        deliveryLongitude={deliveryLng}
+        initialDeliveryNotes={assignDeliveryNotesDefault}
+        onSuccess={() => {
+          refreshOrderPayload();
+        }}
+      />
     </>
   );
 }
 
 function MetaLine({ label, value, valueClass = 'text-[#1E1E24]', valueAsPill = false, pillClass = '' }) {
   return (
-    <div className="text-sm">
+    <div className="min-w-0 text-sm break-words">
       <span className="text-[#1E1E24]">{label} : </span>
       {valueAsPill ? (
         <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${pillClass}`}>{value || '-'}</span>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { CenteredSpinner, LoadingSpinner } from '@/app/components/LoadingSpinner';
 
 const INITIAL_FORM = {
   bannerId: '',
@@ -170,7 +171,13 @@ export default function BannerStatusUpdatePage() {
             disabled={!form.bannerId.trim() || loadingDetail}
             className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loadingDetail ? 'Loading...' : 'Refresh'}
+            {loadingDetail ? (
+              <span className="inline-flex items-center gap-2">
+                <LoadingSpinner size="xs" label="Refreshing" />
+              </span>
+            ) : (
+              'Refresh'
+            )}
           </button>
         </div>
 
@@ -191,7 +198,9 @@ export default function BannerStatusUpdatePage() {
         )}
 
         {loadingDetail && form.bannerId.trim() && (
-          <p className="text-xs text-gray-500">Loading advertisement details...</p>
+          <div className="rounded-lg border border-gray-100 bg-gray-50/80 px-4 py-10">
+            <CenteredSpinner minHeight="6rem" label="Loading advertisement details" />
+          </div>
         )}
 
         {selectedBanner && (

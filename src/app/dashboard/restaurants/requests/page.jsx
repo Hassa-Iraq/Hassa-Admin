@@ -9,6 +9,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { formatPhoneWithFlag } from '@/app/lib/phone';
 import { toast } from 'sonner';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const DEFAULT_RESTAURANT_IMAGE = '/default-image.svg';
 
@@ -265,13 +266,7 @@ export default function NewJoiningRequestsPage() {
               </thead>
 
               <tbody>
-                {loading && (
-                  <tr>
-                    <td colSpan={6} className="text-center py-10 text-gray-400 text-sm">
-                      Loading...
-                    </td>
-                  </tr>
-                )}
+                {loading && <TableLoadingSkeleton colSpan={6} rows={8} variant="cells" />}
 
                 {!loading && fetchError && (
                   <tr>

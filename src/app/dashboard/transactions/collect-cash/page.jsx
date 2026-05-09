@@ -3,6 +3,8 @@
 import { Download, Eye, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '@/app/config';
+import { LoadingSpinner } from '@/app/components/LoadingSpinner';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const TYPE_OPTIONS = [
   { label: 'Deliveryman', value: 'driver' },
@@ -473,7 +475,16 @@ export default function CollectCashPage() {
               ))}
             </select>
           </Field>
-          <Field label="Restaurant">
+          <Field
+            label={
+              <span className="inline-flex items-center gap-2">
+                Restaurant
+                {listLoading && type === 'restaurant' ? (
+                  <LoadingSpinner size="xs" label="Loading restaurants" />
+                ) : null}
+              </span>
+            }
+          >
             <div className="relative">
               <button
                 type="button"
@@ -482,7 +493,9 @@ export default function CollectCashPage() {
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-xs font-normal normal-case text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-50"
               >
                 {listLoading ? (
-                  'Loading...'
+                  <span className="inline-flex items-center gap-2 text-gray-500">
+                    <LoadingSpinner size="xs" label="Loading restaurants" />
+                  </span>
                 ) : selectedRestaurant ? (
                   <span className="flex items-center gap-2">
                     <img
@@ -546,16 +559,23 @@ export default function CollectCashPage() {
               ) : null}
             </div>
           </Field>
-          <Field label="Deliveryman *">
+          <Field
+            label={
+              <span className="inline-flex items-center gap-2">
+                Deliveryman *
+                {listLoading && type === 'driver' ? (
+                  <LoadingSpinner size="xs" label="Loading delivery people" />
+                ) : null}
+              </span>
+            }
+          >
             <select
               value={selectedDriverId}
               onChange={(e) => setSelectedDriverId(e.target.value)}
               disabled={listLoading || type !== 'driver'}
               className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-50"
             >
-              <option value="">
-                {listLoading ? 'Loading...' : 'Select Deliveryman'}
-              </option>
+              <option value="">{listLoading ? '\u00A0' : 'Select Deliveryman'}</option>
               {type === 'driver'
                 ? options.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -595,7 +615,9 @@ export default function CollectCashPage() {
               inputMode="decimal"
             />
             {balanceLoading ? (
-              <p className="mt-1 text-[11px] text-gray-400">Fetching pending balance...</p>
+              <div className="mt-1 flex items-center gap-1.5" role="status" aria-label="Fetching pending balance">
+                <LoadingSpinner size="xs" label="Fetching pending balance" />
+              </div>
             ) : null}
           </Field>
         </div>
@@ -629,7 +651,13 @@ export default function CollectCashPage() {
             onClick={handleSubmit}
             className="rounded-md bg-[#7C3AED] px-5 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitLoading ? 'Collecting...' : 'Collect Cash'}
+            {submitLoading ? (
+              <span className="inline-flex items-center justify-center px-1">
+                <LoadingSpinner size="sm" className="[&_svg]:text-white" label="Collecting cash" />
+              </span>
+            ) : (
+              'Collect Cash'
+            )}
           </button>
         </div>
       </section>
@@ -663,11 +691,7 @@ export default function CollectCashPage() {
             </thead>
             <tbody>
               {tableLoading ? (
-                <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-xs text-gray-500">
-                    Loading transactions...
-                  </td>
-                </tr>
+                <TableLoadingSkeleton colSpan={8} rows={8} variant="cells" />
               ) : tableError ? (
                 <tr>
                   <td colSpan={8} className="px-3 py-8 text-center text-xs text-rose-600">

@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'sonner';
+import TableLoadingSkeleton from '@/app/components/TableLoadingSkeleton';
 
 const PER_PAGE = 20;
 
@@ -125,7 +126,26 @@ export default function PublicBannersPage() {
           </div>
         </div>
 
-        {loading && <p className="p-4 text-xs text-gray-500">Loading advertisements...</p>}
+        {loading && (
+          <div className="overflow-x-auto px-2 pb-2">
+            <table className="w-full min-w-[980px] text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50/70">
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">SI</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Advertisement</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Restaurant</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Description</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Status</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Public</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-semibold text-[#1E1E24]">Validity</th>
+                </tr>
+              </thead>
+              <tbody>
+                <TableLoadingSkeleton colSpan={7} rows={8} variant="cells" />
+              </tbody>
+            </table>
+          </div>
+        )}
         {!loading && error && <p className="p-4 text-xs text-red-500">{error}</p>}
 
         {!loading && !error && (

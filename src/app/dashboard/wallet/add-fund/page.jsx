@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { API_BASE_URL } from '@/app/config';
+import { LoadingSpinner } from '@/app/components/LoadingSpinner';
 
 function Field({ label, children }) {
   return (
@@ -212,7 +213,14 @@ export default function WalletAddFundPage() {
     <div className="space-y-4">
       <section className="rounded-xl border border-gray-200 bg-white p-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <Field label="Customer">
+          <Field
+            label={
+              <span className="inline-flex items-center gap-2">
+                Customer
+                {customersLoading ? <LoadingSpinner size="xs" label="Loading customers" /> : null}
+              </span>
+            }
+          >
             <div className="relative" ref={customerWrapRef}>
               <button
                 type="button"
@@ -233,7 +241,11 @@ export default function WalletAddFundPage() {
                     {walletUserId
                       ? selectedCustomerLabel
                       : customersLoading
-                        ? 'Loading customers...'
+                        ? (
+                            <span className="inline-flex items-center gap-2 text-gray-500">
+                              <LoadingSpinner size="xs" label="Loading customers" />
+                            </span>
+                          )
                         : 'Select Customer'}
                   </span>
                 </span>

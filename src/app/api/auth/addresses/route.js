@@ -2,26 +2,16 @@ import { NextResponse } from 'next/server';
 import axios from 'axios';
 import { API_BASE_URL } from '../../../config';
 
-const REQUEST_TIMEOUT_MS = 12000;
+const REQUEST_TIMEOUT_MS = 15000;
 
-/**
- * Proxies Order Service: GET /api/orders/:order_id (get order by id).
- * Client calls /api/orders/{order_id}; this forwards to `${API_BASE_URL}/api/orders/{order_id}`.
- */
-export async function GET(request, context) {
+export async function GET(request) {
   try {
-    const { order_id: orderId } = await context.params;
-    if (!orderId) {
-      return NextResponse.json({ message: 'order_id is required' }, { status: 400 });
-    }
-
-    const id = encodeURIComponent(String(orderId).trim());
-
     const authorization = request.headers.get('authorization');
     const cookieToken = request.cookies.get('token')?.value;
     const authHeader = authorization || (cookieToken ? `Bearer ${cookieToken}` : '');
+    const search = request.nextUrl.search || '';
 
-    const backendResponse = await axios.get(`${API_BASE_URL}/api/orders/${id}`, {
+    const backendResponse = await axios.get(`${API_BASE_URL}/api/auth/addresses${search}`, {
       headers: {
         ...(authHeader ? { Authorization: authHeader } : {}),
       },
@@ -35,9 +25,10 @@ export async function GET(request, context) {
         error.code === 'ECONNABORTED' ||
         error.code === 'ETIMEDOUT' ||
         String(error.message || '').toLowerCase().includes('timedout');
+
       if (timeoutLike) {
         return NextResponse.json(
-          { message: 'Order details request timed out. Please retry.' },
+          { message: 'Backend request timed out. Please try again.' },
           { status: 504 }
         );
       }
@@ -47,14 +38,15 @@ export async function GET(request, context) {
         error.response?.data?.message ||
         error.response?.data ||
         error.message ||
-        'Failed to fetch order';
+        'Failed to fetch addresses';
 
       return NextResponse.json({ message }, { status });
     }
 
     return NextResponse.json(
-      { message: error?.message || 'Failed to fetch order' },
+      { message: error?.message || 'Failed to fetch addresses' },
       { status: 500 }
     );
   }
 }
+

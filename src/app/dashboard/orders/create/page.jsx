@@ -680,11 +680,11 @@ export default function AdminCreateOrderPage() {
         }
 
         if (normalized.length === 0) {
-          const params = new URLSearchParams({
-            restaurant_id: restaurantId,
-            page: '1',
-            limit: '500',
-          });
+        const params = new URLSearchParams({
+          restaurant_id: restaurantId,
+          page: '1',
+          limit: '500',
+        });
           const menuRes = await fetch(`/api/restaurants/menu-items?${params.toString()}`, {
             headers,
           });
@@ -789,10 +789,10 @@ export default function AdminCreateOrderPage() {
                 const active = idx === step;
                 const done = idx < step;
                 return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setStep(idx)}
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setStep(idx)}
                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
                       active
                         ? 'border-violet-600 bg-violet-600 text-white shadow-md shadow-violet-600/20'
@@ -804,7 +804,7 @@ export default function AdminCreateOrderPage() {
                     <Icon className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
                     <span className="hidden sm:inline">{idx + 1}.</span>
                     <span>{t}</span>
-                  </button>
+                </button>
                 );
               })}
             </div>
@@ -898,11 +898,11 @@ export default function AdminCreateOrderPage() {
                       <p className="text-sm text-gray-500">No saved addresses for this customer.</p>
                     ) : null}
                     {addresses.map((a, idx) => {
-                      const id = toId(a);
+                    const id = toId(a);
                       if (!id) return null;
                       const sel = addressId === id;
                       const sec = addressDisplaySecondary(a);
-                      return (
+                    return (
                         <ChoiceRow
                           key={id || `a-${idx}`}
                           selected={sel}
@@ -915,8 +915,8 @@ export default function AdminCreateOrderPage() {
                           title={addressDisplayPrimary(a)}
                           subtitle={sec}
                         />
-                      );
-                    })}
+                    );
+                  })}
                   </div>
                 )}
               </div>
@@ -978,7 +978,7 @@ export default function AdminCreateOrderPage() {
                             const id = toRestaurantRecordId(r);
                             if (!id) return null;
                             const sel = restaurantId === id;
-                            return (
+                        return (
                               <button
                                 key={id}
                                 type="button"
@@ -1039,7 +1039,7 @@ export default function AdminCreateOrderPage() {
                           </button>
                         );
                       })}
-                    </div>
+                  </div>
                   </div>
                 ) : null}
 
@@ -1048,9 +1048,9 @@ export default function AdminCreateOrderPage() {
                     className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
                     aria-hidden
                   />
-                  <input
-                    value={menuSearch}
-                    onChange={(e) => setMenuSearch(e.target.value)}
+                    <input
+                      value={menuSearch}
+                      onChange={(e) => setMenuSearch(e.target.value)}
                     placeholder="Search items in this category…"
                     className="w-full rounded-xl border border-gray-200 bg-gray-50/80 py-2.5 pl-10 pr-3 text-sm outline-none ring-violet-500/0 transition focus:border-violet-300 focus:bg-white focus:ring-2 focus:ring-violet-500/20"
                     disabled={!restaurantId || (loading && menuItems.length === 0)}
@@ -1059,7 +1059,7 @@ export default function AdminCreateOrderPage() {
 
                 {!restaurantId ? (
                   <p className="text-sm text-gray-500">Select a restaurant to load categories and menu.</p>
-                ) : null}
+                      ) : null}
                 {restaurantId && !loading && filteredMenuItems.length === 0 && menuItems.length > 0 ? (
                   <p className="text-sm text-gray-500">
                     No items in this category{menuSearch.trim() ? ' match your search' : ''}.
@@ -1071,10 +1071,10 @@ export default function AdminCreateOrderPage() {
 
                 {restaurantId && !loading && filteredMenuItems.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {filteredMenuItems.map((m) => {
+                      {filteredMenuItems.map((m) => {
                       const hasOpts = (m.optionGroups?.length || 0) > 0;
                       const inCartTotal = totalQtyForMenuItem.get(m.id) || 0;
-                      return (
+                        return (
                         <div
                           key={m.id}
                           className={`flex items-stretch overflow-hidden rounded-xl border bg-white shadow-sm transition hover:shadow-md ${
@@ -1120,8 +1120,8 @@ export default function AdminCreateOrderPage() {
                                   <span className="ml-1 font-normal text-gray-500">+ add-ons</span>
                                 ) : null}
                               </span>
-                              <button
-                                type="button"
+                                <button
+                                  type="button"
                                 onClick={() => setOptionModalItem(m)}
                                 className={`w-full rounded-lg px-3 py-2.5 text-center text-xs font-semibold text-white shadow-sm transition active:scale-[0.99] ${
                                   inCartTotal > 0
@@ -1130,13 +1130,13 @@ export default function AdminCreateOrderPage() {
                                 }`}
                               >
                                 {inCartTotal > 0 ? 'Add another' : 'Add to cart'}
-                              </button>
-                            </div>
+                                </button>
+                              </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                </div>
                 ) : null}
 
                 <div className="rounded-xl border border-violet-100/80 bg-violet-50/40 px-4 py-3 text-sm text-violet-900">
@@ -1251,7 +1251,7 @@ export default function AdminCreateOrderPage() {
                             const item = menuItems.find((x) => x.id === line.menuItemId);
                             const unit = lineUnitPrice(item, line.selectedOptionIds);
                             const optText = selectionSummary(item, line.selectedOptionIds);
-                            return (
+                          return (
                               <div
                                 key={line.lineId}
                                 className="flex items-start gap-2 rounded-lg border border-violet-100/80 bg-white/90 p-2 text-sm shadow-sm"
@@ -1280,7 +1280,7 @@ export default function AdminCreateOrderPage() {
                                     </button>
                                     <span className="min-w-[1.5rem] text-center text-xs font-semibold">
                                       {line.quantity}
-                                    </span>
+                              </span>
                                     <button
                                       type="button"
                                       onClick={() =>
@@ -1295,10 +1295,10 @@ export default function AdminCreateOrderPage() {
                                 </div>
                                 <span className="shrink-0 text-xs font-semibold text-violet-800">
                                   {formatCurrencyFixed2(unit * line.quantity)}
-                                </span>
-                              </div>
-                            );
-                          })}
+                              </span>
+                            </div>
+                          );
+                        })}
                         </div>
                         <div className="mt-3 space-y-1.5 border-t border-violet-100 pt-3 text-sm">
                           <div className="flex justify-between text-gray-600">
@@ -1306,7 +1306,7 @@ export default function AdminCreateOrderPage() {
                             <span className="font-medium text-[#1E1E24]">
                               {formatCurrencyFixed2(itemsSubtotal)}
                             </span>
-                          </div>
+                      </div>
                           <div className="flex justify-between text-gray-600">
                             <span>Delivery fee</span>
                             <span className="font-medium text-[#1E1E24]">
@@ -1365,7 +1365,7 @@ export default function AdminCreateOrderPage() {
                     media={
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
                         <MapPin className="h-6 w-6" aria-hidden />
-                      </div>
+                </div>
                     }
                   />
                   <ReviewCard
@@ -1655,7 +1655,7 @@ function ItemOptionsModal({ item, onClose, onConfirm }) {
                             Up to {g.maxSelections > 0 ? g.maxSelections : g.options.length}
                           </span>
                         ) : null}
-                      </div>
+                </div>
                       <div className="space-y-1.5">
                         {isSingle
                           ? g.options.map((o) => (
@@ -1709,7 +1709,7 @@ function ItemOptionsModal({ item, onClose, onConfirm }) {
                                 </span>
                               </label>
                             ))}
-                      </div>
+              </div>
                       {optionalSingle ? (
                         <button
                           type="button"
@@ -1718,14 +1718,14 @@ function ItemOptionsModal({ item, onClose, onConfirm }) {
                         >
                           Clear selection
                         </button>
-                      ) : null}
-                    </div>
+            ) : null}
+          </div>
                   );
                 })}
-              </div>
+        </div>
 
               {err ? <p className="mt-4 text-sm text-rose-600">{err}</p> : null}
-            </div>
+      </div>
 
             <div className="space-y-3 border-t border-gray-100 bg-gray-50/90 px-4 py-3 shadow-[0_-6px_16px_rgba(0,0,0,0.04)]">
               <label className="block space-y-1.5">
@@ -1800,13 +1800,13 @@ function RoundMedia({ src, alt, fallbackLetter, sizeClass, rounded = 'rounded-xl
 
   if (fillContainer) {
     if (!src || failed) {
-      return (
+  return (
         <div
           className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-violet-100 to-indigo-100 text-base font-semibold text-violet-800 ${rounded}`}
           aria-hidden
         >
           {letter}
-        </div>
+    </div>
       );
     }
     return (

@@ -415,27 +415,28 @@ export default function Topbar({ title, titleKey, subtitle, subtitleKey, rightCo
             className={`flex min-h-0 min-w-0 flex-1 items-center justify-end gap-1.5 overflow-visible sm:gap-3 md:gap-6 ${isRTL ? 'pe-10 ps-0' : 'ps-10 pe-0'} md:ps-0 md:pe-0`}
           >
 
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard/orders/pending')}
-              className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-visible rounded-lg text-purple-600 transition hover:bg-gray-50 md:h-9 md:w-9"
-              aria-label={
-                pendingOrdersCount !== null
-                  ? `Pending orders, ${pendingOrdersCount}`
-                  : 'Pending orders'
-              }
-            >
-              <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
-              {pendingOrdersCount !== null && pendingOrdersCount > 0 ? (
-                <span
-  className={`pointer-events-none absolute z-20 flex min-w-[14px] items-center justify-center rounded-full bg-red-500 px-1 py-[1px] text-[9px] font-medium leading-none text-white shadow-sm ring-2 ring-white ${
-    isRTL ? '-left-1 -top-1' : '-right-1 -top-1'
-  }`}
+           <button
+  type="button"
+  onClick={() => router.push('/dashboard/orders/pending')}
+  className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-visible rounded-lg text-purple-600 transition hover:bg-gray-50 md:h-9 md:w-9"
+  aria-label={
+    pendingOrdersCount !== null
+      ? `Pending orders, ${pendingOrdersCount}`
+      : 'Pending orders'
+  }
 >
-  {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
-</span>
-              ) : null}
-            </button>
+  <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
+
+  {pendingOrdersCount !== null && pendingOrdersCount > 0 ? (
+    <span
+      className={`pointer-events-none absolute z-20 text-[9px] font-bold leading-none text-red-600 ${
+        isRTL ? '-left-1 -top-1' : '-right-1 -top-1'
+      }`}
+    >
+      {pendingOrdersCount > 9 ? '9+' : pendingOrdersCount}
+    </span>
+  ) : null}
+</button>
 
             {/* Language Selector */}
             <div ref={langRef} className="relative hidden sm:block">

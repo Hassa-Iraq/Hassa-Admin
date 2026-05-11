@@ -428,12 +428,12 @@ export default function Topbar({ title, titleKey, subtitle, subtitleKey, rightCo
               <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
               {pendingOrdersCount !== null && pendingOrdersCount > 0 ? (
                 <span
-                  className={`pointer-events-none absolute z-10 flex h-3 min-h-3 min-w-3 max-w-[18px] items-center justify-center rounded-full bg-red-500 px-px text-[7px] font-regular tabular-nums leading-none text-white shadow-sm ring-[1px] ring-white md:h-[11px] md:min-w-[11px] md:max-w-[20px] md:px-[2px] md:text-[8px] md:ring-[1.5px] ${
-                    isRTL ? 'left-0 top-0' : 'right-0 top-0'
-                  }`}
-                >
-                  {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
-                </span>
+  className={`pointer-events-none absolute z-20 flex min-w-[14px] items-center justify-center rounded-full bg-red-500 px-1 py-[1px] text-[9px] font-medium leading-none text-white shadow-sm ring-2 ring-white ${
+    isRTL ? '-left-1 -top-1' : '-right-1 -top-1'
+  }`}
+>
+  {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
+</span>
               ) : null}
             </button>
 

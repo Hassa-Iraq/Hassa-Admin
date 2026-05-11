@@ -133,6 +133,7 @@ export default function Dashboard() {
       <Topbar
         title={t.dashboardOverview}
         subtitle={t.welcomeBack}
+
       />
       <div className="pt-32 md:pt-36 px-4 md:px-6 space-y-6 pb-16">
         <OrderStats

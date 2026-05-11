@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Mail, ShoppingCart, Search, Globe, ChevronDown, LogOut, Loader2 } from 'lucide-react';
+import { ShoppingCart, Search, Globe, ChevronDown, LogOut, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/app/i18n/LanguageContext';
+
 
 const LANGUAGES = [
   { code: 'en', label: 'English (US)', flag: '🇺🇸' },
@@ -413,12 +414,6 @@ export default function Topbar({ title, titleKey, subtitle, subtitleKey, rightCo
           <div
             className={`flex min-h-0 min-w-0 flex-1 items-center justify-end gap-1.5 overflow-visible sm:gap-3 md:gap-6 ${isRTL ? 'pe-10 ps-0' : 'ps-10 pe-0'} md:ps-0 md:pe-0`}
           >
-            <div className="relative shrink-0">
-              <Mail className="h-5 w-5 text-purple-600" />
-              <span
-                className={`absolute -top-0.5 h-2 w-2 rounded-full bg-red-500 ${isRTL ? '-left-0.5' : '-right-0.5'}`}
-              />
-            </div>
 
             <button
               type="button"
@@ -433,7 +428,7 @@ export default function Topbar({ title, titleKey, subtitle, subtitleKey, rightCo
               <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
               {pendingOrdersCount !== null && pendingOrdersCount > 0 ? (
                 <span
-                  className={`pointer-events-none absolute z-10 flex h-3 min-h-3 min-w-3 max-w-[18px] items-center justify-center rounded-full bg-red-500 px-px text-[7px] font-bold tabular-nums leading-none text-white shadow-sm ring-[1px] ring-white md:h-[11px] md:min-w-[11px] md:max-w-[20px] md:px-[2px] md:text-[8px] md:ring-[1.5px] ${
+                  className={`pointer-events-none absolute z-10 flex h-3 min-h-3 min-w-3 max-w-[18px] items-center justify-center rounded-full bg-red-500 px-px text-[7px] font-regular tabular-nums leading-none text-white shadow-sm ring-[1px] ring-white md:h-[11px] md:min-w-[11px] md:max-w-[20px] md:px-[2px] md:text-[8px] md:ring-[1.5px] ${
                     isRTL ? 'left-0 top-0' : 'right-0 top-0'
                   }`}
                 >

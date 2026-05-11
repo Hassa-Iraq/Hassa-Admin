@@ -8,6 +8,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const SIDEBAR_ICONS = {
     dashboard: '/icons/Vector.png',
     orders: '/icons/orders.png',
+    createOrders: '/icons/food.png',
     restaurants: '/icons/restaurant.png',
     foods: '/icons/food.png',
     categories: '/icons/orders.png',
@@ -314,6 +315,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     'Restaurant List': '/dashboard/restaurants/list',
     'New Joining Request': '/dashboard/restaurants/requests',
     'Customers': '/dashboard/customers',
+    'Create Orders': '/dashboard/orders/create',
     'Dispatch Management': '/dashboard/dispatch/searching',
     'Searching Deliverymen': '/dashboard/dispatch/searching',
     'Ongoing Orders': '/dashboard/dispatch/ongoing',
@@ -445,16 +447,15 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       return;
     }
 
-    // Subcategory screens commented per request (keep code, hide navigation)
-    // if (pathname === '/dashboard/foods/sub-categories') {
-    //   setActiveItem('Sub category');
-    //   return;
-    // }
-    //
-    // if (pathname === '/dashboard/foods/sub-categories/add') {
-    //   setActiveItem('Add Subcategory');
-    //   return;
-    // }
+    if (pathname === '/dashboard/foods/sub-categories') {
+      setActiveItem('Sub category');
+      return;
+    }
+
+    if (pathname === '/dashboard/foods/sub-categories/add') {
+      setActiveItem('Add Subcategory');
+      return;
+    }
 
     if (pathname === '/dashboard/foods/cuisine-categories') {
       setActiveItem('Cuisine List');
@@ -669,13 +670,18 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       isHeader: true,
       items: [
         { icon: SIDEBAR_ICONS.orders, label: 'Orders', tKey: 'orders', key: 'orderManagement', submenu: ['All', 'Pending', 'Accepted', 'Processing', 'Food On The Way', 'Delivered', 'Cancelled', 'Refunded', 'Offline Payments'] },
+         { icon: SIDEBAR_ICONS.createOrders, label: 'Create Orders', tKey: 'Create Orders', hasSubmenu: false }
       ]
     },
+
+    
     {
       label: 'VENDOR MANAGEMENT', tKey: 'vendorManagement',
       isHeader: true,
       items: [
         { icon: SIDEBAR_ICONS.restaurants, label: 'Restaurants', tKey: 'restaurants', key: 'vendorManagement', submenu: ['Add Restaurants', 'Restaurant List', 'New Joining Request'] },
+        
+
       ]
     },
     {

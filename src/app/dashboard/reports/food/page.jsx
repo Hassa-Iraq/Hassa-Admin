@@ -79,6 +79,8 @@ export default function FoodReportPage() {
   const [averageYearlySales, setAverageYearlySales] = useState(0);
   const [chart, setChart] = useState([]);
   const [items, setItems] = useState([]);
+
+    const [rows, setRows] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -88,12 +90,30 @@ export default function FoodReportPage() {
 
   const [restaurants, setRestaurants] = useState([]);
   const [restaurantsLoading, setRestaurantsLoading] = useState(false);
+    const [reference, setReference] = useState('');
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const dropdownRef = useRef(null);
   const categoryDropdownRef = useRef(null);
   const abortRef = useRef(null);
   const lastLoadRef = useRef({ key: '', at: 0 });
+
+   const visibleRows = useMemo(() => {
+    const q = reference.trim().toLowerCase();
+    if (!q) return rows;
+    return (Array.isArray(rows) ? rows : []).filter((row) => {
+      const restaurantName = safeStr(row?.restaurant_name).toLowerCase();
+      const customerName = safeStr(row?.customer_name).toLowerCase();
+      const orderNumber = safeStr(row?.order_number).toLowerCase();
+      const orderId = safeStr(row?.order_id).toLowerCase();
+      return (
+        restaurantName.includes(q) ||
+        customerName.includes(q) ||
+        orderNumber.includes(q) ||
+        orderId.includes(q)
+      );
+    });
+  }, [reference, rows]);
 
   useEffect(() => {
     if (!restaurantDropdownOpen) return undefined;
@@ -604,71 +624,56 @@ export default function FoodReportPage() {
             )}
           </button>
         </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-600">
-          <div>
-            Showing <span className="font-semibold text-gray-800">{visibleItems.length}</span> of{' '}
-            <span className="font-semibold text-gray-800">{pagination.total}</span> items
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 disabled:opacity-50"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={loading || page <= 1}
-            >
-              Prev
-            </button>
-            <span>
-              Page <span className="font-semibold text-gray-800">{pagination.page}</span> /{' '}
-              <span className="font-semibold text-gray-800">{pagination.totalPages}</span>
-            </span>
-            <button
-              className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 disabled:opacity-50"
-              onClick={() => setPage((p) => Math.min(pagination.totalPages || 1, p + 1))}
-              disabled={loading || page >= (pagination.totalPages || 1)}
-            >
-              Next
-            </button>
-            <select
-              className="rounded-md border border-gray-200 bg-white px-2 py-1.5"
-              value={limit}
-              onChange={(e) => setLimit(Number(e.target.value) || 20)}
-              disabled={loading}
-            >
-              {[10, 20, 50, 100].map((n) => (
-                <option key={n} value={n}>
-                  {n}/page
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
       </section>
-
       <section className="rounded-xl border border-gray-200 bg-white p-4">
-        <div className="h-64 rounded-lg border border-gray-100 bg-white p-4">
-          {loading ? (
-            <ChartSkeleton className="h-full min-h-[12rem]" heightClass="h-full" />
-          ) : chartBars.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-xs text-gray-500">No chart data.</div>
-          ) : (
-            <div className="flex h-full items-end justify-around gap-6">
-              {chartBars.slice(-7).map((c, i) => (
-                <div key={`${c.year}-${i}`} className="flex w-14 flex-col items-center gap-2">
-                  <div
-                    className="w-4 rounded-full bg-gradient-to-b from-[#7C3AED] to-[#EEE7FF]"
-                    style={{ height: `${Math.max(28, c.value / 40)}px` }}
-                    title={`${c.year}: ${formatIQD(c.value)}`}
-                  />
-                  <span className="whitespace-nowrap text-[10px] text-gray-500">{c.year}</span>
-                </div>
-              ))}
-            </div>
-          )}
+  <div className="rounded-lg border border-gray-100 bg-white p-6">
+    <div className="h-64 overflow-hidden">
+      {loading ? (
+        <ChartSkeleton className="h-full min-h-[12rem]" heightClass="h-full" />
+      ) : chartBars.length === 0 ? (
+        <div className="flex h-full items-center justify-center text-xs text-gray-500">
+          No chart data.
         </div>
-        <div className="mt-2 flex justify-center text-[11px] text-gray-500">
-          Average Yearly Sales: <span className="ml-1 font-semibold text-gray-800">{formatIQD(averageYearlySales)}</span>
+      ) : (
+        <div className="flex h-full items-end justify-around gap-6">
+          {chartBars.slice(-7).map((c, i) => {
+            const maxValue = Math.max(...chartBars.map((item) => item.value), 1);
+
+            // max bar height inside container
+            const barHeight = (c.value / maxValue) * 180;
+
+            return (
+              <div
+                key={`${c.year}-${i}`}
+                className="flex w-14 flex-col items-center justify-end gap-3"
+              >
+                <div
+                  className="w-4 rounded-full bg-gradient-to-b from-[#7C3AED] to-[#EEE7FF] transition-all duration-300"
+                  style={{
+                    height: `${Math.max(28, barHeight)}px`,
+                    maxHeight: '180px',
+                  }}
+                  title={`${c.year}: ${formatIQD(c.value)}`}
+                />
+
+                <span className="whitespace-nowrap text-[10px] text-gray-500">
+                  {c.year}
+                </span>
+              </div>
+            );
+          })}
         </div>
-      </section>
+      )}
+    </div>
+  </div>
+
+  <div className="mt-4 flex justify-center text-[11px] text-gray-500">
+    Average Yearly Sales:
+    <span className="ml-1 font-semibold text-gray-800">
+      {formatIQD(averageYearlySales)}
+    </span>
+  </div>
+</section>
 
       <section className="rounded-xl border border-gray-200 bg-white">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
@@ -777,6 +782,44 @@ export default function FoodReportPage() {
               )}
             </tbody>
           </table>
+          </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-4 py-3 text-[11px] text-gray-600">
+          <div>
+            Showing <span className="font-semibold text-gray-800">{visibleRows.length}</span> of{' '}
+            <span className="font-semibold text-gray-800">{pagination.total}</span> results
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 disabled:opacity-50"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={loading || page <= 1}
+            >
+              Prev
+            </button>
+            <span>
+              Page <span className="font-semibold text-gray-800">{pagination.page}</span> /{' '}
+              <span className="font-semibold text-gray-800">{pagination.totalPages}</span>
+            </span>
+            <button
+              className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 disabled:opacity-50"
+              onClick={() => setPage((p) => Math.min(pagination.totalPages || 1, p + 1))}
+              disabled={loading || page >= (pagination.totalPages || 1)}
+            >
+              Next
+            </button>
+            <select
+              className="rounded-md border border-gray-200 bg-white px-2 py-1.5"
+              value={limit}
+              onChange={(e) => setLimit(Number(e.target.value) || 20)}
+              disabled={loading}
+            >
+              {[10, 20, 50, 100].map((n) => (
+                <option key={n} value={n}>
+                  {n}/page
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </section>
     </div>

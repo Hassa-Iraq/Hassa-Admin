@@ -572,44 +572,6 @@ export default function TransactionReportPage() {
             )}
           </button>
         </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-600">
-          <div>
-            Showing <span className="font-semibold text-gray-800">{visibleRows.length}</span> of{' '}
-            <span className="font-semibold text-gray-800">{pagination.total}</span> results
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 disabled:opacity-50"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={loading || page <= 1}
-            >
-              Prev
-            </button>
-            <span>
-              Page <span className="font-semibold text-gray-800">{pagination.page}</span> /{' '}
-              <span className="font-semibold text-gray-800">{pagination.totalPages}</span>
-            </span>
-            <button
-              className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 disabled:opacity-50"
-              onClick={() => setPage((p) => Math.min(pagination.totalPages || 1, p + 1))}
-              disabled={loading || page >= (pagination.totalPages || 1)}
-            >
-              Next
-            </button>
-            <select
-              className="rounded-md border border-gray-200 bg-white px-2 py-1.5"
-              value={limit}
-              onChange={(e) => setLimit(Number(e.target.value) || 20)}
-              disabled={loading}
-            >
-              {[10, 20, 50, 100].map((n) => (
-                <option key={n} value={n}>
-                  {n}/page
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-5">
@@ -781,6 +743,44 @@ export default function TransactionReportPage() {
               )}
             </tbody>
           </table>
+          </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-4 py-3 text-[11px] text-gray-600">
+          <div>
+            Showing <span className="font-semibold text-gray-800">{visibleRows.length}</span> of{' '}
+            <span className="font-semibold text-gray-800">{pagination.total}</span> results
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 disabled:opacity-50"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={loading || page <= 1}
+            >
+              Prev
+            </button>
+            <span>
+              Page <span className="font-semibold text-gray-800">{pagination.page}</span> /{' '}
+              <span className="font-semibold text-gray-800">{pagination.totalPages}</span>
+            </span>
+            <button
+              className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 disabled:opacity-50"
+              onClick={() => setPage((p) => Math.min(pagination.totalPages || 1, p + 1))}
+              disabled={loading || page >= (pagination.totalPages || 1)}
+            >
+              Next
+            </button>
+            <select
+              className="rounded-md border border-gray-200 bg-white px-2 py-1.5"
+              value={limit}
+              onChange={(e) => setLimit(Number(e.target.value) || 20)}
+              disabled={loading}
+            >
+              {[10, 20, 50, 100].map((n) => (
+                <option key={n} value={n}>
+                  {n}/page
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </section>
     </div>
